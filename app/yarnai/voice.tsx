@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { Mic, MicOff, Volume2, MessageSquare } from 'lucide-react-native';
-import { Audio } from 'expo-av';
+import { useAudioRecorder, usePermissions, RecordingOptions } from 'expo-audio';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { useLanguage } from '@/hooks/language-context';
@@ -191,11 +191,10 @@ const styles = StyleSheet.create({
 
 export default function VoiceAssistant() {
   const { t } = useLanguage();
-  const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [conversation, setConversation] = useState<Conversation[]>([]);
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
-  const [permissionResponse, requestPermission] = Audio.usePermissions();
+  const audioRecorder = useAudioRecorder();
+  const [permissionResponse, requestPermission] = usePermissions();
 
   const startRecording = async () => {
     if (Platform.OS === 'web') {
@@ -212,18 +211,8 @@ export default function VoiceAssistant() {
         await requestPermission();
       }
 
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-
       console.log('Starting recording..');
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-
-      setRecording(recording);
-      setIsRecording(true);
+      await audioRecorder.record();
       console.log('Recording started');
     } catch (err) {
       console.error('Failed to start recording', err);
@@ -232,19 +221,13 @@ export default function VoiceAssistant() {
   };
 
   const stopRecording = async () => {
-    if (!recording) return;
+    if (!audioRecorder.isRecording) return;
 
     console.log('Stopping recording..');
-    setIsRecording(false);
     setIsProcessing(true);
 
     try {
-      await recording.stopAndUnloadAsync();
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-      });
-
-      const uri = recording.getURI();
+      const uri = await audioRecorder.stop();
       console.log('Recording stopped and stored at', uri);
 
       if (uri) {
@@ -254,7 +237,6 @@ export default function VoiceAssistant() {
       console.error('Error stopping recording:', error);
       Alert.alert('Error', 'Failed to process recording');
     } finally {
-      setRecording(null);
       setIsProcessing(false);
     }
   };
@@ -354,7 +336,7 @@ export default function VoiceAssistant() {
   };
 
   const handleRecordPress = () => {
-    if (isRecording) {
+    if (audioRecorder.isRecording) {
       stopRecording();
     } else {
       startRecording();
@@ -367,13 +349,13 @@ export default function VoiceAssistant() {
 
   const getRecordButtonStyle = () => {
     if (isProcessing) return styles.recordButtonProcessing;
-    if (isRecording) return styles.recordButtonActive;
+    if (audioRecorder.isRecording) return styles.recordButtonActive;
     return styles.recordButtonIdle;
   };
 
   const getStatusText = () => {
     if (isProcessing) return t('yarnai.voiceAssistantProcessing');
-    if (isRecording) return t('yarnai.voiceAssistantListening');
+    if (audioRecorder.isRecording) return t('yarnai.voiceAssistantListening');
     return t('yarnai.voiceAssistantTapToStart');
   };
 
@@ -381,7 +363,7 @@ export default function VoiceAssistant() {
     if (isProcessing) {
       return <ActivityIndicator size="large" color={Colors.white} />;
     }
-    if (isRecording) {
+    if (audioRecorder.isRecording) {
       return <MicOff size={48} color={Colors.white} />;
     }
     return <Mic size={48} color={Colors.white} />;

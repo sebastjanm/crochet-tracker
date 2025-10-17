@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(bun run start)",
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(curl:*)",
+      "Bash(bash)",
+      "Bash(~/.bun/bin/bun run start:*)",
+      "Bash(~/.bun/bin/bunx expo start:*)",
+      "Bash(~/.bun/bin/bunx expo install:*)",
+      "Bash(~/.bun/bin/bun add:*)",
+      "WebFetch(domain:docs.expo.dev)",
+      "Bash(~/.bun/bin/bun remove:*)",
+      "Bash(ls:*)",
+      "WebSearch",
+      "Bash(rm:*)",
+      "Bash(npm view:*)",
+      "Bash(~/.bun/bin/bun upgrade:*)",
+      "Bash(~/.bun/bin/bun update:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nchore: upgrade to Expo SDK 54 and React Native 0.81\n\n- Upgrade Expo SDK from 53 to 54.0.13\n- Upgrade React Native from 0.79 to 0.81.4\n- Upgrade React from 19.0 to 19.1.0\n- Update all Expo packages to SDK 54 compatible versions\n- Migrate from deprecated expo-av to expo-audio\n- Update lucide-react-native to 0.546.0 for React 19 compatibility\n- Fix Expo Router 6 navigation layout patterns\n- Add comprehensive project documentation\nEOF\n)\")",
+      "Bash(xargs -I {} sh -c 'echo \"\"\"\"=== {} ===\"\"\"\" && head -30 {}')",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, Link } from 'expo-router';
@@ -17,6 +18,10 @@ import { useAuth } from '@/hooks/auth-context';
 import { useLanguage } from '@/hooks/language-context';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
+
+const { width, height } = Dimensions.get('window');
+const isSmallDevice = width < 375;
+const isTablet = width >= 768;
 
 export default function RegisterScreen() {
   const [name, setName] = useState('');
@@ -165,25 +170,28 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 24,
+    paddingHorizontal: isSmallDevice ? 16 : isTablet ? 48 : 24,
+    paddingVertical: isSmallDevice ? 16 : 24,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     alignItems: 'center',
-    marginBottom: 48,
+    marginBottom: isSmallDevice ? 32 : 48,
+    width: '100%',
   },
   logoContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: isSmallDevice ? 80 : 100,
+    height: isSmallDevice ? 80 : 100,
+    borderRadius: isSmallDevice ? 40 : 50,
     backgroundColor: Colors.beige,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
+    marginBottom: isSmallDevice ? 16 : 24,
   },
   title: {
-    fontSize: 42,
-    lineHeight: 48,
+    fontSize: isSmallDevice ? 32 : isTablet ? 48 : 42,
+    lineHeight: isSmallDevice ? 38 : isTablet ? 56 : 48,
     fontWeight: '300' as const,
     letterSpacing: -0.5,
     color: Colors.charcoal,
@@ -191,29 +199,34 @@ const styles = StyleSheet.create({
     textAlign: 'center' as const,
   },
   subtitle: {
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: isSmallDevice ? 14 : 16,
+    lineHeight: isSmallDevice ? 20 : 22,
     fontWeight: '400' as const,
     letterSpacing: 0.2,
     color: Colors.warmGray,
     textAlign: 'center' as const,
     opacity: 0.8,
+    maxWidth: isTablet ? 480 : '100%',
   },
   form: {
     width: '100%',
+    maxWidth: isTablet ? 480 : 480,
   },
   button: {
-    marginTop: 24,
+    marginTop: isSmallDevice ? 16 : 24,
   },
   links: {
-    marginTop: 32,
+    marginTop: isSmallDevice ? 24 : 32,
     alignItems: 'center',
   },
   link: {
     alignSelf: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
   },
   linkTextBold: {
     ...Typography.body,
+    fontSize: isSmallDevice ? 14 : 16,
     color: Colors.terracotta,
     fontWeight: '600',
     textAlign: 'center',
@@ -222,9 +235,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    flexWrap: 'wrap',
+    paddingHorizontal: 16,
   },
   loginHint: {
     ...Typography.body,
+    fontSize: isSmallDevice ? 14 : 16,
     color: Colors.warmGray,
+    textAlign: 'center',
   },
 });

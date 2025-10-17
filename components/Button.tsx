@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
+import { MAX_FONT_SIZE_MULTIPLIER } from '@/constants/accessibility';
 
 interface ButtonProps extends TouchableOpacityProps {
   title: string;
@@ -20,6 +21,8 @@ interface ButtonProps extends TouchableOpacityProps {
   loading?: boolean;
   icon?: React.ReactNode;
   fullWidth?: boolean;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -31,6 +34,8 @@ export const Button: React.FC<ButtonProps> = ({
   style,
   icon,
   fullWidth = false,
+  accessibilityLabel,
+  accessibilityHint,
   ...props
 }) => {
   const buttonStyle: ViewStyle[] = [
@@ -60,17 +65,32 @@ export const Button: React.FC<ButtonProps> = ({
       style={buttonStyle}
       disabled={disabled || loading}
       activeOpacity={disabled ? 1 : 0.75}
+      accessible={true}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel || title}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{
+        disabled: disabled || loading,
+        busy: loading,
+      }}
       {...props}
     >
       {loading ? (
-        <ActivityIndicator 
-          color={getLoadingColor()} 
+        <ActivityIndicator
+          color={getLoadingColor()}
           size="small"
+          accessibilityLabel="Loading"
         />
       ) : (
         <View style={styles.content}>
           {icon && icon}
-          <Text style={textStyle}>{title}</Text>
+          <Text
+            style={textStyle}
+            maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}
+            accessible={false}
+          >
+            {title}
+          </Text>
         </View>
       )}
     </TouchableOpacity>

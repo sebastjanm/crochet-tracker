@@ -38,7 +38,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       name,
       email,
     };
-    
+
     await AsyncStorage.setItem('user', JSON.stringify(mockUser));
     setUser(mockUser);
     return mockUser;
@@ -51,7 +51,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       name,
       email,
     };
-    
+
     await AsyncStorage.setItem('user', JSON.stringify(mockUser));
     setUser(mockUser);
     return mockUser;

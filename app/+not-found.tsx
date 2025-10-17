@@ -1,5 +1,6 @@
 import { Link } from "expo-router";
-import { StyleSheet, Text, View, SafeAreaView } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 
 export default function NotFoundScreen() {

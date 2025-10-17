@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import {
   TextInput,
   TextInputProps,
@@ -8,23 +8,38 @@ import {
 } from 'react-native';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
+import { MAX_FONT_SIZE_MULTIPLIER, ACCESSIBLE_COLORS } from '@/constants/accessibility';
 
 interface InputProps extends TextInputProps {
   label?: string;
   error?: string;
   helper?: string;
+  required?: boolean;
 }
 
 export const Input: React.FC<InputProps> = ({
   label,
   error,
   helper,
+  required = false,
   style,
+  accessibilityLabel,
   ...props
 }) => {
+  const inputId = useId();
+
   return (
     <View style={styles.container}>
-      {label && <Text style={styles.label}>{label}</Text>}
+      {label && (
+        <Text
+          style={styles.label}
+          maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}
+          nativeID={`${inputId}-label`}
+        >
+          {label}
+          {required && <Text style={styles.required}> *</Text>}
+        </Text>
+      )}
       <TextInput
         style={[
           styles.input,
@@ -32,10 +47,43 @@ export const Input: React.FC<InputProps> = ({
           style,
         ]}
         placeholderTextColor={Colors.warmGray}
+        accessible={true}
+        accessibilityLabel={accessibilityLabel || label}
+        accessibilityRequired={required}
+        accessibilityInvalid={!!error}
+        accessibilityLabelledBy={label ? `${inputId}-label` : undefined}
+        accessibilityDescribedBy={
+          error ? `${inputId}-error` : helper ? `${inputId}-helper` : undefined
+        }
+        maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}
         {...props}
       />
-      {helper && !error && <Text style={styles.helper}>{helper}</Text>}
-      {error && <Text style={styles.error}>{error}</Text>}
+      {helper && !error && (
+        <Text
+          style={styles.helper}
+          maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}
+          nativeID={`${inputId}-helper`}
+          accessible={false}
+        >
+          {helper}
+        </Text>
+      )}
+      {error && (
+        <View
+          accessible={true}
+          accessibilityLiveRegion="polite"
+          accessibilityRole="alert"
+          nativeID={`${inputId}-error`}
+        >
+          <Text
+            style={styles.error}
+            maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}
+            accessible={false}
+          >
+            {error}
+          </Text>
+        </View>
+      )}
     </View>
   );
 };
@@ -71,7 +119,11 @@ const styles = StyleSheet.create({
   },
   error: {
     ...Typography.caption,
-    color: Colors.error,
+    color: ACCESSIBLE_COLORS.errorAccessible,
     marginTop: 4,
+    fontWeight: '500',
+  },
+  required: {
+    color: ACCESSIBLE_COLORS.errorAccessible,
   },
 });

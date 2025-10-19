@@ -136,12 +136,12 @@ export default function EditInventoryScreen() {
     if (category === 'yarn') {
       updatedItem.yarnDetails = {
         name: yarnName.trim(),
-        brand: yarnBrand.trim(),
+        brand: yarnBrand.trim() || undefined,
         ball_weight: yarnWeight ? parseFloat(yarnWeight) : undefined,
         length: yarnLength ? parseFloat(yarnLength) : undefined,
-        color: yarnColorName.trim(),
-        fiber: yarnFiber.trim(),
-        store: yarnPurchaseLocation.trim(),
+        color: yarnColorName.trim() || undefined,
+        fiber: yarnFiber.trim() || undefined,
+        store: yarnPurchaseLocation.trim() || undefined,
         purchase_price: yarnPurchasePrice ? parseFloat(yarnPurchasePrice) : undefined,
       };
     }
@@ -149,11 +149,11 @@ export default function EditInventoryScreen() {
     if (category === 'hook') {
       updatedItem.hookDetails = {
         name: hookName.trim(),
-        brand: hookBrand.trim(),
-        size: hookSize.trim(),
+        brand: hookBrand.trim() || undefined,
+        size: hookSize.trim() || undefined,
         material: (hookMaterial.trim() || 'other') as 'aluminum' | 'steel' | 'plastic' | 'bamboo' | 'wood' | 'resin' | 'other',
         purchasePrice: hookPurchasePrice ? parseFloat(hookPurchasePrice) : undefined,
-        purchaseLocation: hookPurchaseLocation.trim(),
+        purchaseLocation: hookPurchaseLocation.trim() || undefined,
       };
     }
 

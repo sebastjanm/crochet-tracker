@@ -55,7 +55,7 @@ export interface HookDetails {
   barcode?: string;
 
   // Size Information
-  size: string; // e.g., "3.5 mm", "G/6"
+  size?: string; // e.g., "3.5 mm", "G/6"
   sizeMetric?: number; // size in mm
   sizeUS?: string; // US letter/number size
   sizeUK?: string; // UK size

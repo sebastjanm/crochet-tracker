@@ -137,17 +137,17 @@ export default function AddInventoryScreen() {
       const priceNum = purchasePrice ? parseFloat(purchasePrice) : undefined;
 
       const yarnDetails: YarnDetails | undefined = category === 'yarn' ? {
-        name: yarnName,
-        brand,
-        color,
-        color_code: colorCode,
-        fiber,
-        weight_category: weightCategory,
+        name: yarnName.trim(),
+        brand: brand.trim() || undefined,
+        color: color.trim() || undefined,
+        color_code: colorCode.trim() || undefined,
+        fiber: fiber.trim() || undefined,
+        weight_category: weightCategory.trim() || undefined,
         ball_weight: ballWeightNum,
         length: lengthNum,
-        hook_size: recommendedHookSize,
-        storage,
-        store,
+        hook_size: recommendedHookSize.trim() || undefined,
+        storage: storage.trim() || undefined,
+        store: store.trim() || undefined,
         purchase_date: purchaseDate ? new Date(purchaseDate) : undefined,
         purchase_price: priceNum,
         total_length: lengthNum ? lengthNum * qty : undefined,
@@ -155,12 +155,12 @@ export default function AddInventoryScreen() {
       } : undefined;
 
       const hookDetails: HookDetails | undefined = category === 'hook' ? {
-        name: hookName,
-        size: hookSize,
+        name: hookName.trim(),
+        size: hookSize.trim() || undefined,
       } : undefined;
 
       const otherDetails = category === 'other' ? {
-        name: otherName,
+        name: otherName.trim(),
       } : undefined;
 
       await addItem({

@@ -128,7 +128,7 @@ export default function EditProjectScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container}>
       <ModalHeader title={t('projects.editProject')} />
 
       <KeyboardAvoidingView
@@ -173,6 +173,14 @@ export default function EditProjectScreen() {
                   ]}
                   onPress={() => setStatus(item.value)}
                   activeOpacity={0.7}
+                  accessible={true}
+                  accessibilityRole="radio"
+                  accessibilityLabel={item.label}
+                  accessibilityHint={`Set project status to ${item.label}`}
+                  accessibilityState={{
+                    selected: status === item.value,
+                    checked: status === item.value,
+                  }}
                 >
                   {item.icon}
                   <Text style={[
@@ -207,12 +215,22 @@ export default function EditProjectScreen() {
                       <TouchableOpacity
                         style={[styles.imageActionButton, index === defaultImageIndex && styles.imageActionButtonActive]}
                         onPress={() => setAsDefault(index)}
+                        activeOpacity={0.7}
+                        accessible={true}
+                        accessibilityRole="button"
+                        accessibilityLabel={index === defaultImageIndex ? t('projects.defaultImage') : t('projects.markAsDefault')}
+                        accessibilityHint={index === defaultImageIndex ? t('projects.currentDefaultImage') : t('projects.setAsMainPhoto')}
                       >
                         <Star size={16} color={index === defaultImageIndex ? Colors.white : Colors.charcoal} />
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={[styles.imageActionButton, styles.deleteButton]}
                         onPress={() => removeImage(index)}
+                        activeOpacity={0.7}
+                        accessible={true}
+                        accessibilityRole="button"
+                        accessibilityLabel="Delete photo"
+                        accessibilityHint={t('projects.removeThisPhoto')}
                       >
                         <Trash2 size={16} color={Colors.white} />
                       </TouchableOpacity>
@@ -223,6 +241,11 @@ export default function EditProjectScreen() {
                   <TouchableOpacity
                     style={styles.addImageButton}
                     onPress={() => pickImage(false)}
+                    activeOpacity={0.7}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('projects.addMorePhotos')}
+                    accessibilityHint={t('projects.chooseFromGallery')}
                   >
                     <Plus size={24} color={Colors.sage} />
                     <Text style={styles.addImageText}>{t('common.add')}</Text>
@@ -237,6 +260,11 @@ export default function EditProjectScreen() {
                 <TouchableOpacity
                   style={styles.imageButton}
                   onPress={() => pickImage(false)}
+                  activeOpacity={0.7}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('common.gallery')}
+                  accessibilityHint={t('projects.chooseFromGallery')}
                 >
                   <ImageIcon size={24} color={Colors.sage} />
                   <Text style={styles.imageButtonText}>{t('common.gallery')}</Text>
@@ -244,6 +272,11 @@ export default function EditProjectScreen() {
                 <TouchableOpacity
                   style={styles.imageButton}
                   onPress={() => pickImage(true)}
+                  activeOpacity={0.7}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('common.camera')}
+                  accessibilityHint={t('projects.takePhotoWithCamera')}
                 >
                   <Camera size={24} color={Colors.sage} />
                   <Text style={styles.imageButtonText}>{t('common.camera')}</Text>
@@ -444,8 +477,10 @@ const styles = StyleSheet.create({
   },
   imageActionButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 8,
-    padding: 8,
+    borderRadius: 12,
+    padding: 12,
+    minWidth: 44,
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },

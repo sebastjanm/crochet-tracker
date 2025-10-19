@@ -14,9 +14,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
-import { X, QrCode, Barcode } from 'lucide-react-native';
+import { QrCode, Barcode } from 'lucide-react-native';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
+import { ModalHeader } from '@/components/ModalHeader';
 import { ImageGallery } from '@/components/ImageGallery';
 import { useInventory } from '@/hooks/inventory-context';
 import Colors from '@/constants/colors';
@@ -28,7 +29,6 @@ export default function AddInventoryScreen() {
   const { addItem } = useInventory();
   const { t } = useLanguage();
   const [category, setCategory] = useState<InventoryItem['category']>('yarn');
-  const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [quantity, setQuantity] = useState('1');
   const [images, setImages] = useState<string[]>([]);
@@ -37,24 +37,28 @@ export default function AddInventoryScreen() {
   const [showScanner, setShowScanner] = useState(false);
   const [scannerMode, setScannerMode] = useState<'qr' | 'barcode'>('qr');
   const [permission, requestPermission] = useCameraPermissions();
-  
+
   // Yarn specific fields
+  const [yarnName, setYarnName] = useState('');
   const [brand, setBrand] = useState('');
-  const [composition, setComposition] = useState('');
-  const [weight, setWeight] = useState('');
-  const [length, setLength] = useState('');
-  const [needleSize, setNeedleSize] = useState('');
-  const [crochetHookSize, setCrochetHookSize] = useState('');
-  const [country, setCountry] = useState('');
-  const [gauge, setGauge] = useState('');
-  const [certificate, setCertificate] = useState('');
-  const [colorName, setColorName] = useState('');
+  const [color, setColor] = useState('');
   const [colorCode, setColorCode] = useState('');
-  const [dyelot, setDyelot] = useState('');
-  const [barcode, setBarcode] = useState('');
-  
+  const [fiber, setFiber] = useState('');
+  const [weightCategory, setWeightCategory] = useState('');
+  const [ballWeight, setBallWeight] = useState('');
+  const [length, setLength] = useState('');
+  const [recommendedHookSize, setRecommendedHookSize] = useState('');
+  const [storage, setStorage] = useState('');
+  const [store, setStore] = useState('');
+  const [purchaseDate, setPurchaseDate] = useState('');
+  const [purchasePrice, setPurchasePrice] = useState('');
+
   // Hook specific fields
+  const [hookName, setHookName] = useState('');
   const [hookSize, setHookSize] = useState('');
+
+  // Other specific fields
+  const [otherName, setOtherName] = useState('');
 
   const categories = [
     { id: 'yarn', label: t('inventory.yarn') },
@@ -64,73 +68,34 @@ export default function AddInventoryScreen() {
 
 
 
-  const lookupBarcode = async (barcodeData: string) => {
-    try {
-      setLoading(true);
-      setBarcode(barcodeData);
-      
-      // Try UPCitemdb API
-      const response = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${barcodeData}`);
-      const data = await response.json();
-      
-      if (data.items && data.items.length > 0) {
-        const item = data.items[0];
-        
-        // Extract relevant information
-        if (item.title) {
-          setTitle(item.title);
-        }
-        if (item.brand) {
-          setBrand(item.brand);
-        }
-        if (item.description) {
-          setDescription(item.description);
-        }
-        
-        Alert.alert(
-          t('inventory.productFound'), 
-          `${t('inventory.found')}: ${item.title || 'Unknown'}${item.brand ? ' by ' + item.brand : ''}\n\n${t('inventory.reviewInfo')}`
-        );
-      } else {
-        Alert.alert(
-          t('inventory.productNotFound'), 
-          `${t('inventory.barcode')} ${barcodeData} ${t('inventory.scannedButNotFound')}`
-        );
-      }
-    } catch (error) {
-      console.log('Barcode lookup error:', error);
-      Alert.alert(
-        t('inventory.lookupFailed'), 
-        `${t('inventory.barcode')} ${barcodeData} ${t('inventory.scannedButFailed')}`
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
     console.log(`${scannerMode === 'qr' ? 'QR' : 'Bar'}code scanned:`, data);
     setShowScanner(false);
-    
+
     if (scannerMode === 'barcode') {
-      lookupBarcode(data);
+      // Simple barcode scan - just show the value
+      Alert.alert(t('inventory.barcodeScanned'), `Barcode: ${data}`);
     } else {
-      // Parse QR code data
+      // Parse QR code data (Simplified Fields)
       try {
         const parsed = JSON.parse(data);
-        if (parsed.title) setTitle(parsed.title);
+        if (parsed.name) setYarnName(parsed.name);
         if (parsed.brand) setBrand(parsed.brand);
-        if (parsed.description) setDescription(parsed.description);
-        if (parsed.composition) setComposition(parsed.composition);
-        if (parsed.weight) setWeight(parsed.weight.toString());
+        if (parsed.color) setColor(parsed.color);
+        if (parsed.color_code) setColorCode(parsed.color_code);
+        if (parsed.fiber) setFiber(parsed.fiber);
+        if (parsed.weight_category) setWeightCategory(parsed.weight_category);
+        if (parsed.ball_weight) setBallWeight(parsed.ball_weight.toString());
         if (parsed.length) setLength(parsed.length.toString());
-        if (parsed.colorName) setColorName(parsed.colorName);
+        if (parsed.hook_size) setRecommendedHookSize(parsed.hook_size);
+        if (parsed.storage) setStorage(parsed.storage);
+        if (parsed.store) setStore(parsed.store);
+        if (parsed.quantity) setQuantity(parsed.quantity.toString());
         Alert.alert(t('common.success'), t('inventory.qrImported'));
       } catch {
         const lines = data.split('\n');
         if (lines.length > 0) {
-          setTitle(lines[0]);
-          if (lines.length > 1) setDescription(lines.slice(1).join(' '));
+          setDescription(lines.join(' '));
         }
         Alert.alert(t('inventory.qrScanned'), t('inventory.someInfoImported'));
       }
@@ -150,41 +115,62 @@ export default function AddInventoryScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!title.trim()) {
-      Alert.alert(t('common.error'), t('inventory.enterItemTitle'));
+    // Validate name based on category
+    if (category === 'yarn' && !yarnName.trim()) {
+      Alert.alert(t('common.error'), 'Please enter a yarn name');
+      return;
+    }
+    if (category === 'hook' && !hookName.trim()) {
+      Alert.alert(t('common.error'), 'Please enter a hook name');
+      return;
+    }
+    if (category === 'other' && !otherName.trim()) {
+      Alert.alert(t('common.error'), 'Please enter an item name');
       return;
     }
 
     setLoading(true);
     try {
+      const qty = parseInt(quantity) || 1;
+      const ballWeightNum = ballWeight ? parseFloat(ballWeight) : undefined;
+      const lengthNum = length ? parseFloat(length) : undefined;
+      const priceNum = purchasePrice ? parseFloat(purchasePrice) : undefined;
+
       const yarnDetails: YarnDetails | undefined = category === 'yarn' ? {
+        name: yarnName,
         brand,
-        composition,
-        weight: weight ? parseFloat(weight) : undefined,
-        length: length ? parseFloat(length) : undefined,
-        needleSize,
-        crochetHookSize,
-        country,
-        gauge,
-        certificate,
-        colorName,
-        colorCode,
-        dyelot,
-        barcode,
+        color,
+        color_code: colorCode,
+        fiber,
+        weight_category: weightCategory,
+        ball_weight: ballWeightNum,
+        length: lengthNum,
+        hook_size: recommendedHookSize,
+        storage,
+        store,
+        purchase_date: purchaseDate ? new Date(purchaseDate) : undefined,
+        purchase_price: priceNum,
+        total_length: lengthNum ? lengthNum * qty : undefined,
+        total_weight: ballWeightNum ? ballWeightNum * qty : undefined,
       } : undefined;
 
       const hookDetails: HookDetails | undefined = category === 'hook' ? {
+        name: hookName,
         size: hookSize,
+      } : undefined;
+
+      const otherDetails = category === 'other' ? {
+        name: otherName,
       } : undefined;
 
       await addItem({
         category,
-        title,
         description,
         images,
         quantity: parseInt(quantity) || 1,
         yarnDetails,
         hookDetails,
+        otherDetails,
         notes,
       });
       router.back();
@@ -197,14 +183,11 @@ export default function AddInventoryScreen() {
 
   if (showScanner && Platform.OS !== 'web') {
     return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => setShowScanner(false)} style={styles.closeButton}>
-            <X size={24} color={Colors.charcoal} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{t('inventory.scan')} {scannerMode === 'qr' ? 'QR Code' : t('inventory.barcode')}</Text>
-          <View style={styles.placeholder} />
-        </View>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <ModalHeader
+          title={`${t('inventory.scan')} ${scannerMode === 'qr' ? 'QR Code' : t('inventory.barcode')}`}
+          onClose={() => setShowScanner(false)}
+        />
         <CameraView
           style={styles.scanner}
           facing={'back' as CameraType}
@@ -225,14 +208,8 @@ export default function AddInventoryScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <X size={24} color={Colors.charcoal} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{t('inventory.addToInventory')}</Text>
-        <View style={styles.placeholder} />
-      </View>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <ModalHeader title={t('inventory.addToInventory')} />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -248,6 +225,10 @@ export default function AddInventoryScreen() {
                 style={styles.scanButton}
                 onPress={() => openScanner('qr')}
                 activeOpacity={0.7}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={t('inventory.scanQR')}
+                accessibilityHint="Opens camera to scan QR codes for quick item import"
               >
                 <QrCode size={22} color={Colors.white} strokeWidth={2} />
                 <Text style={styles.scanButtonText}>{t('inventory.scanQR')}</Text>
@@ -256,6 +237,10 @@ export default function AddInventoryScreen() {
                 style={[styles.scanButton, styles.barcodeButton]}
                 onPress={() => openScanner('barcode')}
                 activeOpacity={0.7}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={t('inventory.scanBarcode')}
+                accessibilityHint="Opens camera to scan product barcodes for automatic lookup"
               >
                 <Barcode size={22} color={Colors.white} strokeWidth={2} />
                 <Text style={styles.scanButtonText}>{t('inventory.scanBarcode')}</Text>
@@ -274,6 +259,15 @@ export default function AddInventoryScreen() {
                     category === cat.id && styles.categoryButtonActive,
                   ]}
                   onPress={() => setCategory(cat.id as InventoryItem['category'])}
+                  activeOpacity={0.7}
+                  accessible={true}
+                  accessibilityRole="radio"
+                  accessibilityLabel={cat.label}
+                  accessibilityHint={`Set item category to ${cat.label}`}
+                  accessibilityState={{
+                    selected: category === cat.id,
+                    checked: category === cat.id,
+                  }}
                 >
                   <Text style={[
                     styles.categoryButtonText,
@@ -287,23 +281,39 @@ export default function AddInventoryScreen() {
           </View>
 
           <Text style={styles.sectionTitle}>{t('inventory.basicInfo')}</Text>
-          
-          <Input
-            label={t('inventory.itemName')}
-            placeholder={t('inventory.enterItemName')}
-            value={title}
-            onChangeText={setTitle}
-          />
 
+          {/* Name field - always first, category-specific */}
           {category === 'yarn' && (
             <Input
-              label={t('inventory.brand')}
-              placeholder="e.g., ALIZE"
-              value={brand}
-              onChangeText={setBrand}
+              label="Yarn Name"
+              placeholder="e.g., Alize Angora Gold Batik"
+              value={yarnName}
+              onChangeText={setYarnName}
+              required={true}
             />
           )}
 
+          {category === 'hook' && (
+            <Input
+              label="Hook Name"
+              placeholder="e.g., Clover Amour Hook"
+              value={hookName}
+              onChangeText={setHookName}
+              required={true}
+            />
+          )}
+
+          {category === 'other' && (
+            <Input
+              label="Item Name"
+              placeholder="e.g., Stitch Markers Set"
+              value={otherName}
+              onChangeText={setOtherName}
+              required={true}
+            />
+          )}
+
+          {/* Description - always second */}
           <Input
             label={t('inventory.description')}
             placeholder={t('inventory.describeItem')}
@@ -314,128 +324,7 @@ export default function AddInventoryScreen() {
             style={styles.textArea}
           />
 
-          {category === 'yarn' && (
-            <>
-              <Text style={styles.sectionTitle}>{t('inventory.technicalSpecs')}</Text>
-              
-              <Input
-                label={t('inventory.composition')}
-                placeholder="e.g., 80% Acrylic, 20% Wool"
-                value={composition}
-                onChangeText={setComposition}
-              />
-              
-              <View style={styles.row}>
-                <View style={styles.halfInput}>
-                  <Input
-                    label={`${t('inventory.weight')} (g)`}
-                    placeholder="100"
-                    value={weight}
-                    onChangeText={setWeight}
-                    keyboardType="numeric"
-                  />
-                </View>
-                <View style={styles.halfInput}>
-                  <Input
-                    label={`${t('inventory.length')} (m)`}
-                    placeholder="550"
-                    value={length}
-                    onChangeText={setLength}
-                    keyboardType="numeric"
-                  />
-                </View>
-              </View>
-
-              <View style={styles.row}>
-                <View style={styles.halfInput}>
-                  <Input
-                    label={t('inventory.needleSize')}
-                    placeholder="e.g., 2.0-5.0"
-                    value={needleSize}
-                    onChangeText={setNeedleSize}
-                  />
-                </View>
-                <View style={styles.halfInput}>
-                  <Input
-                    label={t('inventory.crochetHookSize')}
-                    placeholder="e.g., 1.0-4.0"
-                    value={crochetHookSize}
-                    onChangeText={setCrochetHookSize}
-                  />
-                </View>
-              </View>
-
-              <Input
-                label={t('inventory.gauge')}
-                placeholder="e.g., 10x10cm = 28 stitches x 36 rows"
-                value={gauge}
-                onChangeText={setGauge}
-              />
-
-              <Text style={styles.sectionTitle}>{t('inventory.colorInfo')}</Text>
-              
-              <View style={styles.row}>
-                <View style={styles.halfInput}>
-                  <Input
-                    label={t('inventory.colorName')}
-                    placeholder="e.g., Forest Green"
-                    value={colorName}
-                    onChangeText={setColorName}
-                  />
-                </View>
-                <View style={styles.halfInput}>
-                  <Input
-                    label={t('inventory.colorCode')}
-                    placeholder="e.g., #234"
-                    value={colorCode}
-                    onChangeText={setColorCode}
-                  />
-                </View>
-              </View>
-
-              <Input
-                label={t('inventory.dyelot')}
-                placeholder={t('inventory.enterDyelot')}
-                value={dyelot}
-                onChangeText={setDyelot}
-              />
-
-              <Text style={styles.sectionTitle}>{t('inventory.additionalInfo')}</Text>
-              
-              <Input
-                label={t('inventory.country')}
-                placeholder="e.g., Turkey"
-                value={country}
-                onChangeText={setCountry}
-              />
-
-              <Input
-                label={t('inventory.certificate')}
-                placeholder="e.g., Oeko-Tex Standard 100"
-                value={certificate}
-                onChangeText={setCertificate}
-              />
-
-              {barcode && (
-                <Input
-                  label={t('inventory.barcode')}
-                  value={barcode}
-                  onChangeText={setBarcode}
-                  editable={false}
-                />
-              )}
-            </>
-          )}
-
-          {category === 'hook' && (
-            <Input
-              label={t('inventory.size')}
-              placeholder="e.g., 5mm"
-              value={hookSize}
-              onChangeText={setHookSize}
-            />
-          )}
-
+          {/* Quantity - always third */}
           <Input
             label={t('inventory.quantity')}
             placeholder="1"
@@ -443,6 +332,123 @@ export default function AddInventoryScreen() {
             onChangeText={setQuantity}
             keyboardType="numeric"
           />
+
+          {/* Category-specific details section */}
+          {category === 'yarn' && (
+            <>
+              <Text style={styles.sectionTitle}>{t('inventory.yarnDetails')}</Text>
+
+              <Input
+                label="Brand"
+                placeholder="e.g., Alize"
+                value={brand}
+                onChangeText={setBrand}
+              />
+
+              <View style={styles.row}>
+                <View style={styles.halfInput}>
+                  <Input
+                    label="Color"
+                    placeholder="e.g., 8057 Opečno-smetana"
+                    value={color}
+                    onChangeText={setColor}
+                  />
+                </View>
+                <View style={styles.halfInput}>
+                  <Input
+                    label="Color Code"
+                    placeholder="e.g., 8057"
+                    value={colorCode}
+                    onChangeText={setColorCode}
+                  />
+                </View>
+              </View>
+
+              <Input
+                label="Fiber Content"
+                placeholder="e.g., 80% akril / 20% volna"
+                value={fiber}
+                onChangeText={setFiber}
+              />
+
+              <Input
+                label="Weight Category"
+                placeholder="e.g., Fingering, DK, Worsted"
+                value={weightCategory}
+                onChangeText={setWeightCategory}
+              />
+
+              <View style={styles.row}>
+                <View style={styles.halfInput}>
+                  <Input
+                    label="Ball Weight (g)"
+                    placeholder="100"
+                    value={ballWeight}
+                    onChangeText={setBallWeight}
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View style={styles.halfInput}>
+                  <Input
+                    label="Length (m)"
+                    placeholder="280"
+                    value={length}
+                    onChangeText={setLength}
+                    keyboardType="numeric"
+                  />
+                </View>
+              </View>
+
+              <Input
+                label="Hook Size"
+                placeholder="e.g., 3 - 3.5 mm"
+                value={recommendedHookSize}
+                onChangeText={setRecommendedHookSize}
+              />
+
+              <Input
+                label="Storage Location"
+                placeholder="e.g., Škatla 2 – tople barve"
+                value={storage}
+                onChangeText={setStorage}
+              />
+
+              <Input
+                label="Store"
+                placeholder="e.g., Svet Metraže"
+                value={store}
+                onChangeText={setStore}
+              />
+
+              <Input
+                label="Purchase Date"
+                placeholder="YYYY-MM-DD"
+                value={purchaseDate}
+                onChangeText={setPurchaseDate}
+              />
+
+              <Input
+                label="Purchase Price"
+                placeholder="0.00"
+                value={purchasePrice}
+                onChangeText={setPurchasePrice}
+                keyboardType="decimal-pad"
+              />
+            </>
+          )}
+
+          {category === 'hook' && (
+            <>
+              <Text style={styles.sectionTitle}>{t('inventory.hookDetails')}</Text>
+
+              <Input
+                label={t('inventory.size')}
+                placeholder="e.g., 5mm"
+                value={hookSize}
+                onChangeText={setHookSize}
+              />
+            </>
+          )}
 
           <Input
             label={t('inventory.notes')}
@@ -482,25 +488,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.cream,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  closeButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    ...Typography.title3,
-    color: Colors.charcoal,
-  },
-  placeholder: {
-    width: 40,
   },
   keyboardView: {
     flex: 1,
@@ -568,7 +555,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   textArea: {
-    height: 80,
+    height: 100,
     textAlignVertical: 'top',
     paddingTop: 12,
   },

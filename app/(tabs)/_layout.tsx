@@ -1,71 +1,10 @@
 import { Tabs, router } from "expo-router";
-import { Volleyball, Box, User, HelpCircle, Sparkles } from "lucide-react-native";
+import { Volleyball, Box, User, Sparkles } from "lucide-react-native";
 import React, { useEffect } from "react";
-import { Platform, Text, TouchableOpacity, StyleSheet, View } from "react-native";
+import { Platform } from "react-native";
 import Colors from "@/constants/colors";
-import { Typography } from "@/constants/typography";
 import { useAuth } from "@/hooks/auth-context";
 import { useLanguage } from "@/hooks/language-context";
-
-
-const styles = StyleSheet.create({
-  helpButton: {
-    marginRight: 12,
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: Colors.cream,
-  },
-});
-
-// We'll handle the custom header in the projects screen itself
-
-function ProjectsHeaderRight() {
-  return (
-    <TouchableOpacity 
-      onPress={() => router.push('/help')}
-      style={styles.helpButton}
-      activeOpacity={0.7}
-    >
-      <HelpCircle size={28} color={Colors.deepSage} strokeWidth={2.5} />
-    </TouchableOpacity>
-  );
-}
-
-function InventoryHeaderRight() {
-  return (
-    <TouchableOpacity 
-      onPress={() => router.push('/help')}
-      style={styles.helpButton}
-      activeOpacity={0.7}
-    >
-      <HelpCircle size={28} color={Colors.deepSage} strokeWidth={2.5} />
-    </TouchableOpacity>
-  );
-}
-
-function ProfileHeaderRight() {
-  return (
-    <TouchableOpacity 
-      onPress={() => router.push('/help')}
-      style={styles.helpButton}
-      activeOpacity={0.7}
-    >
-      <HelpCircle size={28} color={Colors.deepSage} strokeWidth={2.5} />
-    </TouchableOpacity>
-  );
-}
-
-function YarnAIHeaderRight() {
-  return (
-    <TouchableOpacity 
-      onPress={() => router.push('/help')}
-      style={styles.helpButton}
-      activeOpacity={0.7}
-    >
-      <HelpCircle size={28} color={Colors.deepSage} strokeWidth={2.5} />
-    </TouchableOpacity>
-  );
-}
 
 export default function TabLayout() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -149,13 +88,11 @@ export default function TabLayout() {
         name="inventory"
         options={{
           title: t('tabs.inventory'),
-          headerTitle: t('tabs.inventory'),
-          headerTitleAlign: 'left' as const,
-          headerRight: InventoryHeaderRight,
+          headerShown: false,
           tabBarIcon: ({ color, focused }) => (
-            <Box 
-              color={focused ? Colors.deepTeal : Colors.warmGray} 
-              size={26} 
+            <Box
+              color={focused ? Colors.deepTeal : Colors.warmGray}
+              size={26}
               strokeWidth={focused ? 3 : 2}
             />
           ),
@@ -169,13 +106,11 @@ export default function TabLayout() {
         name="yarnai"
         options={{
           title: t('tabs.yarnai'),
-          headerTitle: t('tabs.yarnai'),
-          headerTitleAlign: 'left' as const,
-          headerRight: YarnAIHeaderRight,
+          headerShown: false,
           tabBarIcon: ({ color, focused }) => (
-            <Sparkles 
-              color={focused ? Colors.deepTeal : Colors.warmGray} 
-              size={26} 
+            <Sparkles
+              color={focused ? Colors.deepTeal : Colors.warmGray}
+              size={26}
               strokeWidth={focused ? 3 : 2}
             />
           ),
@@ -189,13 +124,11 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: t('tabs.profile'),
-          headerTitle: t('tabs.profile'),
-          headerTitleAlign: 'left' as const,
-          headerRight: ProfileHeaderRight,
+          headerShown: false,
           tabBarIcon: ({ color, focused }) => (
-            <User 
-              color={focused ? Colors.deepTeal : Colors.warmGray} 
-              size={26} 
+            <User
+              color={focused ? Colors.deepTeal : Colors.warmGray}
+              size={26}
               strokeWidth={focused ? 3 : 2}
             />
           ),

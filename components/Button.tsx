@@ -42,16 +42,16 @@ export const Button: React.FC<ButtonProps> = ({
     styles.base,
     styles[variant],
     styles[size],
-    fullWidth && styles.fullWidth,
-    disabled && styles.disabled,
-    style as ViewStyle,
+    ...(fullWidth ? [styles.fullWidth] : []),
+    ...(disabled ? [styles.disabled] : []),
+    ...(style ? [style as ViewStyle] : []),
   ];
 
   const textStyle: TextStyle[] = [
     styles.text,
     styles[`${variant}Text`],
     styles[`${size}Text`],
-    disabled && styles.disabledText,
+    ...(disabled ? [styles.disabledText] : []),
   ];
 
   const getLoadingColor = () => {

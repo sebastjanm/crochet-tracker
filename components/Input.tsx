@@ -1,4 +1,4 @@
-import React, { useId } from 'react';
+import React from 'react';
 import {
   TextInput,
   TextInputProps,
@@ -26,15 +26,12 @@ export const Input: React.FC<InputProps> = ({
   accessibilityLabel,
   ...props
 }) => {
-  const inputId = useId();
-
   return (
     <View style={styles.container}>
       {label && (
         <Text
           style={styles.label}
           maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}
-          nativeID={`${inputId}-label`}
         >
           {label}
           {required && <Text style={styles.required}> *</Text>}
@@ -49,12 +46,7 @@ export const Input: React.FC<InputProps> = ({
         placeholderTextColor={Colors.warmGray}
         accessible={true}
         accessibilityLabel={accessibilityLabel || label}
-        accessibilityRequired={required}
-        accessibilityInvalid={!!error}
-        accessibilityLabelledBy={label ? `${inputId}-label` : undefined}
-        accessibilityDescribedBy={
-          error ? `${inputId}-error` : helper ? `${inputId}-helper` : undefined
-        }
+        accessibilityHint={error ? `Error: ${error}` : helper}
         maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}
         {...props}
       />
@@ -62,7 +54,6 @@ export const Input: React.FC<InputProps> = ({
         <Text
           style={styles.helper}
           maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}
-          nativeID={`${inputId}-helper`}
           accessible={false}
         >
           {helper}
@@ -73,7 +64,6 @@ export const Input: React.FC<InputProps> = ({
           accessible={true}
           accessibilityLiveRegion="polite"
           accessibilityRole="alert"
-          nativeID={`${inputId}-error`}
         >
           <Text
             style={styles.error}

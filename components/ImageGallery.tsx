@@ -9,6 +9,7 @@ import {
   ScrollView,
   Dimensions,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { X, ImageIcon, Trash2, Plus } from 'lucide-react-native';
 import { useImagePicker } from '@/hooks/useImagePicker';
@@ -25,15 +26,24 @@ interface ImageGalleryProps {
   editable?: boolean;
 }
 
-export function ImageGallery({ 
-  images, 
-  onImagesChange, 
-  maxImages = 10, 
-  editable = true 
+export function ImageGallery({
+  images,
+  onImagesChange,
+  maxImages = 10,
+  editable = true
 }: ImageGalleryProps) {
   const { t } = useLanguage();
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
+  const [loadingImages, setLoadingImages] = useState<Record<number, boolean>>({});
   const { showImagePickerOptions, isPickingImage } = useImagePicker();
+
+  const handleImageLoad = (index: number) => {
+    setLoadingImages((prev) => ({ ...prev, [index]: false }));
+  };
+
+  const handleImageLoadStart = (index: number) => {
+    setLoadingImages((prev) => ({ ...prev, [index]: true }));
+  };
 
   const handleAddImages = async () => {
     const newImages = await showImagePickerOptions();
@@ -76,7 +86,18 @@ export function ImageGallery({
             style={[styles.galleryItem, { width: imageSize, height: imageSize }]}
             onPress={() => setSelectedImageIndex(index)}
           >
-            <Image source={{ uri: image }} style={styles.galleryImage} />
+            <Image
+              source={{ uri: image }}
+              style={styles.galleryImage}
+              onLoadStart={() => handleImageLoadStart(index)}
+              onLoad={() => handleImageLoad(index)}
+              onError={() => handleImageLoad(index)}
+            />
+            {loadingImages[index] && (
+              <View style={styles.loadingOverlay}>
+                <ActivityIndicator size="small" color={Colors.teal} />
+              </View>
+            )}
           </TouchableOpacity>
         ))}
         
@@ -133,7 +154,18 @@ export function ImageGallery({
           >
             {images.map((image, index) => (
               <View key={index} style={styles.fullScreenImageContainer}>
-                <Image source={{ uri: image }} style={styles.fullScreenImage} />
+                <Image
+                  source={{ uri: image }}
+                  style={styles.fullScreenImage}
+                  onLoadStart={() => handleImageLoadStart(index)}
+                  onLoad={() => handleImageLoad(index)}
+                  onError={() => handleImageLoad(index)}
+                />
+                {loadingImages[index] && (
+                  <View style={styles.fullScreenLoadingOverlay}>
+                    <ActivityIndicator size="large" color={Colors.white} />
+                  </View>
+                )}
               </View>
             ))}
           </ScrollView>
@@ -184,6 +216,16 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: Colors.cream,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   addImageButton: {
     backgroundColor: Colors.white,
@@ -270,5 +312,14 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
   },
-
+  fullScreenLoadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

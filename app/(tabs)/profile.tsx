@@ -6,19 +6,25 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Platform,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { 
-  LogOut, 
-  ChevronRight, 
-  Package, 
+import {
+  LogOut,
+  ChevronRight,
+  Package,
   Scissors,
   Settings,
   HelpCircle,
   Globe,
   FileText,
 } from 'lucide-react-native';
+
+const { width } = Dimensions.get('window');
+const isSmallDevice = width < 375;
+const isTablet = width >= 768;
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Avatar } from '@/components/Avatar';
@@ -34,6 +40,8 @@ export default function ProfileScreen() {
   const { projects, completedCount, inProgressCount } = useProjects();
   const { items } = useInventory();
   const { language, changeLanguage, t } = useLanguage();
+
+  const userName = user?.name?.split(' ')[0] || t('profile.defaultName');
 
   const handleLogout = () => {
     Alert.alert(
@@ -100,9 +108,35 @@ export default function ProfileScreen() {
   ];
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
+    <View style={styles.backgroundContainer}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <View style={styles.customHeader}>
+          <View style={styles.headerContent}>
+            <View style={styles.titleContainer}>
+              <Text style={styles.headerTitle} numberOfLines={1} ellipsizeMode="tail">
+                {t('profile.title')}
+              </Text>
+              <Text style={styles.headerSubtitle} numberOfLines={1} ellipsizeMode="tail">
+                {t('profile.subtitle')}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => router.push('/help')}
+              style={styles.helpButton}
+              activeOpacity={0.7}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Help and support"
+              accessibilityHint="Get help and view tutorials"
+            >
+              <HelpCircle size={isSmallDevice ? 24 : 28} color={Colors.deepSage} strokeWidth={2.5} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+
+      <ScrollView showsVerticalScrollIndicator={false} style={styles.container}>
+        <View style={styles.profileInfo}>
           <View style={styles.avatarContainer}>
             <Avatar user={user || undefined} size={96} />
           </View>
@@ -153,6 +187,10 @@ export default function ProfileScreen() {
                   style={styles.menuItem}
                   onPress={item.onPress}
                   activeOpacity={0.7}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel={item.label}
+                  accessibilityHint={`Open ${item.label}`}
                 >
                   {item.icon}
                   <Text style={styles.menuLabel}>{item.label}</Text>
@@ -174,16 +212,95 @@ export default function ProfileScreen() {
           />
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  backgroundContainer: {
+    flex: 1,
+    backgroundColor: Colors.cream,
+  },
+  safeArea: {
+    backgroundColor: Colors.cream,
+  },
   container: {
     flex: 1,
     backgroundColor: Colors.beige,
   },
+  customHeader: {
+    backgroundColor: Colors.cream,
+    paddingBottom: isSmallDevice ? 12 : 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    ...Platform.select({
+      ios: {
+        shadowColor: Colors.black,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+      default: {},
+    }),
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: isSmallDevice ? 16 : isTablet ? 32 : 20,
+    paddingVertical: isSmallDevice ? 12 : 16,
+    maxWidth: isTablet ? 1200 : '100%',
+    alignSelf: 'center',
+    width: '100%',
+  },
+  titleContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    minWidth: 0,
+  },
+  headerTitle: {
+    ...Typography.title1,
+    color: Colors.charcoal,
+    fontWeight: '700' as const,
+    fontSize: isSmallDevice ? 24 : isTablet ? 32 : 28,
+    lineHeight: isSmallDevice ? 30 : isTablet ? 38 : 34,
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: isSmallDevice ? 13 : 14,
+    color: Colors.warmGray,
+    opacity: 0.9,
+    lineHeight: 18,
+  },
+  helpButton: {
+    padding: isSmallDevice ? 6 : 8,
+    backgroundColor: Colors.white,
+    borderRadius: 24,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: Colors.deepSage,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+      },
+      default: {},
+    }),
+  },
   header: {
+    alignItems: 'center',
+    paddingVertical: 24,
+  },
+  profileInfo: {
     alignItems: 'center',
     paddingVertical: 24,
   },

@@ -31,6 +31,11 @@ export async function migrateDataToSupabase(): Promise<MigrationResult> {
   };
 
   try {
+    // Check if Supabase client is initialized
+    if (!supabase) {
+      throw new Error('Supabase client is not initialized');
+    }
+
     // Check if user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
@@ -96,12 +101,18 @@ export async function migrateDataToSupabase(): Promise<MigrationResult> {
         console.log(`Found ${inventory.length} inventory items to migrate`);
 
         for (const item of inventory) {
+          // Get display name for logging based on category
+          const itemName = item.category === 'yarn'
+            ? (item.yarnDetails?.name || 'Untitled')
+            : item.category === 'hook'
+            ? (item.hookDetails?.name || 'Untitled')
+            : (item.otherDetails?.name || 'Untitled');
+
           // Transform inventory data for Supabase
           const supabaseItem = {
             id: item.id,
             user_id: user.id,
             category: item.category,
-            title: item.title,
             description: item.description,
             images: item.images || [],
             quantity: item.quantity,
@@ -119,7 +130,7 @@ export async function migrateDataToSupabase(): Promise<MigrationResult> {
             last_used: item.lastUsed,
             yarn_details: item.yarnDetails,
             hook_details: item.hookDetails,
-            notion_details: item.notionDetails,
+            other_details: item.otherDetails,
             upc_data: item.upcData,
           };
 
@@ -128,7 +139,7 @@ export async function migrateDataToSupabase(): Promise<MigrationResult> {
             .upsert(supabaseItem);
 
           if (error) {
-            result.errors.push(`Failed to migrate inventory "${item.title}": ${error.message}`);
+            result.errors.push(`Failed to migrate inventory "${itemName}": ${error.message}`);
           } else {
             result.inventoryMigrated++;
           }

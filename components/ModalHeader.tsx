@@ -30,10 +30,14 @@ export function ModalHeader({
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity 
+      <TouchableOpacity
         onPress={handleClose}
         style={styles.closeButton}
         activeOpacity={0.7}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel="Close"
+        accessibilityHint="Closes this screen and returns to the previous screen"
       >
         <X size={24} color={Colors.charcoal} strokeWidth={2.5} />
       </TouchableOpacity>
@@ -70,18 +74,16 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
   },
   closeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: Colors.sage + '15',
     alignItems: 'center',
     justifyContent: 'center',
   },
   title: {
-    ...Typography.title3,
+    ...Typography.headline,
     color: Colors.charcoal,
-    fontWeight: '600' as const,
-    fontSize: 18,
     flex: 1,
     textAlign: 'center',
     marginHorizontal: 12,

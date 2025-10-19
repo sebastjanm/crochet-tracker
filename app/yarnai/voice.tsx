@@ -11,7 +11,8 @@ import {
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { Mic, MicOff, Volume2, MessageSquare } from 'lucide-react-native';
-import { useAudioRecorder, usePermissions, RecordingOptions } from 'expo-audio';
+import { useAudioRecorder, IOSOutputFormat, AudioQuality } from 'expo-audio';
+import * as Audio from 'expo-audio';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { useLanguage } from '@/hooks/language-context';
@@ -193,8 +194,24 @@ export default function VoiceAssistant() {
   const { t } = useLanguage();
   const [isProcessing, setIsProcessing] = useState(false);
   const [conversation, setConversation] = useState<Conversation[]>([]);
-  const audioRecorder = useAudioRecorder();
-  const [permissionResponse, requestPermission] = usePermissions();
+  const audioRecorder = useAudioRecorder({
+    extension: '.m4a',
+    sampleRate: 44100,
+    numberOfChannels: 1,
+    bitRate: 128000,
+    android: {
+      outputFormat: 'mpeg4',
+      audioEncoder: 'aac',
+    },
+    ios: {
+      outputFormat: IOSOutputFormat.MPEG4AAC,
+      audioQuality: AudioQuality.HIGH,
+    },
+    web: {
+      mimeType: 'audio/webm',
+      bitsPerSecond: 128000,
+    },
+  });
 
   const startRecording = async () => {
     if (Platform.OS === 'web') {
@@ -206,9 +223,12 @@ export default function VoiceAssistant() {
     }
 
     try {
-      if (permissionResponse?.status !== 'granted') {
-        console.log('Requesting permission..');
-        await requestPermission();
+      // Request audio permissions using expo-audio
+      const { granted } = await Audio.requestRecordingPermissionsAsync();
+
+      if (!granted) {
+        Alert.alert('Permission Denied', 'Audio recording permission is required');
+        return;
       }
 
       console.log('Starting recording..');
@@ -227,7 +247,8 @@ export default function VoiceAssistant() {
     setIsProcessing(true);
 
     try {
-      const uri = await audioRecorder.stop();
+      await audioRecorder.stop();
+      const uri = audioRecorder.uri;
       console.log('Recording stopped and stored at', uri);
 
       if (uri) {

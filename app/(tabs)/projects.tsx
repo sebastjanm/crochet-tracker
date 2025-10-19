@@ -9,8 +9,13 @@ import {
   RefreshControl,
   Platform,
   ScrollView,
-  SafeAreaView,
+  Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+const { width } = Dimensions.get('window');
+const isSmallDevice = width < 375;
+const isTablet = width >= 768;
 import { router } from 'expo-router';
 import { Plus, Clock, CheckCircle, Lightbulb, Calendar, Volleyball, HelpCircle } from 'lucide-react-native';
 import { Button } from '@/components/Button';
@@ -89,6 +94,10 @@ export default function ProjectsScreen() {
         onPress={() => router.push(`/project/${item.id}`)}
         activeOpacity={0.8}
         style={styles.gridItem}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel={`${item.title} project`}
+        accessibilityHint={`View details for ${item.title}`}
       >
         <View style={styles.projectCard}>
           <Image 
@@ -123,24 +132,28 @@ export default function ProjectsScreen() {
 
   return (
     <View style={styles.backgroundContainer}>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.customHeader}>
           <View style={styles.headerContent}>
-            <Avatar user={user || undefined} size={52} />
+            <Avatar user={user || undefined} size={isSmallDevice ? 44 : isTablet ? 52 : 56} />
             <View style={styles.textContainer}>
               <Text style={styles.headerGreeting} numberOfLines={1} ellipsizeMode="tail">
                 {t('home.greeting')}, {userName}
               </Text>
               <Text style={styles.headerSubtitle} numberOfLines={1} ellipsizeMode="tail">
-                {t('home.beautifulDay')}
+                {t('projects.manageYourProjects')}
               </Text>
             </View>
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => router.push('/help')}
               style={styles.helpButton}
               activeOpacity={0.7}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Help and support"
+              accessibilityHint="Get help and view tutorials"
             >
-              <HelpCircle size={28} color={Colors.deepSage} strokeWidth={2.5} />
+              <HelpCircle size={isSmallDevice ? 24 : 28} color={Colors.deepSage} strokeWidth={2.5} />
             </TouchableOpacity>
           </View>
         </View>
@@ -162,6 +175,14 @@ export default function ProjectsScreen() {
             ]}
             onPress={() => setFilter(item.key as ProjectStatus | 'all')}
             activeOpacity={0.75}
+            accessible={true}
+            accessibilityRole="radio"
+            accessibilityLabel={item.label}
+            accessibilityHint={`Show ${item.label.toLowerCase()} projects`}
+            accessibilityState={{
+              selected: filter === item.key,
+              checked: filter === item.key,
+            }}
           >
             {item.icon}
             <Text style={[
@@ -219,6 +240,10 @@ export default function ProjectsScreen() {
           style={styles.fab}
           onPress={() => router.push('/add-project')}
           activeOpacity={0.8}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel={t('projects.addProject')}
+          accessibilityHint={t('projects.createNewProject')}
         >
           <Plus size={32} color={Colors.white} strokeWidth={3} />
         </TouchableOpacity>
@@ -238,13 +263,15 @@ const styles = StyleSheet.create({
   },
   customHeader: {
     backgroundColor: Colors.cream,
-    paddingBottom: 16,
+    paddingBottom: isSmallDevice ? 12 : 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
     ...Platform.select({
       ios: {
         shadowColor: Colors.black,
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
       },
       android: {
         elevation: 4,
@@ -255,37 +282,56 @@ const styles = StyleSheet.create({
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    gap: 16,
+    paddingHorizontal: isSmallDevice ? 16 : isTablet ? 32 : 20,
+    paddingVertical: isSmallDevice ? 12 : 16,
+    gap: isSmallDevice ? 12 : 16,
+    maxWidth: isTablet ? 1200 : '100%',
+    alignSelf: 'center',
+    width: '100%',
+    minHeight: 56,
   },
-
-
   textContainer: {
     flex: 1,
     justifyContent: 'center',
     marginRight: 8,
+    minWidth: 0,
   },
   headerGreeting: {
     ...Typography.title2,
     color: Colors.charcoal,
     fontWeight: '700' as const,
-    fontSize: 24,
-    lineHeight: 30,
-    marginBottom: 2,
+    fontSize: isSmallDevice ? 20 : isTablet ? 28 : 24,
+    lineHeight: isSmallDevice ? 26 : isTablet ? 34 : 30,
+    marginBottom: 4,
   },
   headerSubtitle: {
     ...Typography.body,
     color: Colors.warmGray,
-    fontSize: 12,
+    fontSize: isSmallDevice ? 13 : 14,
     fontWeight: '500' as const,
-    lineHeight: 16,
-    opacity: 0.8,
+    lineHeight: isSmallDevice ? 17 : 18,
+    opacity: 0.9,
   },
   helpButton: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: Colors.cream,
+    padding: isSmallDevice ? 6 : 8,
+    backgroundColor: Colors.white,
+    borderRadius: 24,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: Colors.deepSage,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+      },
+      default: {},
+    }),
   },
   container: {
     flex: 1,

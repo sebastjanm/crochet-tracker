@@ -8,10 +8,12 @@ import {
   Image,
   ScrollView,
   Platform,
+  Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { router } from 'expo-router';
-import { Plus, Package, Volleyball, Grid3x3, Wrench } from 'lucide-react-native';
+import { Plus, Package, Volleyball, Grid3x3, Wrench, HelpCircle } from 'lucide-react-native';
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
 import { useInventory } from '@/hooks/inventory-context';
@@ -19,6 +21,10 @@ import { useLanguage } from '@/hooks/language-context';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { InventoryItem } from '@/types';
+
+const { width } = Dimensions.get('window');
+const isSmallDevice = width < 375;
+const isTablet = width >= 768;
 
 export default function InventoryScreen() {
   const { items, yarnCount, hookCount } = useInventory();
@@ -36,64 +42,105 @@ export default function InventoryScreen() {
     { id: 'other', label: t('inventory.other'), count: items.filter(i => i.category === 'other').length, icon: <Package size={18} color={selectedCategory === 'other' ? Colors.white : '#9C27B0'} />, color: '#9C27B0' },
   ];
 
-  const renderItem = ({ item }: { item: InventoryItem }) => (
-    <TouchableOpacity
-      style={styles.itemWrapper}
-      onPress={() => router.push(`/edit-inventory/${item.id}`)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.itemCard}>
-        {item.images && item.images.length > 0 ? (
-          <Image source={{ uri: item.images[0] }} style={styles.itemImage} />
-        ) : (
-          <View style={[styles.itemImage, styles.placeholderImage]}>
-            {item.category === 'yarn' ? (
-              <Volleyball size={32} color={Colors.warmGray} />
-            ) : (
-              <Package size={32} color={Colors.warmGray} />
-            )}
-          </View>
-        )}
-        <View style={styles.itemInfo}>
-          <View>
-            <Text style={styles.itemTitle} numberOfLines={2}>
-              {item.title}
-            </Text>
+  const renderItem = ({ item }: { item: InventoryItem }) => {
+    // Get display name based on category
+    const displayName = item.category === 'yarn'
+      ? (item.yarnDetails?.name || 'Untitled')
+      : item.category === 'hook'
+      ? (item.hookDetails?.name || 'Untitled')
+      : (item.otherDetails?.name || 'Untitled');
+
+    return (
+      <TouchableOpacity
+        style={styles.itemWrapper}
+        onPress={() => router.push(`/edit-inventory/${item.id}`)}
+        activeOpacity={0.7}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel={`${displayName}${item.yarnDetails?.brand ? `, ${item.yarnDetails.brand}` : ''}`}
+        accessibilityHint={`Edit ${displayName} details`}
+      >
+        <View style={styles.itemCard}>
+          {item.images && item.images.length > 0 ? (
+            <Image source={{ uri: item.images[0] }} style={styles.itemImage} />
+          ) : (
+            <View style={[styles.itemImage, styles.placeholderImage]}>
+              {item.category === 'yarn' ? (
+                <Volleyball size={32} color={Colors.warmGray} />
+              ) : (
+                <Package size={32} color={Colors.warmGray} />
+              )}
+            </View>
+          )}
+          <View style={styles.itemInfo}>
+            <View>
+              <Text style={styles.itemTitle} numberOfLines={2}>
+                {displayName}
+              </Text>
             {item.yarnDetails?.brand && (
               <Text style={styles.itemBrand} numberOfLines={1}>
                 {item.yarnDetails.brand}
               </Text>
             )}
-            {item.yarnDetails?.composition && (
+            {item.yarnDetails?.fiber && (
               <Text style={styles.itemComposition} numberOfLines={2}>
-                {item.yarnDetails.composition}
+                {item.yarnDetails.fiber}
               </Text>
             )}
-            {item.yarnDetails?.colorName && (
+            {item.yarnDetails?.color && (
               <Text style={styles.colorName} numberOfLines={1}>
-                {item.yarnDetails.colorName}
+                {item.yarnDetails.color}
               </Text>
             )}
-            {item.yarnDetails?.weight && item.yarnDetails?.length && (
+            {item.yarnDetails?.ball_weight && item.yarnDetails?.length && (
               <Text style={styles.itemSpecs}>
-                {item.yarnDetails.weight}g • {item.yarnDetails.length}m
+                {item.yarnDetails.ball_weight}g • {item.yarnDetails.length}m
               </Text>
             )}
-          </View>
-          <View style={styles.itemMeta}>
-            <Text style={styles.itemQuantity}>
-              {t('inventory.qty')}: {item.quantity}
-            </Text>
+            </View>
+            <View style={styles.itemMeta}>
+              <Text style={styles.itemQuantity}>
+                {t('inventory.qty')}: {item.quantity}
+              </Text>
+            </View>
           </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
-    <View style={styles.container}>
-      <ScrollView 
-        horizontal 
+    <View style={styles.backgroundContainer}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <View style={styles.customHeader}>
+          <View style={styles.headerContent}>
+            <View style={styles.titleContainer}>
+              <Text style={styles.headerTitle} numberOfLines={1} ellipsizeMode="tail">
+                {t('inventory.title')}
+              </Text>
+              <Text style={styles.headerSubtitle} numberOfLines={1} ellipsizeMode="tail">
+                {t('inventory.manageYourSupplies')}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => router.push('/help')}
+              style={styles.helpButton}
+              activeOpacity={0.7}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Help and support"
+              accessibilityHint="Get help and view tutorials"
+            >
+              <HelpCircle size={isSmallDevice ? 24 : 28} color={Colors.deepSage} strokeWidth={2.5} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+
+      <View style={styles.container}>
+
+      <ScrollView
+        horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.categoriesContainer}
         contentContainerStyle={styles.categoriesContent}
@@ -107,6 +154,14 @@ export default function InventoryScreen() {
             ]}
             onPress={() => setSelectedCategory(category.id as any)}
             activeOpacity={0.75}
+            accessible={true}
+            accessibilityRole="radio"
+            accessibilityLabel={category.label}
+            accessibilityHint={`Show ${category.label.toLowerCase()} items`}
+            accessibilityState={{
+              selected: selectedCategory === category.id,
+              checked: selectedCategory === category.id,
+            }}
           >
             {category.icon}
             <Text style={[
@@ -128,15 +183,17 @@ export default function InventoryScreen() {
       {filteredItems.length === 0 ? (
         <EmptyState
           icon={<Package size={64} color={Colors.warmGray} />}
-          title={t('inventory.noItems')}
-          description={t('inventory.addYourSupplies')}
+          title={selectedCategory === 'all' ? t('inventory.noItems') : t('inventory.noItemsInCategory')}
+          description={selectedCategory === 'all' ? t('inventory.addYourSupplies') : t('inventory.tryDifferentFilter')}
           action={
-            <Button
-              title={t('inventory.addFirstItem')}
-              icon={<Plus size={20} color={Colors.white} />}
-              onPress={() => router.push('/add-inventory')}
-              size="large"
-            />
+            selectedCategory === 'all' ? (
+              <Button
+                title={t('inventory.addFirstItem')}
+                icon={<Plus size={20} color={Colors.white} />}
+                onPress={() => router.push('/add-inventory')}
+                size="large"
+              />
+            ) : undefined
           }
         />
       ) : (
@@ -155,18 +212,101 @@ export default function InventoryScreen() {
           style={styles.fab}
           onPress={() => router.push('/add-inventory')}
           activeOpacity={0.8}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel={t('inventory.addItem')}
+          accessibilityHint={t('inventory.addNewItemToInventory')}
         >
           <Plus size={32} color={Colors.white} strokeWidth={3} />
         </TouchableOpacity>
       )}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  backgroundContainer: {
+    flex: 1,
+    backgroundColor: Colors.cream,
+  },
+  safeArea: {
+    backgroundColor: Colors.cream,
+  },
+  customHeader: {
+    backgroundColor: Colors.cream,
+    paddingBottom: isSmallDevice ? 12 : 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    ...Platform.select({
+      ios: {
+        shadowColor: Colors.black,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+      default: {},
+    }),
+  },
   container: {
     flex: 1,
     backgroundColor: Colors.beige,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: isSmallDevice ? 16 : isTablet ? 32 : 20,
+    paddingVertical: isSmallDevice ? 12 : 16,
+    maxWidth: isTablet ? 1200 : '100%',
+    alignSelf: 'center',
+    width: '100%',
+    minHeight: 56,
+  },
+  titleContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    minWidth: 0,
+  },
+  headerTitle: {
+    ...Typography.title1,
+    color: Colors.charcoal,
+    fontWeight: '700' as const,
+    fontSize: isSmallDevice ? 24 : isTablet ? 32 : 28,
+    lineHeight: isSmallDevice ? 30 : isTablet ? 38 : 34,
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    ...Typography.body,
+    color: Colors.warmGray,
+    fontSize: isSmallDevice ? 13 : 14,
+    fontWeight: '500' as const,
+    lineHeight: isSmallDevice ? 17 : 18,
+    opacity: 0.9,
+  },
+  helpButton: {
+    padding: isSmallDevice ? 6 : 8,
+    backgroundColor: Colors.white,
+    borderRadius: 24,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: Colors.deepSage,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+      },
+      default: {},
+    }),
   },
   categoriesContainer: {
     maxHeight: 80,
@@ -256,16 +396,16 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.3)',
   },
   list: {
-    padding: 8,
+    padding: 16,
     paddingBottom: 100,
   },
   row: {
     justifyContent: 'space-between',
-    gap: 8,
+    paddingHorizontal: 0,
   },
   itemWrapper: {
-    flex: 1,
-    maxWidth: '49%',
+    width: '48%',
+    marginBottom: 16,
   },
   itemCard: {
     width: '100%',

@@ -23,23 +23,23 @@ export function useYarnInventory() {
   const yarnByWeight = useMemo(() => {
     const grouped: Record<string, InventoryItem[]> = {};
     yarnItems.forEach(item => {
-      const weight = item.yarnDetails?.yarnWeight || 'Unknown';
+      const weight = item.yarnDetails?.weight_category || 'Unknown';
       if (!grouped[weight]) grouped[weight] = [];
       grouped[weight].push(item);
     });
     return grouped;
   }, [yarnItems]);
-  
-  const totalYarnLength = useMemo(() => 
-    yarnItems.reduce((sum, item) => 
+
+  const totalYarnLength = useMemo(() =>
+    yarnItems.reduce((sum, item) =>
       sum + (item.yarnDetails?.length || 0) * item.quantity, 0
     ),
     [yarnItems]
   );
-  
-  const totalYarnWeight = useMemo(() => 
-    yarnItems.reduce((sum, item) => 
-      sum + (item.yarnDetails?.weight || 0) * item.quantity, 0
+
+  const totalYarnWeight = useMemo(() =>
+    yarnItems.reduce((sum, item) =>
+      sum + (item.yarnDetails?.ball_weight || 0) * item.quantity, 0
     ),
     [yarnItems]
   );

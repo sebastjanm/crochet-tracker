@@ -6,43 +6,112 @@ import {
   ScrollView,
   TouchableOpacity,
   Platform,
+  Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { 
-  MessageSquare, 
-  ImageIcon, 
-  Lightbulb, 
-  Search, 
+import {
+  MessageSquare,
+  ImageIcon,
+  Lightbulb,
+  Search,
   Mic,
-  ChevronRight 
+  ChevronRight,
+  HelpCircle,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { useLanguage } from '@/hooks/language-context';
 
+const { width } = Dimensions.get('window');
+const isSmallDevice = width < 375;
+const isTablet = width >= 768;
+
 const styles = StyleSheet.create({
-  container: {
+  backgroundContainer: {
     flex: 1,
     backgroundColor: Colors.cream,
   },
-  scrollContent: {
-    padding: 16,
+  safeArea: {
+    backgroundColor: Colors.cream,
   },
-  header: {
-    marginBottom: 32,
+  customHeader: {
+    backgroundColor: Colors.cream,
+    paddingBottom: isSmallDevice ? 12 : 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    ...Platform.select({
+      ios: {
+        shadowColor: Colors.black,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+      default: {},
+    }),
+  },
+  container: {
+    flex: 1,
+    backgroundColor: Colors.beige,
+  },
+  headerContent: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: isSmallDevice ? 16 : isTablet ? 32 : 20,
+    paddingVertical: isSmallDevice ? 12 : 16,
+    maxWidth: isTablet ? 1200 : '100%',
+    alignSelf: 'center',
+    width: '100%',
+    minHeight: 56,
   },
-  title: {
-    ...Typography.largeTitle,
+  titleContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    minWidth: 0,
+  },
+  headerTitle: {
+    ...Typography.title1,
     color: Colors.charcoal,
-    marginBottom: 8,
-    textAlign: 'center',
+    fontWeight: '700' as const,
+    fontSize: isSmallDevice ? 24 : isTablet ? 32 : 28,
+    lineHeight: isSmallDevice ? 30 : isTablet ? 38 : 34,
+    marginBottom: 4,
   },
-  subtitle: {
+  headerSubtitle: {
     ...Typography.body,
     color: Colors.warmGray,
-    textAlign: 'center',
-    maxWidth: 280,
+    fontSize: isSmallDevice ? 13 : 14,
+    fontWeight: '500' as const,
+    lineHeight: isSmallDevice ? 17 : 18,
+    opacity: 0.9,
+  },
+  helpButton: {
+    padding: isSmallDevice ? 6 : 8,
+    backgroundColor: Colors.white,
+    borderRadius: 24,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: Colors.deepSage,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+      },
+      default: {},
+    }),
+  },
+  scrollContent: {
+    padding: 16,
   },
   appsGrid: {
     gap: 16,
@@ -187,17 +256,39 @@ export default function YarnAI() {
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.header}>
-          <Text style={styles.title}>{t('yarnai.title')}</Text>
-          <Text style={styles.subtitle}>{t('yarnai.subtitle')}</Text>
+    <View style={styles.backgroundContainer}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <View style={styles.customHeader}>
+          <View style={styles.headerContent}>
+            <View style={styles.titleContainer}>
+              <Text style={styles.headerTitle} numberOfLines={1} ellipsizeMode="tail">
+                {t('yarnai.title')}
+              </Text>
+              <Text style={styles.headerSubtitle} numberOfLines={1} ellipsizeMode="tail">
+                {t('yarnai.headerSubtitle')}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => router.push('/help')}
+              style={styles.helpButton}
+              activeOpacity={0.7}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Help and support"
+              accessibilityHint="Get help and view tutorials"
+            >
+              <HelpCircle size={isSmallDevice ? 24 : 28} color={Colors.deepSage} strokeWidth={2.5} />
+            </TouchableOpacity>
+          </View>
         </View>
+      </SafeAreaView>
 
-        <View style={styles.appsGrid}>
+      <View style={styles.container}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.appsGrid}>
           {aiApps.map((app) => {
             const IconComponent = app.icon;
             return (
@@ -206,6 +297,10 @@ export default function YarnAI() {
                 style={styles.appCard}
                 onPress={() => handleAppPress(app.route)}
                 activeOpacity={0.7}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={app.title}
+                accessibilityHint={app.description}
               >
                 <View style={styles.appHeader}>
                   <View style={[styles.iconContainer, { backgroundColor: app.backgroundColor }]}>
@@ -228,6 +323,10 @@ export default function YarnAI() {
                 style={styles.comingSoonCard}
                 onPress={() => handleComingSoon(app.title)}
                 activeOpacity={0.7}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={`${app.title} - ${t('yarnai.comingSoon')}`}
+                accessibilityHint={app.description}
               >
                 <View style={styles.appHeader}>
                   <View style={[styles.iconContainer, { backgroundColor: app.backgroundColor }]}>
@@ -244,8 +343,9 @@ export default function YarnAI() {
               </TouchableOpacity>
             );
           })}
-        </View>
-      </ScrollView>
+          </View>
+        </ScrollView>
+      </View>
     </View>
   );
 }

@@ -40,7 +40,9 @@
       "Bash(bun run lint)",
       "Bash(bun pm:*)",
       "Bash(bun remove:*)",
-      "Bash(tail:*)"
+      "Bash(tail:*)",
+      "Bash(git commit:*)",
+      "Bash(git log:*)"
     ],
     "deny": [],
     "ask": []

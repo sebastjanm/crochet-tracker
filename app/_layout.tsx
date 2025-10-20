@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Slot } from "expo-router";
+import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
@@ -48,7 +48,39 @@ export default function RootLayout() {
             <AuthProvider>
               <ProjectsProvider>
                 <InventoryProvider>
-                  <Slot />
+                  <Stack
+                    screenOptions={{
+                      headerShown: false,
+                    }}
+                  >
+                    {/* Main app routes */}
+                    <Stack.Screen name="index" />
+                    <Stack.Screen name="(auth)" />
+                    <Stack.Screen name="(tabs)" />
+                    <Stack.Screen name="help" />
+                    <Stack.Screen name="legal" />
+                    <Stack.Screen name="yarnai" />
+                    <Stack.Screen name="project/[id]" />
+                    <Stack.Screen name="video-player" />
+
+                    {/* Modal routes */}
+                    <Stack.Screen
+                      name="add-inventory"
+                      options={{ presentation: 'modal' }}
+                    />
+                    <Stack.Screen
+                      name="edit-inventory/[id]"
+                      options={{ presentation: 'modal' }}
+                    />
+                    <Stack.Screen
+                      name="add-project"
+                      options={{ presentation: 'modal' }}
+                    />
+                    <Stack.Screen
+                      name="edit-project/[id]"
+                      options={{ presentation: 'modal' }}
+                    />
+                  </Stack>
                 </InventoryProvider>
               </ProjectsProvider>
             </AuthProvider>

@@ -294,34 +294,13 @@ export default function EditInventoryScreen() {
             style={styles.textArea}
           />
 
-          {/* Quantity & Min Quantity - side by side */}
-          <View style={styles.row}>
-            <View style={styles.halfInput}>
-              <Input
-                label={t('inventory.quantity')}
-                placeholder="1"
-                value={quantity}
-                onChangeText={setQuantity}
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.halfInput}>
-              <Input
-                label={t('inventory.minQuantity')}
-                placeholder={t('inventory.optional')}
-                value={minQuantity}
-                onChangeText={setMinQuantity}
-                keyboardType="numeric"
-              />
-            </View>
-          </View>
-
-          {/* Tags - edit form specific */}
+          {/* Quantity - always third */}
           <Input
-            label={t('inventory.tags')}
-            placeholder={t('inventory.tagsPlaceholder')}
-            value={tags}
-            onChangeText={setTags}
+            label={t('inventory.quantity')}
+            placeholder="1"
+            value={quantity}
+            onChangeText={setQuantity}
+            keyboardType="numeric"
           />
 
           {/* Category-specific details section */}
@@ -449,6 +428,22 @@ export default function EditInventoryScreen() {
             multiline
             numberOfLines={2}
             style={styles.textArea}
+          />
+
+          {/* Edit-specific fields */}
+          <Input
+            label={t('inventory.minQuantity')}
+            placeholder={t('inventory.optional')}
+            value={minQuantity}
+            onChangeText={setMinQuantity}
+            keyboardType="numeric"
+          />
+
+          <Input
+            label={t('inventory.tags')}
+            placeholder={t('inventory.tagsPlaceholder')}
+            value={tags}
+            onChangeText={setTags}
           />
 
           <View style={styles.imageSection}>

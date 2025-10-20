@@ -53,7 +53,7 @@ export default function EditProjectScreen() {
 
   if (!project) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{t('projects.projectNotFound')}</Text>
           <Button
@@ -128,7 +128,7 @@ export default function EditProjectScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <ModalHeader title={t('projects.editProject')} />
 
       <KeyboardAvoidingView

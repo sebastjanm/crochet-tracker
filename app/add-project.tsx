@@ -98,7 +98,7 @@ export default function AddProjectScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <ModalHeader title={t('projects.newProject')} />
 
       <KeyboardAvoidingView

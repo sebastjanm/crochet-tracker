@@ -183,7 +183,7 @@ export default function AddInventoryScreen() {
 
   if (showScanner && Platform.OS !== 'web') {
     return (
-      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
         <ModalHeader
           title={`${t('inventory.scan')} ${scannerMode === 'qr' ? 'QR Code' : t('inventory.barcode')}`}
           onClose={() => setShowScanner(false)}
@@ -208,7 +208,7 @@ export default function AddInventoryScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <ModalHeader title={t('inventory.addToInventory')} />
 
       <KeyboardAvoidingView

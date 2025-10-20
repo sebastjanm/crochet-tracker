@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
 import { router } from 'expo-router';
 import Colors from '@/constants/colors';
@@ -15,10 +16,10 @@ interface ModalHeaderProps {
   };
 }
 
-export function ModalHeader({ 
-  title, 
+export function ModalHeader({
+  title,
   onClose,
-  rightAction 
+  rightAction
 }: ModalHeaderProps) {
   const handleClose = () => {
     if (onClose) {
@@ -37,7 +38,8 @@ export function ModalHeader({
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <View style={styles.container}>
       <TouchableOpacity
         onPress={handleClose}
         style={styles.closeButton}
@@ -66,11 +68,15 @@ export function ModalHeader({
       ) : (
         <View style={styles.placeholder} />
       )}
-    </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    backgroundColor: Colors.white,
+  },
   container: {
     flexDirection: 'row',
     alignItems: 'center',

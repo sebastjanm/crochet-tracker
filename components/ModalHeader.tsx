@@ -23,8 +23,16 @@ export function ModalHeader({
   const handleClose = () => {
     if (onClose) {
       onClose();
-    } else if (router.canGoBack()) {
-      router.back();
+    } else {
+      // Use dismiss() for modals to properly close them
+      // Falls back to back() if dismiss is not available
+      try {
+        router.dismiss();
+      } catch {
+        if (router.canGoBack()) {
+          router.back();
+        }
+      }
     }
   };
 

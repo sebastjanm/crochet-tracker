@@ -58,7 +58,7 @@ export default function EditProjectScreen() {
           <Text style={styles.errorText}>{t('projects.projectNotFound')}</Text>
           <Button
             title={t('projects.goBack')}
-            onPress={() => router.back()}
+            onPress={() => router.dismiss()}
             style={styles.errorButton}
           />
         </View>
@@ -119,7 +119,7 @@ export default function EditProjectScreen() {
         defaultImageIndex: images.length > 0 ? defaultImageIndex : undefined,
         status,
       });
-      router.back();
+      router.dismiss();
     } catch (error) {
       Alert.alert(t('common.error'), t('projects.failedToUpdate'));
     } finally {

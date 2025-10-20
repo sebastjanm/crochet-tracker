@@ -89,7 +89,7 @@ export default function AddProjectScreen() {
         defaultImageIndex: images.length > 0 ? defaultImageIndex : undefined,
         status,
       });
-      router.back();
+      router.dismiss();
     } catch (error) {
       Alert.alert(t('common.error'), t('projects.failedToCreate'));
     } finally {

@@ -173,7 +173,7 @@ export default function AddInventoryScreen() {
         otherDetails,
         notes,
       });
-      router.back();
+      router.dismiss();
     } catch (error) {
       Alert.alert(t('common.error'), t('inventory.failedToAddItem'));
     } finally {

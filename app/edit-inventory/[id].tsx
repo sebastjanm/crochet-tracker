@@ -164,7 +164,7 @@ export default function EditInventoryScreen() {
     };
 
     await updateItem(item.id, updatedItem);
-    router.back();
+    router.dismiss();
   };
 
   const handleDelete = () => {
@@ -179,7 +179,7 @@ export default function EditInventoryScreen() {
           onPress: async () => {
             if (item) {
               await deleteItem(item.id);
-              router.back();
+              router.dismiss();
             }
           },
         },

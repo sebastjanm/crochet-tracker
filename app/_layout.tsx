@@ -59,9 +59,14 @@ export default function RootLayout() {
                     <Stack.Screen name="(tabs)" />
                     <Stack.Screen name="help" />
                     <Stack.Screen name="legal" />
-                    <Stack.Screen name="yarnai" />
                     <Stack.Screen name="project/[id]" />
                     <Stack.Screen name="video-player" />
+
+                    {/* YarnAI routes */}
+                    <Stack.Screen name="yarnai/chat" />
+                    <Stack.Screen name="yarnai/ideas" />
+                    <Stack.Screen name="yarnai/image-generator" />
+                    <Stack.Screen name="yarnai/voice" />
 
                     {/* Modal routes */}
                     <Stack.Screen

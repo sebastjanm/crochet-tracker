@@ -62,6 +62,11 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+        <View style={styles.badgeContainer}>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>App terminated</Text>
+          </View>
+        </View>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardView}
@@ -131,6 +136,34 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.cream,
+  },
+  badgeContainer: {
+    position: 'absolute' as const,
+    top: isSmallDevice ? 40 : 60,
+    right: isSmallDevice ? -30 : -40,
+    zIndex: 999,
+    transform: [{ rotate: '45deg' }],
+  },
+  badge: {
+    backgroundColor: Colors.terracotta,
+    paddingVertical: isSmallDevice ? 8 : 12,
+    paddingHorizontal: isSmallDevice ? 40 : 60,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  badgeText: {
+    color: Colors.cream,
+    fontSize: isSmallDevice ? 12 : 14,
+    fontWeight: '700' as const,
+    letterSpacing: 1,
+    textTransform: 'uppercase' as const,
+    textAlign: 'center' as const,
   },
   keyboardView: {
     flex: 1,

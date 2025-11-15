@@ -101,12 +101,8 @@ export async function migrateDataToSupabase(): Promise<MigrationResult> {
         console.log(`Found ${inventory.length} inventory items to migrate`);
 
         for (const item of inventory) {
-          // Get display name for logging based on category
-          const itemName = item.category === 'yarn'
-            ? (item.yarnDetails?.name || 'Untitled')
-            : item.category === 'hook'
-            ? (item.hookDetails?.name || 'Untitled')
-            : (item.otherDetails?.name || 'Untitled');
+          // Get display name for logging from root level
+          const itemName = item.name || 'Untitled';
 
           // Transform inventory data for Supabase
           const supabaseItem = {
@@ -116,7 +112,6 @@ export async function migrateDataToSupabase(): Promise<MigrationResult> {
             description: item.description,
             images: item.images || [],
             quantity: item.quantity,
-            min_quantity: item.minQuantity,
             unit: item.unit || 'piece',
             location: item.location,
             tags: item.tags || [],

@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, memo, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  Image,
   Modal,
   ScrollView,
   Dimensions,
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { X, ImageIcon, Trash2, Plus } from 'lucide-react-native';
 import { useImagePicker } from '@/hooks/useImagePicker';
 import Colors from '@/constants/colors';
@@ -26,7 +26,7 @@ interface ImageGalleryProps {
   editable?: boolean;
 }
 
-export function ImageGallery({
+export const ImageGallery = memo(function ImageGallery({
   images,
   onImagesChange,
   maxImages = 10,
@@ -38,23 +38,27 @@ export function ImageGallery({
   const [loadingImages, setLoadingImages] = useState<Record<number, boolean>>({});
   const { showImagePickerOptions, isPickingImage } = useImagePicker();
 
-  const handleImageLoad = (index: number) => {
-    setLoadingImages((prev) => ({ ...prev, [index]: false }));
-  };
+  const handleImageLoad = useCallback((index: number) => {
+    setLoadingImages((prev) => {
+      const next = { ...prev };
+      delete next[index];
+      return next;
+    });
+  }, []);
 
-  const handleImageLoadStart = (index: number) => {
+  const handleImageLoadStart = useCallback((index: number) => {
     setLoadingImages((prev) => ({ ...prev, [index]: true }));
-  };
+  }, []);
 
-  const handleAddImages = async () => {
+  const handleAddImages = useCallback(async () => {
     const newImages = await showImagePickerOptions();
     if (newImages.length > 0) {
       const updatedImages = [...images, ...newImages].slice(0, maxImages);
       onImagesChange(updatedImages);
     }
-  };
+  }, [images, maxImages, onImagesChange, showImagePickerOptions]);
 
-  const removeImage = (index: number) => {
+  const removeImage = useCallback((index: number) => {
     Alert.alert(
       t('common.confirm'),
       'Remove this image?',
@@ -71,7 +75,7 @@ export function ImageGallery({
         },
       ]
     );
-  };
+  }, [images, onImagesChange, t]);
 
 
 
@@ -85,7 +89,10 @@ export function ImageGallery({
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
+          removeClippedSubviews={true}
           decelerationRate="fast"
+          snapToInterval={screenWidth}
+          snapToAlignment="start"
           style={[styles.carouselWrapper, { height: carouselHeight }]}
           onMomentumScrollEnd={(event) => {
             const newIndex = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
@@ -95,7 +102,7 @@ export function ImageGallery({
         >
           {images.map((image, index) => (
             <TouchableOpacity
-              key={index}
+              key={`${image}-${index}`}
               style={[styles.carouselItem, { width: screenWidth, height: carouselHeight }]}
               onPress={() => setSelectedImageIndex(index)}
               activeOpacity={0.9}
@@ -103,6 +110,10 @@ export function ImageGallery({
               <Image
                 source={{ uri: image }}
                 style={styles.carouselImage}
+                contentFit="cover"
+                transition={200}
+                cachePolicy="memory-disk"
+                priority="high"
                 onLoadStart={() => handleImageLoadStart(index)}
                 onLoad={() => handleImageLoad(index)}
                 onError={() => handleImageLoad(index)}
@@ -184,6 +195,11 @@ export function ImageGallery({
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
+            removeClippedSubviews={true}
+            scrollEventThrottle={16}
+            snapToInterval={screenWidth}
+            snapToAlignment="start"
+            decelerationRate="fast"
             contentOffset={{ x: selectedImageIndex * screenWidth, y: 0 }}
             onMomentumScrollEnd={(event) => {
               const newIndex = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
@@ -191,10 +207,14 @@ export function ImageGallery({
             }}
           >
             {images.map((image, index) => (
-              <View key={index} style={styles.fullScreenImageContainer}>
+              <View key={`${image}-${index}-fullscreen`} style={styles.fullScreenImageContainer}>
                 <Image
                   source={{ uri: image }}
                   style={styles.fullScreenImage}
+                  contentFit="contain"
+                  transition={200}
+                  cachePolicy="memory-disk"
+                  priority="high"
                   onLoadStart={() => handleImageLoadStart(index)}
                   onLoad={() => handleImageLoad(index)}
                   onError={() => handleImageLoad(index)}
@@ -235,7 +255,7 @@ export function ImageGallery({
       {renderFullScreenModal()}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -247,7 +267,6 @@ const styles = StyleSheet.create({
   },
   carouselWrapper: {
     backgroundColor: Colors.beige,
-    borderRadius: 16,
     overflow: 'hidden',
   },
   carouselItem: {
@@ -265,7 +284,6 @@ const styles = StyleSheet.create({
   carouselImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
   },
   loadingOverlay: {
     position: 'absolute',
@@ -380,7 +398,6 @@ const styles = StyleSheet.create({
   fullScreenImage: {
     width: screenWidth,
     height: screenWidth,
-    resizeMode: 'contain',
   },
   imageCounter: {
     position: 'absolute',

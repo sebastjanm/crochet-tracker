@@ -31,7 +31,6 @@ export default function EditInventoryScreen() {
   const [category, setCategory] = useState<InventoryItem['category']>('other');
   const [description, setDescription] = useState('');
   const [quantity, setQuantity] = useState('1');
-  const [minQuantity, setMinQuantity] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const [tags, setTags] = useState('');
   const [notes, setNotes] = useState('');
@@ -63,41 +62,48 @@ export default function EditInventoryScreen() {
       setCategory(item.category);
       setDescription(item.description);
       setQuantity(item.quantity.toString());
-      setMinQuantity(item.minQuantity?.toString() || '');
       setImages(item.images || []);
       setTags(item.tags?.join(', ') || '');
       setNotes(item.notes || '');
 
+      // Set name from root level based on category
+      if (item.category === 'yarn') {
+        setYarnName(item.name || '');
+      } else if (item.category === 'hook') {
+        setHookName(item.name || '');
+      } else if (item.category === 'other') {
+        setOtherName(item.name || '');
+      }
+
       if (item.yarnDetails) {
-        setYarnName(item.yarnDetails.name || '');
         setBrand(item.yarnDetails.brand || '');
-        setColor(item.yarnDetails.color || '');
-        setColorCode(item.yarnDetails.color_code || '');
+        setColor(item.yarnDetails.colorName || '');
+        setColorCode(item.yarnDetails.colorCode || '');
         setFiber(item.yarnDetails.fiber || '');
-        setWeightCategory(item.yarnDetails.weight_category || '');
-        setBallWeight(item.yarnDetails.ball_weight?.toString() || '');
-        setLength(item.yarnDetails.length?.toString() || '');
-        setRecommendedHookSize(item.yarnDetails.hook_size || '');
-        setStorage(item.yarnDetails.storage || '');
+        setWeightCategory(item.yarnDetails.weightCategory || '');
+        setBallWeight(item.yarnDetails.ballWeightG?.toString() || '');
+        setLength(item.yarnDetails.lengthM?.toString() || '');
+        setRecommendedHookSize(item.yarnDetails.hookSizeMm || '');
+        setStorage(item.yarnDetails.storageLocation || '');
         setStore(item.yarnDetails.store || '');
-        if (item.yarnDetails.purchase_date) {
-          const date = item.yarnDetails.purchase_date instanceof Date
-            ? item.yarnDetails.purchase_date
-            : new Date(item.yarnDetails.purchase_date);
+        if (item.yarnDetails.purchaseDate) {
+          const date = item.yarnDetails.purchaseDate instanceof Date
+            ? item.yarnDetails.purchaseDate
+            : new Date(item.yarnDetails.purchaseDate);
           setPurchaseDate(date.toISOString().split('T')[0]);
         } else {
           setPurchaseDate('');
         }
-        setPurchasePrice(item.yarnDetails.purchase_price?.toString() || '');
+        setPurchasePrice(item.yarnDetails.purchasePrice?.toString() || '');
       }
 
       if (item.hookDetails) {
-        setHookName(item.hookDetails.name || '');
         setHookSize(item.hookDetails.size || '');
+        setStorage(item.hookDetails.storageLocation || '');
       }
 
       if (item.otherDetails) {
-        setOtherName(item.otherDetails.name || '');
+        setStorage(item.otherDetails.storageLocation || '');
       }
     }
   }, [item]);
@@ -107,20 +113,20 @@ export default function EditInventoryScreen() {
   const handleSave = async () => {
     // Validate name based on category
     if (category === 'yarn' && !yarnName.trim()) {
-      Alert.alert(t('common.error'), 'Please enter a yarn name');
+      Alert.alert(t('common.error'), t('inventory.pleaseEnterYarnName'));
       return;
     }
     if (category === 'hook' && !hookName.trim()) {
-      Alert.alert(t('common.error'), 'Please enter a hook name');
+      Alert.alert(t('common.error'), t('inventory.pleaseEnterHookName'));
       return;
     }
     if (category === 'other' && !otherName.trim()) {
-      Alert.alert(t('common.error'), 'Please enter an item name');
+      Alert.alert(t('common.error'), t('inventory.pleaseEnterItemName'));
       return;
     }
 
     if (!item) {
-      Alert.alert(t('common.error'), 'Item not found');
+      Alert.alert(t('common.error'), t('inventory.itemNotFound'));
       return;
     }
 
@@ -130,37 +136,41 @@ export default function EditInventoryScreen() {
     const priceNum = purchasePrice ? parseFloat(purchasePrice) : undefined;
 
     const yarnDetails: YarnDetails | undefined = category === 'yarn' ? {
-      name: yarnName.trim(),
       brand: brand.trim() || undefined,
-      color: color.trim() || undefined,
-      color_code: colorCode.trim() || undefined,
-      fiber: fiber.trim() || undefined,
-      weight_category: weightCategory.trim() || undefined,
-      ball_weight: ballWeightNum,
-      length: lengthNum,
-      hook_size: recommendedHookSize.trim() || undefined,
-      storage: storage.trim() || undefined,
+      colorName: color.trim() || undefined,
+      colorCode: colorCode.trim() || undefined,
+      fiber: fiber.trim() || '',
+      weightCategory: weightCategory.trim() || '',
+      ballWeightG: ballWeightNum || 0,
+      lengthM: lengthNum || 0,
+      hookSizeMm: recommendedHookSize.trim() || undefined,
+      storageLocation: storage.trim() || undefined,
       store: store.trim() || undefined,
-      purchase_date: purchaseDate ? new Date(purchaseDate) : undefined,
-      purchase_price: priceNum,
-      total_length: lengthNum ? lengthNum * qty : undefined,
-      total_weight: ballWeightNum ? ballWeightNum * qty : undefined,
+      purchaseDate: purchaseDate ? new Date(purchaseDate) : undefined,
+      purchasePrice: priceNum,
     } : undefined;
 
     const hookDetails: HookDetails | undefined = category === 'hook' ? {
-      name: hookName.trim(),
       size: hookSize.trim() || undefined,
+      storageLocation: storage.trim() || undefined,
     } : undefined;
 
     const otherDetails = category === 'other' ? {
-      name: otherName.trim(),
+      storageLocation: storage.trim() || undefined,
     } : undefined;
 
+    // Get name based on category
+    const itemName = category === 'yarn'
+      ? yarnName.trim()
+      : category === 'hook'
+      ? hookName.trim()
+      : otherName.trim();
+
     const updatedItem: Partial<InventoryItem> = {
+      name: itemName,
       category,
       description: description.trim(),
       quantity: qty,
-      minQuantity: minQuantity ? parseInt(minQuantity) : undefined,
       images,
       tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [],
       yarnDetails,
@@ -194,6 +204,16 @@ export default function EditInventoryScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
+          <View style={styles.imageSection}>
+            <Text style={styles.sectionLabel}>{t('inventory.photos')}</Text>
+            <ImageGallery
+              images={images}
+              onImagesChange={setImages}
+              maxImages={10}
+              editable={true}
+            />
+          </View>
+
           <View style={styles.categorySection}>
             <Text style={styles.sectionLabel}>{t('inventory.category')}</Text>
             <View style={styles.categoryButtons}>
@@ -235,8 +255,8 @@ export default function EditInventoryScreen() {
           {/* Name field - always first, category-specific */}
           {category === 'yarn' && (
             <Input
-              label="Yarn Name"
-              placeholder="e.g., Alize Angora Gold Batik"
+              label={t('inventory.yarnName')}
+              placeholder={t('inventory.yarnNamePlaceholder')}
               value={yarnName}
               onChangeText={setYarnName}
               required={true}
@@ -245,8 +265,8 @@ export default function EditInventoryScreen() {
 
           {category === 'hook' && (
             <Input
-              label="Hook Name"
-              placeholder="e.g., Clover Amour Hook"
+              label={t('inventory.hookName')}
+              placeholder={t('inventory.hookNamePlaceholder')}
               value={hookName}
               onChangeText={setHookName}
               required={true}
@@ -255,8 +275,8 @@ export default function EditInventoryScreen() {
 
           {category === 'other' && (
             <Input
-              label="Item Name"
-              placeholder="e.g., Stitch Markers Set"
+              label={t('inventory.itemName')}
+              placeholder={t('inventory.itemNamePlaceholder')}
               value={otherName}
               onChangeText={setOtherName}
               required={true}
@@ -289,8 +309,8 @@ export default function EditInventoryScreen() {
               <Text style={styles.sectionTitle}>{t('inventory.yarnDetails')}</Text>
 
               <Input
-                label="Brand"
-                placeholder="e.g., Alize"
+                label={t('inventory.brand')}
+                placeholder={t('inventory.brandPlaceholder')}
                 value={brand}
                 onChangeText={setBrand}
               />
@@ -298,16 +318,16 @@ export default function EditInventoryScreen() {
               <View style={styles.row}>
                 <View style={styles.halfInput}>
                   <Input
-                    label="Color"
-                    placeholder="e.g., 8057 Opečno-smetana"
+                    label={t('inventory.color')}
+                    placeholder={t('inventory.colorNamePlaceholder')}
                     value={color}
                     onChangeText={setColor}
                   />
                 </View>
                 <View style={styles.halfInput}>
                   <Input
-                    label="Color Code"
-                    placeholder="e.g., 8057"
+                    label={t('inventory.colorCode')}
+                    placeholder={t('inventory.colorCodePlaceholder')}
                     value={colorCode}
                     onChangeText={setColorCode}
                   />
@@ -315,15 +335,15 @@ export default function EditInventoryScreen() {
               </View>
 
               <Input
-                label="Fiber Content"
-                placeholder="e.g., 80% akril / 20% volna"
+                label={t('inventory.fiberContent')}
+                placeholder={t('inventory.fiberPlaceholder')}
                 value={fiber}
                 onChangeText={setFiber}
               />
 
               <Input
-                label="Weight Category"
-                placeholder="e.g., Fingering, DK, Worsted"
+                label={t('inventory.weightCategory')}
+                placeholder={t('inventory.weightCategoryPlaceholder')}
                 value={weightCategory}
                 onChangeText={setWeightCategory}
               />
@@ -331,7 +351,7 @@ export default function EditInventoryScreen() {
               <View style={styles.row}>
                 <View style={styles.halfInput}>
                   <Input
-                    label="Ball Weight (g)"
+                    label={t('inventory.ballWeightG')}
                     placeholder="100"
                     value={ballWeight}
                     onChangeText={setBallWeight}
@@ -340,7 +360,7 @@ export default function EditInventoryScreen() {
                 </View>
                 <View style={styles.halfInput}>
                   <Input
-                    label="Length (m)"
+                    label={t('inventory.lengthMPerBall')}
                     placeholder="280"
                     value={length}
                     onChangeText={setLength}
@@ -350,39 +370,43 @@ export default function EditInventoryScreen() {
               </View>
 
               <Input
-                label="Hook Size"
-                placeholder="e.g., 3 - 3.5 mm"
+                label={t('inventory.crochetHookSize')}
+                placeholder={t('inventory.hookSizePlaceholder')}
                 value={recommendedHookSize}
                 onChangeText={setRecommendedHookSize}
               />
 
-              <Input
-                label="Storage Location"
-                placeholder="e.g., Škatla 2 – tople barve"
-                value={storage}
-                onChangeText={setStorage}
-              />
+              <Text style={styles.sectionTitle}>{t('inventory.purchaseInfo')}</Text>
 
               <Input
-                label="Store"
+                label={t('inventory.store')}
                 placeholder="e.g., Svet Metraže"
                 value={store}
                 onChangeText={setStore}
               />
 
               <Input
-                label="Purchase Date"
+                label={t('inventory.purchaseDate')}
                 placeholder="YYYY-MM-DD"
                 value={purchaseDate}
                 onChangeText={setPurchaseDate}
               />
 
               <Input
-                label="Purchase Price"
+                label={t('inventory.price')}
                 placeholder="0.00"
                 value={purchasePrice}
                 onChangeText={setPurchasePrice}
                 keyboardType="decimal-pad"
+              />
+
+              <Text style={styles.sectionTitle}>{t('inventory.storageSection')}</Text>
+
+              <Input
+                label={t('inventory.storageLocation')}
+                placeholder="e.g., Škatla 2 – tople barve"
+                value={storage}
+                onChangeText={setStorage}
               />
             </>
           )}
@@ -397,6 +421,28 @@ export default function EditInventoryScreen() {
                 value={hookSize}
                 onChangeText={setHookSize}
               />
+
+              <Text style={styles.sectionTitle}>{t('inventory.storageSection')}</Text>
+
+              <Input
+                label={t('inventory.storageLocation')}
+                placeholder="e.g., Drawer 3"
+                value={storage}
+                onChangeText={setStorage}
+              />
+            </>
+          )}
+
+          {category === 'other' && (
+            <>
+              <Text style={styles.sectionTitle}>{t('inventory.storageSection')}</Text>
+
+              <Input
+                label={t('inventory.storageLocation')}
+                placeholder="e.g., Craft box"
+                value={storage}
+                onChangeText={setStorage}
+              />
             </>
           )}
 
@@ -410,31 +456,13 @@ export default function EditInventoryScreen() {
             style={styles.textArea}
           />
 
-          {/* Edit-specific fields */}
-          <Input
-            label={t('inventory.minQuantity')}
-            placeholder={t('inventory.optional')}
-            value={minQuantity}
-            onChangeText={setMinQuantity}
-            keyboardType="numeric"
-          />
-
+          {/* Tags */}
           <Input
             label={t('inventory.tags')}
             placeholder={t('inventory.tagsPlaceholder')}
             value={tags}
             onChangeText={setTags}
           />
-
-          <View style={styles.imageSection}>
-            <Text style={styles.sectionLabel}>{t('inventory.photos')}</Text>
-            <ImageGallery
-              images={images}
-              onImagesChange={setImages}
-              maxImages={10}
-              editable={true}
-            />
-          </View>
 
           <View style={styles.footer}>
             <Button

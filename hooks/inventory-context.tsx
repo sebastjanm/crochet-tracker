@@ -30,7 +30,7 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
             // Convert nested dates in category details
             yarnDetails: item.yarnDetails ? {
               ...item.yarnDetails,
-              purchase_date: item.yarnDetails.purchase_date ? new Date(item.yarnDetails.purchase_date) : undefined,
+              purchaseDate: item.yarnDetails.purchaseDate ? new Date(item.yarnDetails.purchaseDate) : undefined,
             } : undefined,
             hookDetails: item.hookDetails ? {
               ...item.hookDetails,
@@ -95,16 +95,13 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     const itemName = upcData?.title || 'Unknown Item';
 
     const newItem = await addItem({
+      name: itemName,
       description: upcData?.description || additionalData.description || '',
       images: upcData?.images || additionalData.images || [],
       quantity: additionalData.quantity || 1,
       category,
       barcode,
       upcData,
-      // Set category-specific name
-      ...(category === 'yarn' && { yarnDetails: { name: itemName } }),
-      ...(category === 'hook' && { hookDetails: { name: itemName, size: '' } }),
-      ...(category === 'other' && { otherDetails: { name: itemName } }),
       ...additionalData
     } as Omit<InventoryItem, 'id' | 'dateAdded' | 'lastUpdated'>);
     
@@ -173,12 +170,6 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     return items.filter(item => item.category === category);
   };
 
-  const getLowStockItems = () => {
-    return items.filter(item =>
-      item.minQuantity && item.quantity <= item.minQuantity
-    );
-  };
-
   const getItemByBarcode = (barcode: string) => {
     return items.find(item => item.barcode === barcode);
   };
@@ -186,14 +177,12 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
   const searchItems = (query: string) => {
     const lowerQuery = query.toLowerCase();
     return items.filter(item =>
+      item.name?.toLowerCase().includes(lowerQuery) ||
       item.description.toLowerCase().includes(lowerQuery) ||
       item.tags?.some(tag => tag.toLowerCase().includes(lowerQuery)) ||
-      item.yarnDetails?.name?.toLowerCase().includes(lowerQuery) ||
       item.yarnDetails?.brand?.toLowerCase().includes(lowerQuery) ||
-      item.yarnDetails?.color?.toLowerCase().includes(lowerQuery) ||
-      item.hookDetails?.name?.toLowerCase().includes(lowerQuery) ||
+      item.yarnDetails?.colorName?.toLowerCase().includes(lowerQuery) ||
       item.hookDetails?.brand?.toLowerCase().includes(lowerQuery) ||
-      item.otherDetails?.name?.toLowerCase().includes(lowerQuery) ||
       item.barcode?.includes(query)
     );
   };
@@ -211,14 +200,12 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     if (searchQuery) {
       const lowerQuery = searchQuery.toLowerCase();
       filtered = filtered.filter(item =>
+        item.name?.toLowerCase().includes(lowerQuery) ||
         item.description.toLowerCase().includes(lowerQuery) ||
         item.tags?.some(tag => tag.toLowerCase().includes(lowerQuery)) ||
-        item.yarnDetails?.name?.toLowerCase().includes(lowerQuery) ||
         item.yarnDetails?.brand?.toLowerCase().includes(lowerQuery) ||
-        item.yarnDetails?.color?.toLowerCase().includes(lowerQuery) ||
-        item.hookDetails?.name?.toLowerCase().includes(lowerQuery) ||
+        item.yarnDetails?.colorName?.toLowerCase().includes(lowerQuery) ||
         item.hookDetails?.brand?.toLowerCase().includes(lowerQuery) ||
-        item.otherDetails?.name?.toLowerCase().includes(lowerQuery) ||
         item.barcode?.includes(searchQuery)
       );
     }
@@ -227,17 +214,8 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     filtered = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case 'name':
-          // Get display name for sorting based on category
-          const aName = a.category === 'yarn'
-            ? (a.yarnDetails?.name || '')
-            : a.category === 'hook'
-            ? (a.hookDetails?.name || '')
-            : (a.otherDetails?.name || '');
-          const bName = b.category === 'yarn'
-            ? (b.yarnDetails?.name || '')
-            : b.category === 'hook'
-            ? (b.hookDetails?.name || '')
-            : (b.otherDetails?.name || '');
+          const aName = a.name || '';
+          const bName = b.name || '';
           return aName.localeCompare(bName);
         case 'date':
           return b.lastUpdated.getTime() - a.lastUpdated.getTime();
@@ -259,8 +237,8 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
 
     // Calculate total value from yarn and hook purchase prices
     const totalValue = items.reduce((sum, item) => {
-      if (item.category === 'yarn' && item.yarnDetails?.purchase_price) {
-        return sum + (item.yarnDetails.purchase_price * item.quantity);
+      if (item.category === 'yarn' && item.yarnDetails?.purchasePrice) {
+        return sum + (item.yarnDetails.purchasePrice * item.quantity);
       }
       if (item.category === 'hook' && item.hookDetails?.purchasePrice) {
         return sum + (item.hookDetails.purchasePrice * item.quantity);
@@ -275,7 +253,6 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
       yarnSkeins: yarnItems.reduce((sum, item) => sum + item.quantity, 0),
       hookCount: hookItems.length,
       otherCount: otherItems.length,
-      lowStockCount: getLowStockItems().length,
       uniqueBrands: new Set([
         ...yarnItems.map(i => i.yarnDetails?.brand).filter(Boolean),
         ...hookItems.map(i => i.hookDetails?.brand).filter(Boolean)
@@ -306,7 +283,6 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     // Queries
     getItemById,
     getItemsByCategory,
-    getLowStockItems,
     getItemByBarcode,
     searchItems,
     

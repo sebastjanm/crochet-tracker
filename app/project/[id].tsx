@@ -241,7 +241,6 @@ const styles = StyleSheet.create({
     minWidth: 120,
   },
   imageGalleryContainer: {
-    paddingHorizontal: 16,
     marginBottom: 16,
   },
   content: {

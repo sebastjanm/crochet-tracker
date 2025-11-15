@@ -247,7 +247,6 @@ interface InventoryItem {
   description: string;
   images: string[];
   quantity: number;
-  minQuantity?: number;
   unit?: 'piece' | 'skein' | 'ball' | 'meter' | 'gram' | 'set';
 
   // Category-specific details

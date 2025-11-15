@@ -17,6 +17,8 @@ import {
   Calendar,
   Tag,
   Layers,
+  Ruler,
+  ExternalLink,
 } from 'lucide-react-native';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
@@ -50,12 +52,8 @@ export default function InventoryDetailScreen() {
     );
   }
 
-  // Get display name based on category
-  const displayName = item.category === 'yarn'
-    ? (item.yarnDetails?.name || 'Untitled')
-    : item.category === 'hook'
-    ? (item.hookDetails?.name || 'Untitled')
-    : (item.otherDetails?.name || 'Untitled');
+  // Get display name from root level
+  const displayName = item.name || t('common.untitled');
 
   // Get category color
   const categoryColor = item.category === 'yarn'
@@ -151,14 +149,32 @@ export default function InventoryDetailScreen() {
               )}
             </View>
 
-            {/* Min Quantity Badge - Inline */}
-            {item.minQuantity && (
-              <View style={styles.minQuantityBadge}>
-                <Text style={styles.minQuantityBadgeLabel}>{t('inventory.minQuantity')}:</Text>
-                <Text style={styles.minQuantityBadgeValue}>{item.minQuantity}</Text>
+            {/* Reserved Status Badge */}
+            {item.reserved && (
+              <View style={styles.reservedBadge}>
+                <Text style={styles.reservedText}>{t('inventory.reserved')}</Text>
               </View>
             )}
           </View>
+
+          {/* Reserved for Project - Show which project */}
+          {item.reserved && item.reservedForProject && (
+            <Card style={styles.reservedCard}>
+              <Text style={styles.reservedLabel}>{t('inventory.reservedFor')}:</Text>
+              <TouchableOpacity
+                onPress={() => router.push(`/project/${item.reservedForProject}`)}
+                activeOpacity={0.7}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={t('inventory.reservedFor')}
+                accessibilityHint="View project details"
+              >
+                <Text style={styles.reservedProjectLink}>
+                  {projects.find(p => p.id === item.reservedForProject)?.title || item.reservedForProject}
+                </Text>
+              </TouchableOpacity>
+            </Card>
+          )}
 
           {/* Yarn-specific details */}
           {item.category === 'yarn' && item.yarnDetails && (
@@ -172,6 +188,13 @@ export default function InventoryDetailScreen() {
                 </View>
               )}
 
+              {item.yarnDetails.line && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t('inventory.productLine')}:</Text>
+                  <Text style={styles.detailValue}>{item.yarnDetails.line}</Text>
+                </View>
+              )}
+
               {item.yarnDetails.fiber && (
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>{t('inventory.fiber')}:</Text>
@@ -179,46 +202,270 @@ export default function InventoryDetailScreen() {
                 </View>
               )}
 
-              {item.yarnDetails.color && (
+              {item.yarnDetails.colorName && (
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>{t('inventory.color')}:</Text>
-                  <Text style={styles.detailValue}>{item.yarnDetails.color}</Text>
+                  <Text style={styles.detailValue}>{item.yarnDetails.colorName}</Text>
                 </View>
               )}
 
-              {item.yarnDetails.weight_category && (
+              {item.yarnDetails.colorCode && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t('inventory.colorCode')}:</Text>
+                  <Text style={styles.detailValue}>{item.yarnDetails.colorCode}</Text>
+                </View>
+              )}
+
+              {item.yarnDetails.weightCategory && (
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>{t('inventory.weightCategory')}:</Text>
-                  <Text style={styles.detailValue}>{item.yarnDetails.weight_category}</Text>
+                  <Text style={styles.detailValue}>{item.yarnDetails.weightCategory}</Text>
                 </View>
               )}
 
-              {(item.yarnDetails.ball_weight || item.yarnDetails.length) && (
+              {(item.yarnDetails.ballWeightG || item.yarnDetails.lengthM || item.yarnDetails.ballWeightOz || item.yarnDetails.lengthYd) && (
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>{t('inventory.ballSpecs')}:</Text>
                   <Text style={styles.detailValue}>
-                    {item.yarnDetails.ball_weight && `${item.yarnDetails.ball_weight}g`}
-                    {item.yarnDetails.ball_weight && item.yarnDetails.length && ' • '}
-                    {item.yarnDetails.length && `${item.yarnDetails.length}m`}
+                    {item.yarnDetails.ballWeightG && `${item.yarnDetails.ballWeightG}g`}
+                    {item.yarnDetails.ballWeightOz && ` (${item.yarnDetails.ballWeightOz}oz)`}
+                    {((item.yarnDetails.ballWeightG || item.yarnDetails.ballWeightOz) && (item.yarnDetails.lengthM || item.yarnDetails.lengthYd)) ? ' • ' : ''}
+                    {item.yarnDetails.lengthM && `${item.yarnDetails.lengthM}m`}
+                    {item.yarnDetails.lengthYd && ` (${item.yarnDetails.lengthYd}yd)`}
                   </Text>
                 </View>
               )}
 
-              {(item.yarnDetails.total_weight || item.yarnDetails.total_length) && (
+              {(item.yarnDetails.ballWeightG || item.yarnDetails.lengthM || item.yarnDetails.ballWeightOz || item.yarnDetails.lengthYd) && (
                 <View style={[styles.detailRow, styles.highlightRow]}>
                   <Text style={styles.detailLabel}>{t('inventory.totalSpecs')}:</Text>
                   <Text style={[styles.detailValue, styles.highlightValue]}>
-                    {item.yarnDetails.total_weight && `${item.yarnDetails.total_weight}g`}
-                    {item.yarnDetails.total_weight && item.yarnDetails.total_length && ' • '}
-                    {item.yarnDetails.total_length && `${item.yarnDetails.total_length}m`}
+                    {item.yarnDetails.ballWeightG && `${item.yarnDetails.ballWeightG * item.quantity}g`}
+                    {item.yarnDetails.ballWeightOz && ` (${(item.yarnDetails.ballWeightOz * item.quantity).toFixed(2)}oz)`}
+                    {((item.yarnDetails.ballWeightG || item.yarnDetails.ballWeightOz) && (item.yarnDetails.lengthM || item.yarnDetails.lengthYd)) ? ' • ' : ''}
+                    {item.yarnDetails.lengthM && `${item.yarnDetails.lengthM * item.quantity}m`}
+                    {item.yarnDetails.lengthYd && ` (${item.yarnDetails.lengthYd * item.quantity}yd)`}
                   </Text>
                 </View>
               )}
 
-              {item.yarnDetails.hook_size && (
+              {item.yarnDetails.hookSizeMm && (
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>{t('inventory.recommendedHook')}:</Text>
-                  <Text style={styles.detailValue}>{item.yarnDetails.hook_size}</Text>
+                  <Text style={styles.detailValue}>{item.yarnDetails.hookSizeMm}</Text>
+                </View>
+              )}
+
+              {(item.yarnDetails.needleSizeMm || item.yarnDetails.needleSizeUs) && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t('inventory.recommendedNeedles')}:</Text>
+                  <Text style={styles.detailValue}>
+                    {item.yarnDetails.needleSizeMm && `${item.yarnDetails.needleSizeMm}mm`}
+                    {(item.yarnDetails.needleSizeMm && item.yarnDetails.needleSizeUs) ? ' / ' : ''}
+                    {item.yarnDetails.needleSizeUs && `US ${item.yarnDetails.needleSizeUs}`}
+                  </Text>
+                </View>
+              )}
+            </Card>
+          )}
+
+          {/* Gauge Information for Yarn */}
+          {item.category === 'yarn' && item.yarnDetails && (item.yarnDetails.gauge || item.yarnDetails.myGauge) && (
+            <Card style={styles.detailsCard}>
+              <View style={styles.gaugeTitleRow}>
+                <Ruler size={20} color={Colors.deepTeal} />
+                <Text style={styles.sectionTitle}>{t('inventory.gauge')}</Text>
+              </View>
+
+              {/* Manufacturer's Gauge */}
+              {item.yarnDetails.gauge && (
+                <View style={styles.gaugeSection}>
+                  <Text style={styles.gaugeSubtitle}>{t('inventory.manufacturerGauge')}</Text>
+
+                  {(item.yarnDetails.gauge.stitches || item.yarnDetails.gauge.rows) && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>{t('inventory.stitches')} × {t('inventory.rows')}:</Text>
+                      <Text style={styles.detailValue}>
+                        {item.yarnDetails.gauge.stitches || '?'} × {item.yarnDetails.gauge.rows || '?'}
+                      </Text>
+                    </View>
+                  )}
+
+                  {item.yarnDetails.gauge.sizeCm && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>{t('inventory.gaugeSize')}:</Text>
+                      <Text style={styles.detailValue}>{item.yarnDetails.gauge.sizeCm}</Text>
+                    </View>
+                  )}
+
+                  {item.yarnDetails.gauge.tool && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>{t('inventory.gaugeTool')}:</Text>
+                      <Text style={styles.detailValue}>{item.yarnDetails.gauge.tool}</Text>
+                    </View>
+                  )}
+
+                  {item.yarnDetails.gauge.pattern && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>{t('inventory.gaugePattern')}:</Text>
+                      <Text style={styles.detailValue}>{item.yarnDetails.gauge.pattern}</Text>
+                    </View>
+                  )}
+
+                  {item.yarnDetails.gauge.notes && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>{t('common.notes')}:</Text>
+                      <Text style={styles.detailValue}>{item.yarnDetails.gauge.notes}</Text>
+                    </View>
+                  )}
+                </View>
+              )}
+
+              {/* My Gauge */}
+              {item.yarnDetails.myGauge && (
+                <View style={styles.gaugeSection}>
+                  <Text style={[styles.gaugeSubtitle, styles.myGaugeTitle]}>{t('inventory.myGauge')}</Text>
+
+                  {(item.yarnDetails.myGauge.stitches || item.yarnDetails.myGauge.rows) && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>{t('inventory.stitches')} × {t('inventory.rows')}:</Text>
+                      <Text style={styles.detailValue}>
+                        {item.yarnDetails.myGauge.stitches || '?'} × {item.yarnDetails.myGauge.rows || '?'}
+                      </Text>
+                    </View>
+                  )}
+
+                  {item.yarnDetails.myGauge.sizeCm && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>{t('inventory.gaugeSize')}:</Text>
+                      <Text style={styles.detailValue}>{item.yarnDetails.myGauge.sizeCm}</Text>
+                    </View>
+                  )}
+
+                  {item.yarnDetails.myGauge.tool && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>{t('inventory.gaugeTool')}:</Text>
+                      <Text style={styles.detailValue}>{item.yarnDetails.myGauge.tool}</Text>
+                    </View>
+                  )}
+
+                  {item.yarnDetails.myGauge.pattern && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>{t('inventory.gaugePattern')}:</Text>
+                      <Text style={styles.detailValue}>{item.yarnDetails.myGauge.pattern}</Text>
+                    </View>
+                  )}
+
+                  {item.yarnDetails.myGauge.notes && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>{t('common.notes')}:</Text>
+                      <Text style={styles.detailValue}>{item.yarnDetails.myGauge.notes}</Text>
+                    </View>
+                  )}
+                </View>
+              )}
+            </Card>
+          )}
+
+          {/* Care Instructions for Yarn */}
+          {item.category === 'yarn' && item.yarnDetails && (item.yarnDetails.careSymbols || item.yarnDetails.careText) && (
+            <Card style={styles.detailsCard}>
+              <Text style={styles.sectionTitle}>{t('inventory.careInstructions')}</Text>
+
+              {item.yarnDetails.careSymbols && item.yarnDetails.careSymbols.length > 0 && (
+                <View style={styles.careSymbolsContainer}>
+                  {item.yarnDetails.careSymbols.map((symbol: string, index: number) => (
+                    <View key={index} style={styles.careSymbolBadge}>
+                      <Text style={styles.careSymbolText}>{t(`inventory.${symbol}`)}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {item.yarnDetails.careText && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.careText}>{item.yarnDetails.careText}</Text>
+                </View>
+              )}
+            </Card>
+          )}
+
+          {/* Yarn Characteristics */}
+          {item.category === 'yarn' && item.yarnDetails && (item.yarnDetails.halo || item.yarnDetails.selfStriping ||
+            item.yarnDetails.variegated || item.yarnDetails.texture || item.yarnDetails.sheen ||
+            item.yarnDetails.colorFamily || item.yarnDetails.recommendedFor) && (
+            <Card style={styles.detailsCard}>
+              <Text style={styles.sectionTitle}>{t('inventory.yarnCharacteristics')}</Text>
+
+              {/* Boolean characteristics as badges */}
+              <View style={styles.characteristicsContainer}>
+                {item.yarnDetails.halo && (
+                  <View style={styles.characteristicBadge}>
+                    <Text style={styles.characteristicText}>{t('inventory.halo')}</Text>
+                  </View>
+                )}
+                {item.yarnDetails.selfStriping && (
+                  <View style={styles.characteristicBadge}>
+                    <Text style={styles.characteristicText}>{t('inventory.selfStriping')}</Text>
+                  </View>
+                )}
+                {item.yarnDetails.variegated && (
+                  <View style={styles.characteristicBadge}>
+                    <Text style={styles.characteristicText}>{t('inventory.variegated')}</Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Text characteristics */}
+              {item.yarnDetails.texture && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t('inventory.texture')}:</Text>
+                  <Text style={styles.detailValue}>{item.yarnDetails.texture}</Text>
+                </View>
+              )}
+
+              {item.yarnDetails.sheen && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t('inventory.sheen')}:</Text>
+                  <Text style={styles.detailValue}>{item.yarnDetails.sheen}</Text>
+                </View>
+              )}
+
+              {item.yarnDetails.colorFamily && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t('inventory.colorFamily')}:</Text>
+                  <Text style={styles.detailValue}>{item.yarnDetails.colorFamily}</Text>
+                </View>
+              )}
+
+              {item.yarnDetails.recommendedFor && item.yarnDetails.recommendedFor.length > 0 && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t('inventory.recommendedFor')}:</Text>
+                  <Text style={styles.detailValue}>{item.yarnDetails.recommendedFor.join(', ')}</Text>
+                </View>
+              )}
+            </Card>
+          )}
+
+          {/* Certifications & Quality Info for Yarn */}
+          {item.category === 'yarn' && item.yarnDetails && (item.yarnDetails.certifications || item.yarnDetails.certificateDetails) && (
+            <Card style={styles.detailsCard}>
+              <Text style={styles.sectionTitle}>{t('inventory.certifications')}</Text>
+
+              {item.yarnDetails.certifications && item.yarnDetails.certifications.length > 0 && (
+                <View style={styles.certificationsContainer}>
+                  {item.yarnDetails.certifications.map((cert: string, index: number) => (
+                    <View key={index} style={styles.certificationBadge}>
+                      <Text style={styles.certificationText}>{cert}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {item.yarnDetails.certificateDetails && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t('inventory.certificateDetails')}:</Text>
+                  <Text style={styles.detailValue}>{item.yarnDetails.certificateDetails}</Text>
                 </View>
               )}
             </Card>
@@ -236,6 +483,13 @@ export default function InventoryDetailScreen() {
                 </View>
               )}
 
+              {item.hookDetails.line && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t('inventory.productLine')}:</Text>
+                  <Text style={styles.detailValue}>{item.hookDetails.line}</Text>
+                </View>
+              )}
+
               {item.hookDetails.size && (
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>{t('inventory.size')}:</Text>
@@ -243,13 +497,13 @@ export default function InventoryDetailScreen() {
                 </View>
               )}
 
-              {(item.hookDetails.sizeMetric || item.hookDetails.sizeUS || item.hookDetails.sizeUK) && (
+              {(item.hookDetails.sizeMm || item.hookDetails.sizeUs || item.hookDetails.sizeUk) && (
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>{t('inventory.sizeConversions')}:</Text>
                   <Text style={styles.detailValue}>
-                    {item.hookDetails.sizeMetric && `${item.hookDetails.sizeMetric}mm`}
-                    {item.hookDetails.sizeUS && ` / US ${item.hookDetails.sizeUS}`}
-                    {item.hookDetails.sizeUK && ` / UK ${item.hookDetails.sizeUK}`}
+                    {item.hookDetails.sizeMm && `${item.hookDetails.sizeMm}mm`}
+                    {item.hookDetails.sizeUs ? ` / US ${item.hookDetails.sizeUs}` : ''}
+                    {item.hookDetails.sizeUk ? ` / UK ${item.hookDetails.sizeUk}` : ''}
                   </Text>
                 </View>
               )}
@@ -265,6 +519,115 @@ export default function InventoryDetailScreen() {
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>{t('inventory.handleType')}:</Text>
                   <Text style={styles.detailValue}>{item.hookDetails.handleType}</Text>
+                </View>
+              )}
+
+              {/* Dimensions */}
+              {(item.hookDetails.lengthCm || item.hookDetails.lengthIn) && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t('inventory.hookLength')}:</Text>
+                  <Text style={styles.detailValue}>
+                    {item.hookDetails.lengthCm && `${item.hookDetails.lengthCm}cm`}
+                    {(item.hookDetails.lengthCm && item.hookDetails.lengthIn) ? ' / ' : ''}
+                    {item.hookDetails.lengthIn && `${item.hookDetails.lengthIn}"`}
+                  </Text>
+                </View>
+              )}
+
+              {/* Technical Details */}
+              {item.hookDetails.shaftType && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t('inventory.shaftType')}:</Text>
+                  <Text style={styles.detailValue}>
+                    {item.hookDetails.shaftType === 'inline' ? t('inventory.inline') :
+                     item.hookDetails.shaftType === 'tapered' ? t('inventory.tapered') :
+                     item.hookDetails.shaftType}
+                  </Text>
+                </View>
+              )}
+            </Card>
+          )}
+
+          {/* Hook Features */}
+          {item.category === 'hook' && item.hookDetails && (item.hookDetails.colorCoded || item.hookDetails.nonSlip ||
+            item.hookDetails.lightWeight || item.hookDetails.flexible || item.hookDetails.thumbRest ||
+            item.hookDetails.recommendedYarnWeights || item.hookDetails.bestFor) && (
+            <Card style={styles.detailsCard}>
+              <Text style={styles.sectionTitle}>{t('inventory.hookFeatures')}</Text>
+
+              {/* Feature badges */}
+              <View style={styles.characteristicsContainer}>
+                {item.hookDetails.colorCoded && (
+                  <View style={styles.featureBadge}>
+                    <Text style={styles.featureText}>{t('inventory.colorCoded')}</Text>
+                  </View>
+                )}
+                {item.hookDetails.nonSlip && (
+                  <View style={styles.featureBadge}>
+                    <Text style={styles.featureText}>{t('inventory.nonSlip')}</Text>
+                  </View>
+                )}
+                {item.hookDetails.lightWeight && (
+                  <View style={styles.featureBadge}>
+                    <Text style={styles.featureText}>{t('inventory.lightWeight')}</Text>
+                  </View>
+                )}
+                {item.hookDetails.flexible && (
+                  <View style={styles.featureBadge}>
+                    <Text style={styles.featureText}>{t('inventory.flexible')}</Text>
+                  </View>
+                )}
+                {item.hookDetails.thumbRest && (
+                  <View style={styles.featureBadge}>
+                    <Text style={styles.featureText}>{t('inventory.thumbRest')}</Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Recommended yarn weights */}
+              {item.hookDetails.recommendedYarnWeights && item.hookDetails.recommendedYarnWeights.length > 0 && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t('inventory.recommendedYarnWeights')}:</Text>
+                  <Text style={styles.detailValue}>{item.hookDetails.recommendedYarnWeights.join(', ')}</Text>
+                </View>
+              )}
+
+              {/* Best for */}
+              {item.hookDetails.bestFor && item.hookDetails.bestFor.length > 0 && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t('inventory.bestFor')}:</Text>
+                  <Text style={styles.detailValue}>{item.hookDetails.bestFor.join(', ')}</Text>
+                </View>
+              )}
+            </Card>
+          )}
+
+          {/* Hook Quality & Origin */}
+          {item.category === 'hook' && item.hookDetails && (item.hookDetails.country || item.hookDetails.warranty || item.hookDetails.certifications) && (
+            <Card style={styles.detailsCard}>
+              <Text style={styles.sectionTitle}>{t('inventory.qualityInfo')}</Text>
+
+              {item.hookDetails.certifications && item.hookDetails.certifications.length > 0 && (
+                <View style={styles.certificationsContainer}>
+                  {item.hookDetails.certifications.map((cert: string, index: number) => (
+                    <View key={index} style={styles.certificationBadge}>
+                      <Text style={styles.certificationText}>{cert}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {item.hookDetails.country && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t('inventory.country')}:</Text>
+                  <Text style={styles.detailValue}>{item.hookDetails.country}</Text>
+                </View>
+              )}
+
+              {item.hookDetails.warranty && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t('inventory.warranty')}:</Text>
+                  <Text style={styles.detailValue}>{item.hookDetails.warranty}</Text>
                 </View>
               )}
             </Card>
@@ -309,6 +672,66 @@ export default function InventoryDetailScreen() {
                   <Text style={styles.detailValue}>{item.otherDetails.setSize}</Text>
                 </View>
               )}
+
+              {item.otherDetails.color && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t('inventory.color')}:</Text>
+                  <Text style={styles.detailValue}>{item.otherDetails.color}</Text>
+                </View>
+              )}
+
+              {item.otherDetails.dimensions && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t('inventory.dimensions')}:</Text>
+                  <Text style={styles.detailValue}>{item.otherDetails.dimensions}</Text>
+                </View>
+              )}
+
+              {item.otherDetails.weight && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t('inventory.weight')}:</Text>
+                  <Text style={styles.detailValue}>{item.otherDetails.weight}</Text>
+                </View>
+              )}
+
+              {item.otherDetails.model && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t('inventory.model')}:</Text>
+                  <Text style={styles.detailValue}>{item.otherDetails.model}</Text>
+                </View>
+              )}
+            </Card>
+          )}
+
+          {/* Other Item Features */}
+          {item.category === 'other' && item.otherDetails && (item.otherDetails.features || item.otherDetails.compatibleWith || item.otherDetails.bestFor) && (
+            <Card style={styles.detailsCard}>
+              <Text style={styles.sectionTitle}>{t('inventory.features')}</Text>
+
+              {/* Feature badges */}
+              {item.otherDetails.features && item.otherDetails.features.length > 0 && (
+                <View style={styles.characteristicsContainer}>
+                  {item.otherDetails.features.map((feature: string, index: number) => (
+                    <View key={index} style={styles.featureBadge}>
+                      <Text style={styles.featureText}>{feature}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {item.otherDetails.compatibleWith && item.otherDetails.compatibleWith.length > 0 && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t('inventory.compatibleWith')}:</Text>
+                  <Text style={styles.detailValue}>{item.otherDetails.compatibleWith.join(', ')}</Text>
+                </View>
+              )}
+
+              {item.otherDetails.bestFor && item.otherDetails.bestFor.length > 0 && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t('inventory.bestFor')}:</Text>
+                  <Text style={styles.detailValue}>{item.otherDetails.bestFor.join(', ')}</Text>
+                </View>
+              )}
             </Card>
           )}
 
@@ -317,6 +740,23 @@ export default function InventoryDetailScreen() {
             <Card style={styles.descriptionCard}>
               <Text style={styles.sectionTitle}>{t('common.description')}</Text>
               <Text style={styles.description}>{item.description}</Text>
+            </Card>
+          )}
+
+          {/* Storage Section */}
+          {((item.category === 'yarn' && item.yarnDetails?.storageLocation) ||
+            (item.category === 'hook' && item.hookDetails?.storageLocation) ||
+            (item.category === 'other' && item.otherDetails?.storageLocation)) && (
+            <Card style={styles.storageCard}>
+              <Text style={styles.sectionTitle}>{t('inventory.storageSection')}</Text>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>{t('inventory.storageLocation')}:</Text>
+                <Text style={styles.detailValue}>
+                  {item.category === 'yarn' && item.yarnDetails?.storageLocation}
+                  {item.category === 'hook' && item.hookDetails?.storageLocation}
+                  {item.category === 'other' && item.otherDetails?.storageLocation}
+                </Text>
+              </View>
             </Card>
           )}
 
@@ -378,47 +818,74 @@ export default function InventoryDetailScreen() {
             </Card>
           )}
 
-          {/* Purchase Information - MOVED DOWN (reference data) */}
-          {(item.yarnDetails?.purchase_date || item.yarnDetails?.purchase_price ||
+          {/* Purchase Information - Consistent across all categories */}
+          {(item.yarnDetails?.purchaseDate || item.yarnDetails?.purchasePrice ||
             item.yarnDetails?.store || item.hookDetails?.purchaseDate ||
-            item.hookDetails?.purchasePrice || item.hookDetails?.purchaseLocation ||
-            item.otherDetails?.purchasePrice || item.otherDetails?.purchaseLocation) && (
+            item.hookDetails?.purchasePrice || item.hookDetails?.store ||
+            item.otherDetails?.purchaseDate || item.otherDetails?.purchasePrice ||
+            item.otherDetails?.store || item.yarnDetails?.originalUrl ||
+            item.hookDetails?.originalUrl || item.otherDetails?.originalUrl) && (
             <Card style={styles.purchaseCard}>
               <Text style={styles.sectionTitle}>{t('inventory.purchaseInfo')}</Text>
 
-              {/* Yarn purchase info */}
-              {item.yarnDetails?.purchase_date && (
+              {/* Store */}
+              {(item.yarnDetails?.store || item.hookDetails?.store || item.otherDetails?.store) && (
                 <View style={styles.detailRow}>
-                  <Calendar size={16} color={Colors.warmGray} />
-                  <Text style={styles.detailLabel}>{t('inventory.purchaseDate')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.store')}:</Text>
                   <Text style={styles.detailValue}>
-                    {new Date(item.yarnDetails.purchase_date).toLocaleDateString()}
+                    {item.yarnDetails?.store ||
+                     item.hookDetails?.store ||
+                     item.otherDetails?.store}
                   </Text>
                 </View>
               )}
 
-              {(item.yarnDetails?.purchase_price || item.hookDetails?.purchasePrice ||
+              {/* Purchase Date */}
+              {(item.yarnDetails?.purchaseDate || item.hookDetails?.purchaseDate || item.otherDetails?.purchaseDate) && (
+                <View style={styles.detailRow}>
+                  <Calendar size={16} color={Colors.warmGray} />
+                  <Text style={styles.detailLabel}>{t('inventory.purchaseDate')}:</Text>
+                  <Text style={styles.detailValue}>
+                    {item.yarnDetails?.purchaseDate && new Date(item.yarnDetails.purchaseDate).toLocaleDateString()}
+                    {item.hookDetails?.purchaseDate && new Date(item.hookDetails.purchaseDate).toLocaleDateString()}
+                    {item.otherDetails?.purchaseDate && new Date(item.otherDetails.purchaseDate).toLocaleDateString()}
+                  </Text>
+                </View>
+              )}
+
+              {/* Purchase Price with Currency */}
+              {(item.yarnDetails?.purchasePrice || item.hookDetails?.purchasePrice ||
                 item.otherDetails?.purchasePrice) && (
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>{t('inventory.price')}:</Text>
                   <Text style={styles.detailValue}>
-                    €{item.yarnDetails?.purchase_price ||
+                    {item.yarnDetails?.currency || item.hookDetails?.currency || item.otherDetails?.currency || '€'}
+                    {item.yarnDetails?.purchasePrice ||
                        item.hookDetails?.purchasePrice ||
                        item.otherDetails?.purchasePrice}
                   </Text>
                 </View>
               )}
 
-              {(item.yarnDetails?.store || item.hookDetails?.purchaseLocation ||
-                item.otherDetails?.purchaseLocation) && (
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.store')}:</Text>
-                  <Text style={styles.detailValue}>
-                    {item.yarnDetails?.store ||
-                     item.hookDetails?.purchaseLocation ||
-                     item.otherDetails?.purchaseLocation}
-                  </Text>
-                </View>
+              {/* Product URL */}
+              {(item.yarnDetails?.originalUrl || item.hookDetails?.originalUrl || item.otherDetails?.originalUrl) && (
+                <TouchableOpacity
+                  style={styles.productUrlButton}
+                  onPress={() => {
+                    const url = item.yarnDetails?.originalUrl || item.hookDetails?.originalUrl || item.otherDetails?.originalUrl;
+                    if (url) {
+                      // TODO: Add Linking.openURL(url) when implemented
+                      Alert.alert(t('inventory.viewProductPage'), url);
+                    }
+                  }}
+                  activeOpacity={0.7}
+                  accessible={true}
+                  accessibilityRole="link"
+                  accessibilityLabel={t('inventory.viewProductPage')}
+                >
+                  <ExternalLink size={16} color={Colors.deepTeal} />
+                  <Text style={styles.productUrlText}>{t('inventory.viewProductPage')}</Text>
+                </TouchableOpacity>
               )}
             </Card>
           )}
@@ -428,6 +895,67 @@ export default function InventoryDetailScreen() {
             <Card style={styles.notesCard}>
               <Text style={styles.sectionTitle}>{t('common.notes')}</Text>
               <Text style={styles.notes}>{item.notes}</Text>
+            </Card>
+          )}
+
+          {/* Barcode/UPC Information */}
+          {(item.barcode || item.upcData ||
+            (item.category === 'yarn' && item.yarnDetails?.sku) ||
+            (item.category === 'hook' && item.hookDetails?.sku) ||
+            (item.category === 'other' && item.otherDetails?.sku)) && (
+            <Card style={styles.detailsCard}>
+              <Text style={styles.sectionTitle}>{t('inventory.productInfo')}</Text>
+
+              {item.barcode && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t('inventory.barcode')}:</Text>
+                  <Text style={styles.detailValue}>{item.barcode}</Text>
+                </View>
+              )}
+
+              {(item.category === 'yarn' && item.yarnDetails?.sku) && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t('inventory.sku')}:</Text>
+                  <Text style={styles.detailValue}>{item.yarnDetails.sku}</Text>
+                </View>
+              )}
+
+              {(item.category === 'hook' && item.hookDetails?.sku) && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t('inventory.sku')}:</Text>
+                  <Text style={styles.detailValue}>{item.hookDetails.sku}</Text>
+                </View>
+              )}
+
+              {(item.category === 'other' && item.otherDetails?.sku) && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t('inventory.sku')}:</Text>
+                  <Text style={styles.detailValue}>{item.otherDetails.sku}</Text>
+                </View>
+              )}
+
+              {item.upcData && (
+                <>
+                  {item.upcData.title && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>{t('inventory.itemName')}:</Text>
+                      <Text style={styles.detailValue}>{item.upcData.title}</Text>
+                    </View>
+                  )}
+                  {item.upcData.brand && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>{t('inventory.brand')}:</Text>
+                      <Text style={styles.detailValue}>{item.upcData.brand}</Text>
+                    </View>
+                  )}
+                  {item.upcData.description && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>{t('common.description')}:</Text>
+                      <Text style={styles.detailValue}>{item.upcData.description}</Text>
+                    </View>
+                  )}
+                </>
+              )}
             </Card>
           )}
 
@@ -549,28 +1077,39 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontSize: 13,
   },
-  minQuantityBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+  reservedBadge: {
     paddingHorizontal: 14,
     paddingVertical: 8,
-    backgroundColor: Colors.warning,
+    backgroundColor: '#FF6B6B',
     borderRadius: 20,
   },
-  minQuantityBadgeLabel: {
+  reservedText: {
     ...Typography.caption,
     color: Colors.white,
     fontWeight: '600',
-    fontSize: 12,
+    fontSize: 13,
   },
-  minQuantityBadgeValue: {
+  reservedCard: {
+    marginBottom: 16,
+    backgroundColor: '#FFF5F5',
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF6B6B',
+  },
+  reservedLabel: {
+    ...Typography.caption,
+    color: Colors.warmGray,
+    marginBottom: 8,
+  },
+  reservedProjectLink: {
     ...Typography.body,
-    color: Colors.white,
-    fontWeight: '700',
-    fontSize: 16,
+    color: Colors.deepTeal,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
   descriptionCard: {
+    marginBottom: 16,
+  },
+  storageCard: {
     marginBottom: 16,
   },
   sectionTitle: {
@@ -716,5 +1255,110 @@ const styles = StyleSheet.create({
     ...Typography.caption,
     color: Colors.warmGray,
     marginBottom: 4,
+  },
+  gaugeTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  gaugeSection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  gaugeSubtitle: {
+    ...Typography.body,
+    color: Colors.deepSage,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  myGaugeTitle: {
+    color: Colors.deepTeal,
+  },
+  careSymbolsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  careSymbolBadge: {
+    backgroundColor: Colors.beige,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  careSymbolText: {
+    ...Typography.caption,
+    color: Colors.charcoal,
+    fontWeight: '500',
+  },
+  careText: {
+    ...Typography.body,
+    color: Colors.warmGray,
+    lineHeight: 22,
+  },
+  characteristicsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  characteristicBadge: {
+    backgroundColor: Colors.deepSage,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  characteristicText: {
+    ...Typography.caption,
+    color: Colors.white,
+    fontWeight: '500',
+  },
+  certificationsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  certificationBadge: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  certificationText: {
+    ...Typography.caption,
+    color: Colors.white,
+    fontWeight: '600',
+  },
+  featureBadge: {
+    backgroundColor: Colors.deepTeal,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  featureText: {
+    ...Typography.caption,
+    color: Colors.white,
+    fontWeight: '500',
+  },
+  productUrlButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: Colors.beige,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.deepTeal,
+  },
+  productUrlText: {
+    ...Typography.body,
+    color: Colors.deepTeal,
+    fontWeight: '600',
   },
 });

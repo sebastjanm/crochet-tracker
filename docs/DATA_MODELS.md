@@ -64,7 +64,6 @@ interface InventoryItem {
 
   // Quantity Management
   quantity: number;                     // Current quantity
-  minQuantity?: number;                 // Threshold for low stock alerts
   unit?: 'piece' | 'skein' | 'ball' | 'meter' | 'gram' | 'set';
 
   // Category-Specific Details
@@ -352,7 +351,6 @@ const yarnItem: Omit<InventoryItem, 'id' | 'dateAdded' | 'lastUpdated'> = {
   description: "Pink, 100g ball",
   images: [imageUri],
   quantity: 5,
-  minQuantity: 2,
   unit: "ball",
   yarnDetails: {
     brand: "Bernat",

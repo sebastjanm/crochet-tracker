@@ -23,7 +23,7 @@ export function useYarnInventory() {
   const yarnByWeight = useMemo(() => {
     const grouped: Record<string, InventoryItem[]> = {};
     yarnItems.forEach(item => {
-      const weight = item.yarnDetails?.weight_category || 'Unknown';
+      const weight = item.yarnDetails?.weightCategory || 'Unknown';
       if (!grouped[weight]) grouped[weight] = [];
       grouped[weight].push(item);
     });
@@ -32,14 +32,14 @@ export function useYarnInventory() {
 
   const totalYarnLength = useMemo(() =>
     yarnItems.reduce((sum, item) =>
-      sum + (item.yarnDetails?.length || 0) * item.quantity, 0
+      sum + (item.yarnDetails?.lengthM || 0) * item.quantity, 0
     ),
     [yarnItems]
   );
 
   const totalYarnWeight = useMemo(() =>
     yarnItems.reduce((sum, item) =>
-      sum + (item.yarnDetails?.ball_weight || 0) * item.quantity, 0
+      sum + (item.yarnDetails?.ballWeightG || 0) * item.quantity, 0
     ),
     [yarnItems]
   );
@@ -76,8 +76,8 @@ export function useHookInventory() {
   const availableSizes = useMemo(() => {
     const sizes = new Set<number>();
     hookItems.forEach(item => {
-      if (item.hookDetails?.sizeMetric) {
-        sizes.add(item.hookDetails.sizeMetric);
+      if (item.hookDetails?.sizeMm) {
+        sizes.add(item.hookDetails.sizeMm);
       }
     });
     return Array.from(sizes).sort((a, b) => a - b);
@@ -124,20 +124,15 @@ export function useInventorySearch() {
 }
 
 export function useInventoryStats() {
-  const { statistics, getLowStockItems } = useInventory();
-  const lowStockItems = getLowStockItems();
-  
-  const needsRestock = lowStockItems.length > 0;
-  
+  const { statistics } = useInventory();
+
   const mostUsedItems = useMemo(() => {
     // This would need lastUsed tracking to be more accurate
     return [];
   }, []);
-  
+
   return {
     ...statistics,
-    lowStockItems,
-    needsRestock,
     mostUsedItems
   };
 }

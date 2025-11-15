@@ -43,12 +43,8 @@ export default function InventoryScreen() {
   ];
 
   const renderItem = ({ item }: { item: InventoryItem }) => {
-    // Get display name based on category
-    const displayName = item.category === 'yarn'
-      ? (item.yarnDetails?.name || 'Untitled')
-      : item.category === 'hook'
-      ? (item.hookDetails?.name || 'Untitled')
-      : (item.otherDetails?.name || 'Untitled');
+    // Get display name from root level
+    const displayName = item.name || 'Untitled';
 
     return (
       <TouchableOpacity
@@ -77,26 +73,26 @@ export default function InventoryScreen() {
               <Text style={styles.itemTitle} numberOfLines={2}>
                 {displayName}
               </Text>
-            {item.yarnDetails?.brand && (
-              <Text style={styles.itemBrand} numberOfLines={1}>
-                {item.yarnDetails.brand}
-              </Text>
-            )}
-            {item.yarnDetails?.fiber && (
-              <Text style={styles.itemComposition} numberOfLines={2}>
-                {item.yarnDetails.fiber}
-              </Text>
-            )}
-            {item.yarnDetails?.color && (
-              <Text style={styles.colorName} numberOfLines={1}>
-                {item.yarnDetails.color}
-              </Text>
-            )}
-            {item.yarnDetails?.ball_weight && item.yarnDetails?.length && (
-              <Text style={styles.itemSpecs}>
-                {item.yarnDetails.ball_weight}g • {item.yarnDetails.length}m
-              </Text>
-            )}
+              {item.yarnDetails?.brand && (
+                <Text style={styles.itemBrand} numberOfLines={1}>
+                  {item.yarnDetails.brand}
+                </Text>
+              )}
+              {item.yarnDetails?.fiber && (
+                <Text style={styles.itemComposition} numberOfLines={2}>
+                  {item.yarnDetails.fiber}
+                </Text>
+              )}
+              {item.yarnDetails?.colorName && (
+                <Text style={styles.colorName} numberOfLines={1}>
+                  {item.yarnDetails.colorName}
+                </Text>
+              )}
+              {(item.yarnDetails?.ballWeightG != null && item.yarnDetails?.lengthM != null) && (
+                <Text style={styles.itemSpecs}>
+                  {item.yarnDetails.ballWeightG}g • {item.yarnDetails.lengthM}m
+                </Text>
+              )}
             </View>
             <View style={styles.itemMeta}>
               <Text style={styles.itemQuantity}>

@@ -1,4 +1,4 @@
-import React, { useState, memo, useCallback } from 'react';
+import React, { useState, memo, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,9 +9,11 @@ import {
   Dimensions,
   Alert,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { X, ImageIcon, Trash2, Plus } from 'lucide-react-native';
+import { GestureHandlerRootView, PinchGestureHandler, State } from 'react-native-gesture-handler';
+import { X, ImageIcon, Trash2, Plus, Crop } from 'lucide-react-native';
 import { useImagePicker } from '@/hooks/useImagePicker';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
@@ -36,7 +38,12 @@ export const ImageGallery = memo(function ImageGallery({
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
   const [loadingImages, setLoadingImages] = useState<Record<number, boolean>>({});
-  const { showImagePickerOptions, isPickingImage } = useImagePicker();
+  const { showImagePickerOptions, isPickingImage, editExistingImage } = useImagePicker();
+
+  // Zoom state for fullscreen images
+  const scale = useRef(new Animated.Value(1)).current;
+  const baseScale = useRef(1);
+  const lastScale = useRef(1);
 
   const handleImageLoad = useCallback((index: number) => {
     setLoadingImages((prev) => {
@@ -76,6 +83,37 @@ export const ImageGallery = memo(function ImageGallery({
       ]
     );
   }, [images, onImagesChange, t]);
+
+  const handleEditImage = useCallback(async (index: number) => {
+    const editedImageUri = await editExistingImage(images[index]);
+    if (editedImageUri) {
+      const updatedImages = [...images];
+      updatedImages[index] = editedImageUri;
+      onImagesChange(updatedImages);
+    }
+  }, [editExistingImage, images, onImagesChange]);
+
+  const onPinchGestureEvent = Animated.event(
+    [{ nativeEvent: { scale: scale } }],
+    { useNativeDriver: true }
+  );
+
+  const onPinchHandlerStateChange = (event: any) => {
+    if (event.nativeEvent.oldState === State.ACTIVE) {
+      lastScale.current *= event.nativeEvent.scale;
+      baseScale.current = lastScale.current;
+      scale.setValue(1);
+    }
+  };
+
+  const resetZoom = useCallback(() => {
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+    lastScale.current = 1;
+    baseScale.current = 1;
+  }, [scale]);
 
 
 
@@ -167,30 +205,58 @@ export const ImageGallery = memo(function ImageGallery({
   const renderFullScreenModal = () => {
     if (selectedImageIndex === null) return null;
 
+    const animatedScale = Animated.multiply(baseScale.current, scale);
+
     return (
       <Modal
         visible={true}
         transparent={true}
         animationType="fade"
-        onRequestClose={() => setSelectedImageIndex(null)}
+        onRequestClose={() => {
+          resetZoom();
+          setSelectedImageIndex(null);
+        }}
       >
-        <View style={styles.fullScreenContainer}>
+        <GestureHandlerRootView style={styles.fullScreenContainer}>
           <TouchableOpacity
             style={styles.closeButton}
-            onPress={() => setSelectedImageIndex(null)}
+            onPress={() => {
+              resetZoom();
+              setSelectedImageIndex(null);
+            }}
           >
             <X size={24} color={Colors.white} />
           </TouchableOpacity>
-          
+
           {editable && (
+            <>
+              <TouchableOpacity
+                style={styles.editButton}
+                onPress={() => handleEditImage(selectedImageIndex)}
+                disabled={isPickingImage}
+              >
+                <Crop size={24} color={Colors.white} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => removeImage(selectedImageIndex)}
+              >
+                <Trash2 size={24} color={Colors.white} />
+              </TouchableOpacity>
+            </>
+          )}
+
+          {/* Reset Zoom Button */}
+          {(lastScale.current !== 1 || baseScale.current !== 1) && (
             <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() => removeImage(selectedImageIndex)}
+              style={styles.resetZoomButton}
+              onPress={resetZoom}
             >
-              <Trash2 size={24} color={Colors.white} />
+              <Text style={styles.resetZoomText}>Reset Zoom</Text>
             </TouchableOpacity>
           )}
-          
+
           <ScrollView
             horizontal
             pagingEnabled
@@ -201,24 +267,40 @@ export const ImageGallery = memo(function ImageGallery({
             snapToAlignment="start"
             decelerationRate="fast"
             contentOffset={{ x: selectedImageIndex * screenWidth, y: 0 }}
+            scrollEnabled={lastScale.current === 1}
             onMomentumScrollEnd={(event) => {
               const newIndex = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
               setSelectedImageIndex(newIndex);
+              resetZoom();
             }}
           >
             {images.map((image, index) => (
               <View key={`${image}-${index}-fullscreen`} style={styles.fullScreenImageContainer}>
-                <Image
-                  source={{ uri: image }}
-                  style={styles.fullScreenImage}
-                  contentFit="contain"
-                  transition={200}
-                  cachePolicy="memory-disk"
-                  priority="high"
-                  onLoadStart={() => handleImageLoadStart(index)}
-                  onLoad={() => handleImageLoad(index)}
-                  onError={() => handleImageLoad(index)}
-                />
+                <PinchGestureHandler
+                  onGestureEvent={onPinchGestureEvent}
+                  onHandlerStateChange={onPinchHandlerStateChange}
+                >
+                  <Animated.View
+                    style={[
+                      styles.zoomableContainer,
+                      {
+                        transform: [{ scale: animatedScale }],
+                      },
+                    ]}
+                  >
+                    <Image
+                      source={{ uri: image }}
+                      style={styles.fullScreenImage}
+                      contentFit="contain"
+                      transition={200}
+                      cachePolicy="memory-disk"
+                      priority="high"
+                      onLoadStart={() => handleImageLoadStart(index)}
+                      onLoad={() => handleImageLoad(index)}
+                      onError={() => handleImageLoad(index)}
+                    />
+                  </Animated.View>
+                </PinchGestureHandler>
                 {loadingImages[index] && (
                   <View style={styles.fullScreenLoadingOverlay}>
                     <ActivityIndicator size="large" color={Colors.white} />
@@ -227,13 +309,13 @@ export const ImageGallery = memo(function ImageGallery({
               </View>
             ))}
           </ScrollView>
-          
+
           <View style={styles.imageCounter}>
             <Text style={styles.imageCounterText}>
               {selectedImageIndex + 1} / {images.length}
             </Text>
           </View>
-        </View>
+        </GestureHandlerRootView>
       </Modal>
     );
   };
@@ -380,6 +462,15 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 8,
   },
+  editButton: {
+    position: 'absolute',
+    top: 50,
+    right: 80,
+    zIndex: 10,
+    backgroundColor: Colors.deepTeal,
+    borderRadius: 20,
+    padding: 8,
+  },
   deleteButton: {
     position: 'absolute',
     top: 50,
@@ -395,9 +486,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  zoomableContainer: {
+    width: screenWidth,
+    height: screenHeight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   fullScreenImage: {
     width: screenWidth,
-    height: screenWidth,
+    height: screenHeight - 150, // Full height minus controls
+  },
+  resetZoomButton: {
+    position: 'absolute',
+    top: 50,
+    left: 80,
+    zIndex: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  resetZoomText: {
+    color: Colors.white,
+    fontSize: 14,
+    fontWeight: '600',
   },
   imageCounter: {
     position: 'absolute',

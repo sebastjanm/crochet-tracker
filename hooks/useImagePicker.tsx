@@ -8,7 +8,7 @@ export const useImagePicker = () => {
   const pickImagesFromGallery = async (): Promise<string[]> => {
     try {
       setIsPickingImage(true);
-      
+
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission needed', 'Please grant permission to access your photos');
@@ -18,6 +18,7 @@ export const useImagePicker = () => {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsMultipleSelection: true,
+        allowsEditing: false, // Editing disabled for multi-select
         quality: 0.8,
         base64: false,
       });
@@ -38,7 +39,7 @@ export const useImagePicker = () => {
   const takePhotoWithCamera = async (): Promise<string | null> => {
     try {
       setIsPickingImage(true);
-      
+
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission needed', 'Please grant permission to use the camera');
@@ -46,6 +47,8 @@ export const useImagePicker = () => {
       }
 
       const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true, // Allow cropping after taking photo
+        aspect: [4, 3],
         quality: 0.8,
         base64: false,
       });
@@ -57,6 +60,39 @@ export const useImagePicker = () => {
     } catch (error) {
       console.error('Error taking photo:', error);
       Alert.alert('Error', 'Failed to take photo');
+      return null;
+    } finally {
+      setIsPickingImage(false);
+    }
+  };
+
+  const editExistingImage = async (imageUri: string): Promise<string | null> => {
+    try {
+      setIsPickingImage(true);
+
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Please grant permission to access your photos');
+        return null;
+      }
+
+      // Use launchImageLibraryAsync with editing enabled to crop existing image
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: false,
+        allowsEditing: true, // Enable cropping/editing
+        aspect: [4, 3],
+        quality: 0.8,
+        base64: false,
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        return result.assets[0].uri;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error editing image:', error);
+      Alert.alert('Error', 'Failed to edit image');
       return null;
     } finally {
       setIsPickingImage(false);
@@ -97,6 +133,7 @@ export const useImagePicker = () => {
     isPickingImage,
     pickImagesFromGallery,
     takePhotoWithCamera,
-    showImagePickerOptions
+    showImagePickerOptions,
+    editExistingImage
   };
 };

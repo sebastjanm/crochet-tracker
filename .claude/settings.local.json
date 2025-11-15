@@ -42,7 +42,17 @@
       "Bash(bun remove:*)",
       "Bash(tail:*)",
       "Bash(git commit:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(pkill:*)",
+      "Bash(bunx expo doctor:*)",
+      "Bash(for key in itemNotFound deleteItem ballSpecs totalSpecs recommendedHook weightCategory handleType itemDetails sizeConversions purchaseInfo purchaseDate price store usedInProjects dateAdded lastUpdated lastUsed setSize type location editItem)",
+      "Bash(do)",
+      "Bash(if grep -q \"$key:\" /Users/sebastjanm/dev/crochet-tracker/translations/en.ts)",
+      "Bash(then)",
+      "Bash(echo:*)",
+      "Bash(else)",
+      "Bash(fi)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

@@ -58,10 +58,10 @@ bunx expo doctor          # Expo project health
 Runtime: Node.js 22+ LTS
 Package Manager: Bun 1.3+ (PRIMARY - NOT npm, NOT pnpm)
 Framework: React Native 0.81.4
-Platform: Expo SDK 54.0.13 (managed workflow)
+Platform: Expo SDK ~54.0.0 (managed workflow)
 Library: React 19.1.0 (latest with new features)
-Language: TypeScript 5.9.3 (strict mode)
-Navigation: Expo Router 6.0.12 (file-based, major v6 changes)
+Language: TypeScript ~5.9.2 (strict mode)
+Navigation: Expo Router ~6.0.12 (file-based, major v6 changes)
 ```
 
 **Why Bun?**
@@ -74,65 +74,68 @@ Navigation: Expo Router 6.0.12 (file-based, major v6 changes)
 
 ```yaml
 Local State: useState, useReducer
-Global State: Zustand 5.0.8 (lightweight, <1KB)
+Global State: Zustand ^5.0.2 (lightweight, <1KB)
 Context: React Context API (auth, projects, inventory, language)
-Context Helper: @nkzw/create-context-hook
-Server State: @tanstack/react-query 5.90.5 (for Supabase data)
+Context Helper: @nkzw/create-context-hook ^1.1.0
+Server State: @tanstack/react-query ^5.83.0 (for Supabase data)
 Backend: Supabase (PostgreSQL, Auth, Storage)
-Supabase Client: @supabase/supabase-js 2.75.1
+Supabase Client: @supabase/supabase-js ^2.75.1
 Session Storage: @react-native-async-storage/async-storage 2.2.0
-Internationalization: i18n-js 4.5.1
+Internationalization: i18n-js ^4.5.1
 ```
 
 ### UI, Styling & Media
 
 ```yaml
 Styling: React Native StyleSheet API (PRIMARY)
-         NativeWind 4.2.1 (Tailwind for RN - optional)
+         NativeWind ^4.1.23 (Tailwind for RN - optional)
 Icons: lucide-react-native 0.546.0 (React 19 compatible)
-Vector Icons: @expo/vector-icons 15.0.2
-SF Symbols: expo-symbols 1.0.7 (iOS)
-Images: expo-image 3.0.9 (optimized, cached)
-Camera: expo-camera 17.0.8
-Image Picker: expo-image-picker 17.0.8
-Audio: expo-audio 1.0.13 (NEW - replaces deprecated expo-av)
-Video: expo-av 16.0.7 (legacy for video only)
-Gestures: react-native-gesture-handler 2.28.0
-Safe Areas: react-native-safe-area-context 5.6.1
+Vector Icons: @expo/vector-icons ^15.0.2
+SF Symbols: expo-symbols ~1.0.7 (iOS)
+Images: expo-image ~3.0.9 (optimized, cached)
+Camera: expo-camera ~17.0.8
+Image Picker: expo-image-picker ~17.0.8
+Audio: expo-audio ^1.0.13 (NEW - replaces deprecated expo-av)
+Video: expo-av (legacy for video only)
+Gestures: react-native-gesture-handler ~2.28.0
+Safe Areas: react-native-safe-area-context ~5.6.0
 SVG: react-native-svg 15.12.1
-Gradients: expo-linear-gradient 15.0.7
-Blur: expo-blur 15.0.7
+Gradients: expo-linear-gradient ~15.0.7
+Blur: expo-blur ~15.0.7
 ```
 
 ### Device Features
 
 ```yaml
-Location: expo-location 19.0.7
-Haptics: expo-haptics 15.0.7
-Web Browser: expo-web-browser 15.0.8
-Linking: expo-linking 8.0.8
-Status Bar: expo-status-bar 3.0.8
-System UI: expo-system-ui 6.0.7
-Splash Screen: expo-splash-screen 31.0.10
-Constants: expo-constants 18.0.9
-Fonts: expo-font 14.0.9
+Location: expo-location ~19.0.7
+Haptics: expo-haptics ~15.0.7
+Web Browser: expo-web-browser ~15.0.8
+Linking: expo-linking ~8.0.8
+Status Bar: expo-status-bar ~3.0.8
+System UI: expo-system-ui ~6.0.7
+Splash Screen: expo-splash-screen ~31.0.10
+Constants: expo-constants ~18.0.9
+Fonts: expo-font ~14.0.9
+Navigation Bar: expo-navigation-bar ~5.0.8 (Android)
 ```
 
 ### AI & External Services
 
 ```yaml
-AI: @google/genai 1.25.0 (Google Generative AI)
+AI: @google/genai ^1.19.0 (Google Generative AI)
 Platform: Rork integration for development workflow
 ```
 
 ### Development Tools
 
 ```yaml
-Linting: ESLint 9.38.0 + eslint-config-expo 10.0.0
+Linting: ESLint ^9.31.0 + eslint-config-expo ~10.0.0
 Bundler: Metro (included with Expo)
 Build: EAS Build (when ready for deployment)
 Updates: EAS Update (over-the-air updates)
-Tunnel: @expo/ngrok 4.1.3 (development)
+Tunnel: @expo/ngrok ^4.1.0 (development)
+TypeScript: ~5.9.2 (strict mode)
+Babel: @babel/core ^7.25.2
 ```
 
 ---
@@ -1487,3 +1490,5 @@ chore: upgrade to Expo SDK 54
 ---
 
 **This document is enforced. No exceptions. Quality over speed.**
+
+

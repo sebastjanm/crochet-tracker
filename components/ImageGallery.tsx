@@ -34,6 +34,7 @@ export function ImageGallery({
 }: ImageGalleryProps) {
   const { t } = useLanguage();
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
+  const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
   const [loadingImages, setLoadingImages] = useState<Record<number, boolean>>({});
   const { showImagePickerOptions, isPickingImage } = useImagePicker();
 
@@ -74,43 +75,80 @@ export function ImageGallery({
 
 
 
-  const renderGalleryGrid = () => {
-    const itemsPerRow = 3;
-    const imageSize = (screenWidth - 48 - (itemsPerRow - 1) * 8) / itemsPerRow;
+  const renderCarousel = () => {
+    const carouselHeight = screenWidth * 0.8; // 80% of screen width for aspect ratio
 
     return (
-      <View style={styles.galleryGrid}>
-        {images.map((image, index) => (
+      <View style={styles.carouselContainer}>
+        {/* Horizontal scrollable carousel */}
+        <ScrollView
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          decelerationRate="fast"
+          style={[styles.carouselWrapper, { height: carouselHeight }]}
+          onMomentumScrollEnd={(event) => {
+            const newIndex = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
+            setCurrentCarouselIndex(newIndex);
+          }}
+          scrollEventThrottle={16}
+        >
+          {images.map((image, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[styles.carouselItem, { width: screenWidth, height: carouselHeight }]}
+              onPress={() => setSelectedImageIndex(index)}
+              activeOpacity={0.9}
+            >
+              <Image
+                source={{ uri: image }}
+                style={styles.carouselImage}
+                onLoadStart={() => handleImageLoadStart(index)}
+                onLoad={() => handleImageLoad(index)}
+                onError={() => handleImageLoad(index)}
+              />
+              {loadingImages[index] && (
+                <View style={styles.loadingOverlay}>
+                  <ActivityIndicator size="large" color={Colors.deepTeal} />
+                </View>
+              )}
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {/* Overlay wrapper for floating controls */}
+        <View style={styles.controlsOverlay} pointerEvents="box-none">
+
+        {/* Floating delete button - top right */}
+        {editable && images.length > 0 && (
           <TouchableOpacity
-            key={index}
-            style={[styles.galleryItem, { width: imageSize, height: imageSize }]}
-            onPress={() => setSelectedImageIndex(index)}
+            style={styles.floatingDeleteButton}
+            onPress={() => removeImage(currentCarouselIndex)}
           >
-            <Image
-              source={{ uri: image }}
-              style={styles.galleryImage}
-              onLoadStart={() => handleImageLoadStart(index)}
-              onLoad={() => handleImageLoad(index)}
-              onError={() => handleImageLoad(index)}
-            />
-            {loadingImages[index] && (
-              <View style={styles.loadingOverlay}>
-                <ActivityIndicator size="small" color={Colors.teal} />
-              </View>
-            )}
+            <Trash2 size={20} color={Colors.white} />
           </TouchableOpacity>
-        ))}
-        
+        )}
+
+        {/* Floating add button - bottom right */}
         {editable && images.length < maxImages && (
           <TouchableOpacity
-            style={[styles.addImageButton, { width: imageSize, height: imageSize }]}
+            style={styles.floatingAddButton}
             onPress={handleAddImages}
             disabled={isPickingImage}
           >
-            <Plus size={24} color={Colors.warmGray} />
-            <Text style={styles.addImageText}>Add</Text>
+            <Plus size={24} color={Colors.white} />
           </TouchableOpacity>
         )}
+
+        {/* Image counter badge - bottom center */}
+        {images.length > 1 && (
+          <View style={styles.carouselCounter}>
+            <Text style={styles.carouselCounterText}>
+              {currentCarouselIndex + 1} / {images.length}
+            </Text>
+          </View>
+        )}
+        </View>
       </View>
     );
   };
@@ -184,7 +222,7 @@ export function ImageGallery({
 
   return (
     <View style={styles.container}>
-      {images.length > 0 ? renderGalleryGrid() : (
+      {images.length > 0 ? renderCarousel() : (
         editable && (
           <TouchableOpacity style={styles.emptyGallery} onPress={handleAddImages} disabled={isPickingImage}>
             <ImageIcon size={48} color={Colors.warmGray} />
@@ -193,7 +231,7 @@ export function ImageGallery({
           </TouchableOpacity>
         )
       )}
-      
+
       {renderFullScreenModal()}
     </View>
   );
@@ -203,16 +241,28 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  galleryGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+  carouselContainer: {
+    width: '100%',
+    position: 'relative',
   },
-  galleryItem: {
-    borderRadius: 12,
+  carouselWrapper: {
+    backgroundColor: Colors.beige,
+    borderRadius: 16,
     overflow: 'hidden',
   },
-  galleryImage: {
+  carouselItem: {
+    backgroundColor: Colors.beige,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  controlsOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  carouselImage: {
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
@@ -227,19 +277,54 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  addImageButton: {
-    backgroundColor: Colors.white,
-    borderWidth: 2,
-    borderColor: Colors.border,
-    borderStyle: 'dashed',
-    borderRadius: 12,
+  floatingDeleteButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: 'rgba(220, 38, 38, 0.9)',
+    borderRadius: 22,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
   },
-  addImageText: {
+  floatingAddButton: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+    backgroundColor: Colors.deepTeal,
+    borderRadius: 28,
+    width: 56,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  carouselCounter: {
+    position: 'absolute',
+    bottom: 12,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    pointerEvents: 'none',
+  },
+  carouselCounterText: {
     ...Typography.caption,
-    color: Colors.warmGray,
-    marginTop: 4,
+    color: Colors.white,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    fontWeight: '600' as const,
   },
   emptyGallery: {
     backgroundColor: Colors.white,

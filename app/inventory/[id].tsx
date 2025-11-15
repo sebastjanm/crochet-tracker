@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,8 @@ import {
   Layers,
   Ruler,
   ExternalLink,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react-native';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
@@ -30,12 +32,23 @@ import { useLanguage } from '@/hooks/language-context';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 
+// Helper function to format Date to EU format (DD.MM.YYYY)
+function formatEUDate(date: Date): string {
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}.${month}.${year}`;
+}
+
 export default function InventoryDetailScreen() {
   const { id } = useLocalSearchParams();
   const { getItemById, deleteItem, updateItem } = useInventory();
   const { projects } = useProjects();
   const { t } = useLanguage();
   const item = getItemById(id as string);
+
+  const [showAllProjects, setShowAllProjects] = useState(false);
+  const MAX_PROJECTS_PREVIEW = 3;
 
   if (!item) {
     return (
@@ -66,6 +79,13 @@ export default function InventoryDetailScreen() {
   const relatedProjects = item.usedInProjects
     ? projects.filter(p => item.usedInProjects?.includes(p.id))
     : [];
+
+  // Projects to display (limited or all)
+  const displayedProjects = showAllProjects
+    ? relatedProjects
+    : relatedProjects.slice(0, MAX_PROJECTS_PREVIEW);
+
+  const hasMoreProjects = relatedProjects.length > MAX_PROJECTS_PREVIEW;
 
   const handleDelete = () => {
     Alert.alert(
@@ -142,37 +162,69 @@ export default function InventoryDetailScreen() {
 
             {/* Quantity Badge - Inline */}
             <View style={styles.quantityBadge}>
-              <Text style={styles.quantityBadgeLabel}>{t('inventory.quantity')}:</Text>
+              <Text style={styles.quantityBadgeLabel}>{t('inventory.quantity')}</Text>
               <Text style={styles.quantityBadgeValue}>{item.quantity}</Text>
-              {item.unit && (
-                <Text style={styles.quantityBadgeUnit}>{item.unit}</Text>
-              )}
             </View>
 
-            {/* Reserved Status Badge */}
-            {item.reserved && (
-              <View style={styles.reservedBadge}>
-                <Text style={styles.reservedText}>{t('inventory.reserved')}</Text>
+            {/* Used in Projects Badge */}
+            {relatedProjects.length > 0 && (
+              <View style={styles.usedInProjectsBadge}>
+                <Text style={styles.usedInProjectsText}>
+                  {t('projects.projects')}: {relatedProjects.length}
+                </Text>
               </View>
             )}
           </View>
 
-          {/* Reserved for Project - Show which project */}
-          {item.reserved && item.reservedForProject && (
-            <Card style={styles.reservedCard}>
-              <Text style={styles.reservedLabel}>{t('inventory.reservedFor')}:</Text>
-              <TouchableOpacity
-                onPress={() => router.push(`/project/${item.reservedForProject}`)}
-                activeOpacity={0.7}
-                accessible={true}
-                accessibilityRole="button"
-                accessibilityLabel={t('inventory.reservedFor')}
-                accessibilityHint="View project details"
-              >
-                <Text style={styles.reservedProjectLink}>
-                  {projects.find(p => p.id === item.reservedForProject)?.title || item.reservedForProject}
-                </Text>
-              </TouchableOpacity>
+          {/* Used in Projects - Show connected projects */}
+          {relatedProjects.length > 0 && (
+            <Card style={styles.usedInProjectsCard}>
+              <View style={styles.projectsHeader}>
+                <Layers size={20} color={Colors.deepSage} />
+                <Text style={styles.sectionTitle}>{t('inventory.usedInProjects')}</Text>
+              </View>
+              {displayedProjects.map((project) => (
+                <TouchableOpacity
+                  key={project.id}
+                  style={styles.projectItem}
+                  onPress={() => router.push(`/project/${project.id}`)}
+                  activeOpacity={0.7}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel={project.title}
+                  accessibilityHint="View project details"
+                >
+                  <Text style={styles.projectTitle}>{project.title}</Text>
+                  <Text style={styles.projectStatus}>
+                    {project.status === 'completed' ? '✓' : '○'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+
+              {/* Show All / Show Less Button */}
+              {hasMoreProjects && (
+                <TouchableOpacity
+                  style={styles.showMoreButton}
+                  onPress={() => setShowAllProjects(!showAllProjects)}
+                  activeOpacity={0.7}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel={showAllProjects ? t('inventory.showLess') : t('inventory.showAllProjects')}
+                  accessibilityHint={showAllProjects ? 'Collapse to show fewer projects' : `Show all ${relatedProjects.length} projects`}
+                >
+                  {showAllProjects ? (
+                    <ChevronUp size={18} color={Colors.deepSage} />
+                  ) : (
+                    <ChevronDown size={18} color={Colors.deepSage} />
+                  )}
+                  <Text style={styles.showMoreText}>
+                    {showAllProjects
+                      ? t('inventory.showLess')
+                      : t('inventory.showAllProjects', { count: relatedProjects.length })
+                    }
+                  </Text>
+                </TouchableOpacity>
+              )}
             </Card>
           )}
 
@@ -183,49 +235,49 @@ export default function InventoryDetailScreen() {
 
               {item.yarnDetails.brand && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.brand')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.brand')}</Text>
                   <Text style={styles.detailValue}>{item.yarnDetails.brand}</Text>
                 </View>
               )}
 
               {item.yarnDetails.line && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.productLine')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.productLine')}</Text>
                   <Text style={styles.detailValue}>{item.yarnDetails.line}</Text>
                 </View>
               )}
 
               {item.yarnDetails.fiber && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.fiber')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.fiber')}</Text>
                   <Text style={styles.detailValue}>{item.yarnDetails.fiber}</Text>
                 </View>
               )}
 
               {item.yarnDetails.colorName && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.color')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.color')}</Text>
                   <Text style={styles.detailValue}>{item.yarnDetails.colorName}</Text>
                 </View>
               )}
 
               {item.yarnDetails.colorCode && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.colorCode')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.colorCode')}</Text>
                   <Text style={styles.detailValue}>{item.yarnDetails.colorCode}</Text>
                 </View>
               )}
 
               {item.yarnDetails.weightCategory && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.weightCategory')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.weightCategory')}</Text>
                   <Text style={styles.detailValue}>{item.yarnDetails.weightCategory}</Text>
                 </View>
               )}
 
               {(item.yarnDetails.ballWeightG || item.yarnDetails.lengthM || item.yarnDetails.ballWeightOz || item.yarnDetails.lengthYd) && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.ballSpecs')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.ballSpecs')}</Text>
                   <Text style={styles.detailValue}>
                     {item.yarnDetails.ballWeightG && `${item.yarnDetails.ballWeightG}g`}
                     {item.yarnDetails.ballWeightOz && ` (${item.yarnDetails.ballWeightOz}oz)`}
@@ -236,29 +288,16 @@ export default function InventoryDetailScreen() {
                 </View>
               )}
 
-              {(item.yarnDetails.ballWeightG || item.yarnDetails.lengthM || item.yarnDetails.ballWeightOz || item.yarnDetails.lengthYd) && (
-                <View style={[styles.detailRow, styles.highlightRow]}>
-                  <Text style={styles.detailLabel}>{t('inventory.totalSpecs')}:</Text>
-                  <Text style={[styles.detailValue, styles.highlightValue]}>
-                    {item.yarnDetails.ballWeightG && `${item.yarnDetails.ballWeightG * item.quantity}g`}
-                    {item.yarnDetails.ballWeightOz && ` (${(item.yarnDetails.ballWeightOz * item.quantity).toFixed(2)}oz)`}
-                    {((item.yarnDetails.ballWeightG || item.yarnDetails.ballWeightOz) && (item.yarnDetails.lengthM || item.yarnDetails.lengthYd)) ? ' • ' : ''}
-                    {item.yarnDetails.lengthM && `${item.yarnDetails.lengthM * item.quantity}m`}
-                    {item.yarnDetails.lengthYd && ` (${item.yarnDetails.lengthYd * item.quantity}yd)`}
-                  </Text>
-                </View>
-              )}
-
               {item.yarnDetails.hookSizeMm && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.recommendedHook')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.recommendedHook')}</Text>
                   <Text style={styles.detailValue}>{item.yarnDetails.hookSizeMm}</Text>
                 </View>
               )}
 
               {(item.yarnDetails.needleSizeMm || item.yarnDetails.needleSizeUs) && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.recommendedNeedles')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.recommendedNeedles')}</Text>
                   <Text style={styles.detailValue}>
                     {item.yarnDetails.needleSizeMm && `${item.yarnDetails.needleSizeMm}mm`}
                     {(item.yarnDetails.needleSizeMm && item.yarnDetails.needleSizeUs) ? ' / ' : ''}
@@ -284,7 +323,7 @@ export default function InventoryDetailScreen() {
 
                   {(item.yarnDetails.gauge.stitches || item.yarnDetails.gauge.rows) && (
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>{t('inventory.stitches')} × {t('inventory.rows')}:</Text>
+                      <Text style={styles.detailLabel}>{t('inventory.stitches')} × {t('inventory.rows')}</Text>
                       <Text style={styles.detailValue}>
                         {item.yarnDetails.gauge.stitches || '?'} × {item.yarnDetails.gauge.rows || '?'}
                       </Text>
@@ -293,28 +332,28 @@ export default function InventoryDetailScreen() {
 
                   {item.yarnDetails.gauge.sizeCm && (
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>{t('inventory.gaugeSize')}:</Text>
+                      <Text style={styles.detailLabel}>{t('inventory.gaugeSize')}</Text>
                       <Text style={styles.detailValue}>{item.yarnDetails.gauge.sizeCm}</Text>
                     </View>
                   )}
 
                   {item.yarnDetails.gauge.tool && (
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>{t('inventory.gaugeTool')}:</Text>
+                      <Text style={styles.detailLabel}>{t('inventory.gaugeTool')}</Text>
                       <Text style={styles.detailValue}>{item.yarnDetails.gauge.tool}</Text>
                     </View>
                   )}
 
                   {item.yarnDetails.gauge.pattern && (
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>{t('inventory.gaugePattern')}:</Text>
+                      <Text style={styles.detailLabel}>{t('inventory.gaugePattern')}</Text>
                       <Text style={styles.detailValue}>{item.yarnDetails.gauge.pattern}</Text>
                     </View>
                   )}
 
                   {item.yarnDetails.gauge.notes && (
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>{t('common.notes')}:</Text>
+                      <Text style={styles.detailLabel}>{t('common.notes')}</Text>
                       <Text style={styles.detailValue}>{item.yarnDetails.gauge.notes}</Text>
                     </View>
                   )}
@@ -328,7 +367,7 @@ export default function InventoryDetailScreen() {
 
                   {(item.yarnDetails.myGauge.stitches || item.yarnDetails.myGauge.rows) && (
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>{t('inventory.stitches')} × {t('inventory.rows')}:</Text>
+                      <Text style={styles.detailLabel}>{t('inventory.stitches')} × {t('inventory.rows')}</Text>
                       <Text style={styles.detailValue}>
                         {item.yarnDetails.myGauge.stitches || '?'} × {item.yarnDetails.myGauge.rows || '?'}
                       </Text>
@@ -337,28 +376,28 @@ export default function InventoryDetailScreen() {
 
                   {item.yarnDetails.myGauge.sizeCm && (
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>{t('inventory.gaugeSize')}:</Text>
+                      <Text style={styles.detailLabel}>{t('inventory.gaugeSize')}</Text>
                       <Text style={styles.detailValue}>{item.yarnDetails.myGauge.sizeCm}</Text>
                     </View>
                   )}
 
                   {item.yarnDetails.myGauge.tool && (
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>{t('inventory.gaugeTool')}:</Text>
+                      <Text style={styles.detailLabel}>{t('inventory.gaugeTool')}</Text>
                       <Text style={styles.detailValue}>{item.yarnDetails.myGauge.tool}</Text>
                     </View>
                   )}
 
                   {item.yarnDetails.myGauge.pattern && (
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>{t('inventory.gaugePattern')}:</Text>
+                      <Text style={styles.detailLabel}>{t('inventory.gaugePattern')}</Text>
                       <Text style={styles.detailValue}>{item.yarnDetails.myGauge.pattern}</Text>
                     </View>
                   )}
 
                   {item.yarnDetails.myGauge.notes && (
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>{t('common.notes')}:</Text>
+                      <Text style={styles.detailLabel}>{t('common.notes')}</Text>
                       <Text style={styles.detailValue}>{item.yarnDetails.myGauge.notes}</Text>
                     </View>
                   )}
@@ -419,28 +458,28 @@ export default function InventoryDetailScreen() {
               {/* Text characteristics */}
               {item.yarnDetails.texture && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.texture')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.texture')}</Text>
                   <Text style={styles.detailValue}>{item.yarnDetails.texture}</Text>
                 </View>
               )}
 
               {item.yarnDetails.sheen && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.sheen')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.sheen')}</Text>
                   <Text style={styles.detailValue}>{item.yarnDetails.sheen}</Text>
                 </View>
               )}
 
               {item.yarnDetails.colorFamily && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.colorFamily')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.colorFamily')}</Text>
                   <Text style={styles.detailValue}>{item.yarnDetails.colorFamily}</Text>
                 </View>
               )}
 
               {item.yarnDetails.recommendedFor && item.yarnDetails.recommendedFor.length > 0 && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.recommendedFor')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.recommendedFor')}</Text>
                   <Text style={styles.detailValue}>{item.yarnDetails.recommendedFor.join(', ')}</Text>
                 </View>
               )}
@@ -464,7 +503,7 @@ export default function InventoryDetailScreen() {
 
               {item.yarnDetails.certificateDetails && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.certificateDetails')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.certificateDetails')}</Text>
                   <Text style={styles.detailValue}>{item.yarnDetails.certificateDetails}</Text>
                 </View>
               )}
@@ -478,28 +517,28 @@ export default function InventoryDetailScreen() {
 
               {item.hookDetails.brand && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.brand')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.brand')}</Text>
                   <Text style={styles.detailValue}>{item.hookDetails.brand}</Text>
                 </View>
               )}
 
               {item.hookDetails.line && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.productLine')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.productLine')}</Text>
                   <Text style={styles.detailValue}>{item.hookDetails.line}</Text>
                 </View>
               )}
 
               {item.hookDetails.size && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.size')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.size')}</Text>
                   <Text style={styles.detailValue}>{item.hookDetails.size}</Text>
                 </View>
               )}
 
               {(item.hookDetails.sizeMm || item.hookDetails.sizeUs || item.hookDetails.sizeUk) && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.sizeConversions')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.sizeConversions')}</Text>
                   <Text style={styles.detailValue}>
                     {item.hookDetails.sizeMm && `${item.hookDetails.sizeMm}mm`}
                     {item.hookDetails.sizeUs ? ` / US ${item.hookDetails.sizeUs}` : ''}
@@ -510,14 +549,14 @@ export default function InventoryDetailScreen() {
 
               {item.hookDetails.material && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.material')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.material')}</Text>
                   <Text style={styles.detailValue}>{item.hookDetails.material}</Text>
                 </View>
               )}
 
               {item.hookDetails.handleType && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.handleType')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.handleType')}</Text>
                   <Text style={styles.detailValue}>{item.hookDetails.handleType}</Text>
                 </View>
               )}
@@ -525,7 +564,7 @@ export default function InventoryDetailScreen() {
               {/* Dimensions */}
               {(item.hookDetails.lengthCm || item.hookDetails.lengthIn) && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.hookLength')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.hookLength')}</Text>
                   <Text style={styles.detailValue}>
                     {item.hookDetails.lengthCm && `${item.hookDetails.lengthCm}cm`}
                     {(item.hookDetails.lengthCm && item.hookDetails.lengthIn) ? ' / ' : ''}
@@ -537,7 +576,7 @@ export default function InventoryDetailScreen() {
               {/* Technical Details */}
               {item.hookDetails.shaftType && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.shaftType')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.shaftType')}</Text>
                   <Text style={styles.detailValue}>
                     {item.hookDetails.shaftType === 'inline' ? t('inventory.inline') :
                      item.hookDetails.shaftType === 'tapered' ? t('inventory.tapered') :
@@ -587,7 +626,7 @@ export default function InventoryDetailScreen() {
               {/* Recommended yarn weights */}
               {item.hookDetails.recommendedYarnWeights && item.hookDetails.recommendedYarnWeights.length > 0 && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.recommendedYarnWeights')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.recommendedYarnWeights')}</Text>
                   <Text style={styles.detailValue}>{item.hookDetails.recommendedYarnWeights.join(', ')}</Text>
                 </View>
               )}
@@ -595,7 +634,7 @@ export default function InventoryDetailScreen() {
               {/* Best for */}
               {item.hookDetails.bestFor && item.hookDetails.bestFor.length > 0 && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.bestFor')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.bestFor')}</Text>
                   <Text style={styles.detailValue}>{item.hookDetails.bestFor.join(', ')}</Text>
                 </View>
               )}
@@ -619,14 +658,14 @@ export default function InventoryDetailScreen() {
 
               {item.hookDetails.country && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.country')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.country')}</Text>
                   <Text style={styles.detailValue}>{item.hookDetails.country}</Text>
                 </View>
               )}
 
               {item.hookDetails.warranty && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.warranty')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.warranty')}</Text>
                   <Text style={styles.detailValue}>{item.hookDetails.warranty}</Text>
                 </View>
               )}
@@ -640,63 +679,63 @@ export default function InventoryDetailScreen() {
 
               {item.otherDetails.type && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.type')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.type')}</Text>
                   <Text style={styles.detailValue}>{item.otherDetails.type}</Text>
                 </View>
               )}
 
               {item.otherDetails.brand && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.brand')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.brand')}</Text>
                   <Text style={styles.detailValue}>{item.otherDetails.brand}</Text>
                 </View>
               )}
 
               {item.otherDetails.material && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.material')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.material')}</Text>
                   <Text style={styles.detailValue}>{item.otherDetails.material}</Text>
                 </View>
               )}
 
               {item.otherDetails.size && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.size')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.size')}</Text>
                   <Text style={styles.detailValue}>{item.otherDetails.size}</Text>
                 </View>
               )}
 
               {item.otherDetails.setSize && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.setSize')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.setSize')}</Text>
                   <Text style={styles.detailValue}>{item.otherDetails.setSize}</Text>
                 </View>
               )}
 
               {item.otherDetails.color && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.color')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.color')}</Text>
                   <Text style={styles.detailValue}>{item.otherDetails.color}</Text>
                 </View>
               )}
 
               {item.otherDetails.dimensions && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.dimensions')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.dimensions')}</Text>
                   <Text style={styles.detailValue}>{item.otherDetails.dimensions}</Text>
                 </View>
               )}
 
               {item.otherDetails.weight && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.weight')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.weight')}</Text>
                   <Text style={styles.detailValue}>{item.otherDetails.weight}</Text>
                 </View>
               )}
 
               {item.otherDetails.model && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.model')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.model')}</Text>
                   <Text style={styles.detailValue}>{item.otherDetails.model}</Text>
                 </View>
               )}
@@ -721,14 +760,14 @@ export default function InventoryDetailScreen() {
 
               {item.otherDetails.compatibleWith && item.otherDetails.compatibleWith.length > 0 && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.compatibleWith')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.compatibleWith')}</Text>
                   <Text style={styles.detailValue}>{item.otherDetails.compatibleWith.join(', ')}</Text>
                 </View>
               )}
 
               {item.otherDetails.bestFor && item.otherDetails.bestFor.length > 0 && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.bestFor')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.bestFor')}</Text>
                   <Text style={styles.detailValue}>{item.otherDetails.bestFor.join(', ')}</Text>
                 </View>
               )}
@@ -750,7 +789,7 @@ export default function InventoryDetailScreen() {
             <Card style={styles.storageCard}>
               <Text style={styles.sectionTitle}>{t('inventory.storageSection')}</Text>
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>{t('inventory.storageLocation')}:</Text>
+                <Text style={styles.detailLabel}>{t('inventory.storageLocation')}</Text>
                 <Text style={styles.detailValue}>
                   {item.category === 'yarn' && item.yarnDetails?.storageLocation}
                   {item.category === 'hook' && item.hookDetails?.storageLocation}
@@ -791,33 +830,6 @@ export default function InventoryDetailScreen() {
             </Card>
           )}
 
-          {/* Projects using this item */}
-          {relatedProjects.length > 0 && (
-            <Card style={styles.projectsCard}>
-              <View style={styles.projectsHeader}>
-                <Layers size={20} color={Colors.deepSage} />
-                <Text style={styles.sectionTitle}>{t('inventory.usedInProjects')}</Text>
-              </View>
-              {relatedProjects.map((project) => (
-                <TouchableOpacity
-                  key={project.id}
-                  style={styles.projectItem}
-                  onPress={() => router.push(`/project/${project.id}`)}
-                  activeOpacity={0.7}
-                  accessible={true}
-                  accessibilityRole="button"
-                  accessibilityLabel={project.title}
-                  accessibilityHint="View project details"
-                >
-                  <Text style={styles.projectTitle}>{project.title}</Text>
-                  <Text style={styles.projectStatus}>
-                    {project.status === 'completed' ? '✓' : '○'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </Card>
-          )}
-
           {/* Purchase Information - Consistent across all categories */}
           {(item.yarnDetails?.purchaseDate || item.yarnDetails?.purchasePrice ||
             item.yarnDetails?.store || item.hookDetails?.purchaseDate ||
@@ -831,7 +843,7 @@ export default function InventoryDetailScreen() {
               {/* Store */}
               {(item.yarnDetails?.store || item.hookDetails?.store || item.otherDetails?.store) && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.store')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.store')}</Text>
                   <Text style={styles.detailValue}>
                     {item.yarnDetails?.store ||
                      item.hookDetails?.store ||
@@ -843,12 +855,14 @@ export default function InventoryDetailScreen() {
               {/* Purchase Date */}
               {(item.yarnDetails?.purchaseDate || item.hookDetails?.purchaseDate || item.otherDetails?.purchaseDate) && (
                 <View style={styles.detailRow}>
-                  <Calendar size={16} color={Colors.warmGray} />
-                  <Text style={styles.detailLabel}>{t('inventory.purchaseDate')}:</Text>
+                  <View style={styles.labelWithIcon}>
+                    <Calendar size={16} color={Colors.warmGray} />
+                    <Text style={styles.detailLabel}>{t('inventory.purchaseDate')}</Text>
+                  </View>
                   <Text style={styles.detailValue}>
-                    {item.yarnDetails?.purchaseDate && new Date(item.yarnDetails.purchaseDate).toLocaleDateString()}
-                    {item.hookDetails?.purchaseDate && new Date(item.hookDetails.purchaseDate).toLocaleDateString()}
-                    {item.otherDetails?.purchaseDate && new Date(item.otherDetails.purchaseDate).toLocaleDateString()}
+                    {item.yarnDetails?.purchaseDate && formatEUDate(new Date(item.yarnDetails.purchaseDate))}
+                    {item.hookDetails?.purchaseDate && formatEUDate(new Date(item.hookDetails.purchaseDate))}
+                    {item.otherDetails?.purchaseDate && formatEUDate(new Date(item.otherDetails.purchaseDate))}
                   </Text>
                 </View>
               )}
@@ -857,12 +871,31 @@ export default function InventoryDetailScreen() {
               {(item.yarnDetails?.purchasePrice || item.hookDetails?.purchasePrice ||
                 item.otherDetails?.purchasePrice) && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.price')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.price')}</Text>
                   <Text style={styles.detailValue}>
-                    {item.yarnDetails?.currency || item.hookDetails?.currency || item.otherDetails?.currency || '€'}
-                    {item.yarnDetails?.purchasePrice ||
-                       item.hookDetails?.purchasePrice ||
-                       item.otherDetails?.purchasePrice}
+                    {(() => {
+                      const price = item.yarnDetails?.purchasePrice ||
+                                   item.hookDetails?.purchasePrice ||
+                                   item.otherDetails?.purchasePrice;
+                      const currency = item.yarnDetails?.currency ||
+                                      item.hookDetails?.currency ||
+                                      item.otherDetails?.currency ||
+                                      'EUR';
+
+                      // Convert currency codes to symbols
+                      const currencySymbol = currency === 'EUR' ? '€' :
+                                            currency === 'USD' ? '$' :
+                                            currency === 'GBP' ? '£' :
+                                            currency === 'CHF' ? 'CHF' :
+                                            currency;
+
+                      // Format price with 2 decimal places
+                      const formattedPrice = price ? Number(price).toFixed(2) : '0.00';
+
+                      // European convention: number first, then currency with space
+                      // Examples: 1.20 €, 5.00 $, 10.50 £, 15.00 CHF
+                      return `${formattedPrice} ${currencySymbol}`;
+                    })()}
                   </Text>
                 </View>
               )}
@@ -908,28 +941,28 @@ export default function InventoryDetailScreen() {
 
               {item.barcode && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.barcode')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.barcode')}</Text>
                   <Text style={styles.detailValue}>{item.barcode}</Text>
                 </View>
               )}
 
               {(item.category === 'yarn' && item.yarnDetails?.sku) && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.sku')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.sku')}</Text>
                   <Text style={styles.detailValue}>{item.yarnDetails.sku}</Text>
                 </View>
               )}
 
               {(item.category === 'hook' && item.hookDetails?.sku) && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.sku')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.sku')}</Text>
                   <Text style={styles.detailValue}>{item.hookDetails.sku}</Text>
                 </View>
               )}
 
               {(item.category === 'other' && item.otherDetails?.sku) && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.sku')}:</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.sku')}</Text>
                   <Text style={styles.detailValue}>{item.otherDetails.sku}</Text>
                 </View>
               )}
@@ -938,19 +971,19 @@ export default function InventoryDetailScreen() {
                 <>
                   {item.upcData.title && (
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>{t('inventory.itemName')}:</Text>
+                      <Text style={styles.detailLabel}>{t('inventory.itemName')}</Text>
                       <Text style={styles.detailValue}>{item.upcData.title}</Text>
                     </View>
                   )}
                   {item.upcData.brand && (
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>{t('inventory.brand')}:</Text>
+                      <Text style={styles.detailLabel}>{t('inventory.brand')}</Text>
                       <Text style={styles.detailValue}>{item.upcData.brand}</Text>
                     </View>
                   )}
                   {item.upcData.description && (
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>{t('common.description')}:</Text>
+                      <Text style={styles.detailLabel}>{t('common.description')}</Text>
                       <Text style={styles.detailValue}>{item.upcData.description}</Text>
                     </View>
                   )}
@@ -962,14 +995,14 @@ export default function InventoryDetailScreen() {
           {/* Metadata */}
           <View style={styles.metadata}>
             <Text style={styles.metaText}>
-              {t('inventory.dateAdded')}: {new Date(item.dateAdded).toLocaleDateString()}
+              {t('inventory.dateAdded')}: {formatEUDate(new Date(item.dateAdded))}
             </Text>
             <Text style={styles.metaText}>
-              {t('inventory.lastUpdated')}: {new Date(item.lastUpdated).toLocaleDateString()}
+              {t('inventory.lastUpdated')}: {formatEUDate(new Date(item.lastUpdated))}
             </Text>
             {item.lastUsed && (
               <Text style={styles.metaText}>
-                {t('inventory.lastUsed')}: {new Date(item.lastUsed).toLocaleDateString()}
+                {t('inventory.lastUsed')}: {formatEUDate(new Date(item.lastUsed))}
               </Text>
             )}
           </View>
@@ -1023,8 +1056,6 @@ const styles = StyleSheet.create({
     minWidth: 120,
   },
   imageGalleryContainer: {
-    paddingHorizontal: 16,
-    marginTop: 16,
     marginBottom: 16,
   },
   content: {
@@ -1041,14 +1072,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
+    minHeight: 36,
   },
   categoryText: {
-    ...Typography.body,
     color: Colors.white,
     fontWeight: '600',
+    fontSize: 14,
   },
   quantityBadge: {
     flexDirection: 'row',
@@ -1058,53 +1090,43 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     backgroundColor: Colors.deepSage,
     borderRadius: 20,
+    minHeight: 36,
   },
   quantityBadgeLabel: {
-    ...Typography.caption,
     color: Colors.white,
     fontWeight: '600',
-    fontSize: 13,
+    fontSize: 14,
   },
   quantityBadgeValue: {
-    ...Typography.title3,
     color: Colors.white,
-    fontWeight: '700',
-    fontSize: 20,
+    fontWeight: '600',
+    fontSize: 14,
   },
   quantityBadgeUnit: {
-    ...Typography.caption,
     color: Colors.white,
-    fontWeight: '500',
-    fontSize: 13,
+    fontWeight: '600',
+    fontSize: 14,
   },
-  reservedBadge: {
+  usedInProjectsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    backgroundColor: '#FF6B6B',
+    backgroundColor: Colors.deepSage,
     borderRadius: 20,
+    minHeight: 36,
   },
-  reservedText: {
-    ...Typography.caption,
+  usedInProjectsText: {
     color: Colors.white,
     fontWeight: '600',
-    fontSize: 13,
+    fontSize: 14,
   },
-  reservedCard: {
+  usedInProjectsCard: {
     marginBottom: 16,
-    backgroundColor: '#FFF5F5',
+    backgroundColor: '#F5FAF7',
     borderLeftWidth: 4,
-    borderLeftColor: '#FF6B6B',
-  },
-  reservedLabel: {
-    ...Typography.caption,
-    color: Colors.warmGray,
-    marginBottom: 8,
-  },
-  reservedProjectLink: {
-    ...Typography.body,
-    color: Colors.deepTeal,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
+    borderLeftColor: Colors.deepSage,
   },
   descriptionCard: {
     marginBottom: 16,
@@ -1113,47 +1135,46 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sectionTitle: {
-    ...Typography.title3,
+    fontSize: 18,
+    fontWeight: '600',
     color: Colors.charcoal,
     marginBottom: 12,
   },
   description: {
-    ...Typography.bodyLarge,
-    color: Colors.warmGray,
+    fontSize: 16,
     lineHeight: 24,
+    fontWeight: '400',
+    color: Colors.warmGray,
   },
   detailsCard: {
     marginBottom: 16,
   },
   detailRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     paddingVertical: 8,
-    gap: 8,
+    paddingHorizontal: 12,
+    gap: 16,
     alignItems: 'flex-start',
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(0, 0, 0, 0.15)',
   },
   detailLabel: {
-    ...Typography.body,
+    fontSize: 16,
+    fontWeight: '400',
     color: Colors.warmGray,
-    fontWeight: '500',
-    minWidth: 100,
+  },
+  labelWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   detailValue: {
-    ...Typography.body,
+    fontSize: 16,
+    fontWeight: '500',
     color: Colors.charcoal,
+    textAlign: 'right',
     flex: 1,
-  },
-  highlightRow: {
-    backgroundColor: Colors.beige,
-    marginHorizontal: -16,
-    paddingHorizontal: 16,
-    marginTop: 8,
-    paddingTop: 12,
-    paddingBottom: 12,
-    borderRadius: 8,
-  },
-  highlightValue: {
-    fontWeight: '600',
-    color: Colors.deepSage,
   },
   locationCard: {
     marginBottom: 16,
@@ -1167,14 +1188,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   locationLabel: {
-    ...Typography.caption,
+    fontSize: 15,
+    fontWeight: '400',
     color: Colors.warmGray,
     marginBottom: 4,
   },
   locationValue: {
-    ...Typography.body,
-    color: Colors.charcoal,
+    fontSize: 16,
     fontWeight: '500',
+    color: Colors.charcoal,
   },
   tagsRow: {
     flexDirection: 'row',
@@ -1184,7 +1206,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   tagsLabel: {
-    ...Typography.caption,
+    fontSize: 15,
+    fontWeight: '400',
     color: Colors.warmGray,
     marginBottom: 8,
   },
@@ -1200,9 +1223,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   tagText: {
-    ...Typography.caption,
+    fontSize: 15,
+    fontWeight: '400',
     color: Colors.charcoal,
-    fontWeight: '500',
   },
   purchaseCard: {
     marginBottom: 16,
@@ -1227,23 +1250,42 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   projectTitle: {
-    ...Typography.body,
-    color: Colors.charcoal,
+    fontSize: 16,
     fontWeight: '500',
+    color: Colors.charcoal,
     flex: 1,
   },
   projectStatus: {
-    ...Typography.body,
-    color: Colors.deepSage,
     fontSize: 18,
+    color: Colors.deepSage,
+  },
+  showMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginTop: 4,
+    backgroundColor: Colors.white,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: Colors.deepSage,
+    borderStyle: 'dashed',
+  },
+  showMoreText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: Colors.deepSage,
   },
   notesCard: {
     marginBottom: 16,
   },
   notes: {
-    ...Typography.body,
+    fontSize: 16,
+    lineHeight: 24,
+    fontWeight: '400',
     color: Colors.warmGray,
-    lineHeight: 22,
   },
   metadata: {
     marginTop: 24,
@@ -1252,7 +1294,8 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.border,
   },
   metaText: {
-    ...Typography.caption,
+    fontSize: 14,
+    fontWeight: '400',
     color: Colors.warmGray,
     marginBottom: 4,
   },
@@ -1269,9 +1312,9 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.border,
   },
   gaugeSubtitle: {
-    ...Typography.body,
-    color: Colors.deepSage,
+    fontSize: 16,
     fontWeight: '600',
+    color: Colors.deepSage,
     marginBottom: 12,
   },
   myGaugeTitle: {
@@ -1285,19 +1328,20 @@ const styles = StyleSheet.create({
   },
   careSymbolBadge: {
     backgroundColor: Colors.beige,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
   },
   careSymbolText: {
-    ...Typography.caption,
+    fontSize: 14,
+    fontWeight: '400',
     color: Colors.charcoal,
-    fontWeight: '500',
   },
   careText: {
-    ...Typography.body,
+    fontSize: 16,
+    lineHeight: 24,
+    fontWeight: '400',
     color: Colors.warmGray,
-    lineHeight: 22,
   },
   characteristicsContainer: {
     flexDirection: 'row',
@@ -1307,14 +1351,14 @@ const styles = StyleSheet.create({
   },
   characteristicBadge: {
     backgroundColor: Colors.deepSage,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
   },
   characteristicText: {
-    ...Typography.caption,
+    fontSize: 14,
+    fontWeight: '400',
     color: Colors.white,
-    fontWeight: '500',
   },
   certificationsContainer: {
     flexDirection: 'row',
@@ -1324,25 +1368,25 @@ const styles = StyleSheet.create({
   },
   certificationBadge: {
     backgroundColor: '#4CAF50',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
   },
   certificationText: {
-    ...Typography.caption,
+    fontSize: 14,
+    fontWeight: '400',
     color: Colors.white,
-    fontWeight: '600',
   },
   featureBadge: {
     backgroundColor: Colors.deepTeal,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
   },
   featureText: {
-    ...Typography.caption,
+    fontSize: 14,
+    fontWeight: '400',
     color: Colors.white,
-    fontWeight: '500',
   },
   productUrlButton: {
     flexDirection: 'row',
@@ -1357,8 +1401,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.deepTeal,
   },
   productUrlText: {
-    ...Typography.body,
+    fontSize: 16,
+    fontWeight: '500',
     color: Colors.deepTeal,
-    fontWeight: '600',
   },
 });

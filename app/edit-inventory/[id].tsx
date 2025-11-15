@@ -8,6 +8,7 @@ import {
   Alert,
   Platform,
   KeyboardAvoidingView,
+  Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -16,6 +17,8 @@ import { Input } from '@/components/Input';
 import { ModalHeader } from '@/components/ModalHeader';
 import { ImageGallery } from '@/components/ImageGallery';
 import { useInventory } from '@/hooks/inventory-context';
+import { useProjects } from '@/hooks/projects-context';
+import { useAuth } from '@/hooks/auth-context';
 import { useLanguage } from '@/hooks/language-context';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
@@ -24,18 +27,19 @@ import { InventoryItem, YarnDetails, HookDetails } from '@/types';
 export default function EditInventoryScreen() {
   const { id } = useLocalSearchParams();
   const { items, updateItem } = useInventory();
+  const { projects } = useProjects();
+  const { user } = useAuth();
   const { t } = useLanguage();
-  
+
   const item = items.find(i => i.id === id);
 
   const [category, setCategory] = useState<InventoryItem['category']>('other');
   const [description, setDescription] = useState('');
   const [quantity, setQuantity] = useState('1');
   const [images, setImages] = useState<string[]>([]);
-  const [tags, setTags] = useState('');
   const [notes, setNotes] = useState('');
 
-  // Yarn specific fields (matching add-inventory.tsx naming)
+  // Yarn specific fields
   const [yarnName, setYarnName] = useState('');
   const [brand, setBrand] = useState('');
   const [color, setColor] = useState('');
@@ -49,13 +53,43 @@ export default function EditInventoryScreen() {
   const [store, setStore] = useState('');
   const [purchaseDate, setPurchaseDate] = useState('');
   const [purchasePrice, setPurchasePrice] = useState('');
+  const [yarnLine, setYarnLine] = useState('');
+  const [yarnNeedleSizeMm, setYarnNeedleSizeMm] = useState('');
+  const [colorFamily, setColorFamily] = useState('');
 
   // Hook specific fields
   const [hookName, setHookName] = useState('');
   const [hookSize, setHookSize] = useState('');
+  const [hookBrand, setHookBrand] = useState('');
+  const [hookModel, setHookModel] = useState('');
+  const [hookSizeMm, setHookSizeMm] = useState('');
+  const [hookHandleType, setHookHandleType] = useState('');
+  const [hookMaterial, setHookMaterial] = useState('');
+  const [hookStore, setHookStore] = useState('');
+  const [hookPurchaseDate, setHookPurchaseDate] = useState('');
+  const [hookPurchasePrice, setHookPurchasePrice] = useState('');
 
   // Other specific fields
   const [otherName, setOtherName] = useState('');
+  const [otherType, setOtherType] = useState('');
+  const [otherBrand, setOtherBrand] = useState('');
+  const [otherModel, setOtherModel] = useState('');
+  const [otherMaterial, setOtherMaterial] = useState('');
+  const [otherStore, setOtherStore] = useState('');
+  const [otherPurchaseDate, setOtherPurchaseDate] = useState('');
+  const [otherPurchasePrice, setOtherPurchasePrice] = useState('');
+
+  // Root level fields (apply to all categories)
+  const [unit, setUnit] = useState<'piece' | 'skein' | 'ball' | 'meter' | 'gram' | 'set'>('skein');
+  const [usedInProjects, setUsedInProjects] = useState<string[]>([]);
+
+  // Helper function to format Date to EU format (DD.MM.YYYY)
+  const formatEUDate = (date: Date): string => {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+    const year = date.getFullYear();
+    return `${day}.${month}.${year}`;
+  };
 
   useEffect(() => {
     if (item) {
@@ -63,8 +97,11 @@ export default function EditInventoryScreen() {
       setDescription(item.description);
       setQuantity(item.quantity.toString());
       setImages(item.images || []);
-      setTags(item.tags?.join(', ') || '');
       setNotes(item.notes || '');
+
+      // Root level fields
+      setUnit(item.unit || 'skein');
+      setUsedInProjects(item.usedInProjects || []);
 
       // Set name from root level based on category
       if (item.category === 'yarn') {
@@ -77,20 +114,23 @@ export default function EditInventoryScreen() {
 
       if (item.yarnDetails) {
         setBrand(item.yarnDetails.brand || '');
+        setYarnLine(item.yarnDetails.line || '');
         setColor(item.yarnDetails.colorName || '');
         setColorCode(item.yarnDetails.colorCode || '');
+        setColorFamily(item.yarnDetails.colorFamily || '');
         setFiber(item.yarnDetails.fiber || '');
         setWeightCategory(item.yarnDetails.weightCategory || '');
         setBallWeight(item.yarnDetails.ballWeightG?.toString() || '');
         setLength(item.yarnDetails.lengthM?.toString() || '');
         setRecommendedHookSize(item.yarnDetails.hookSizeMm || '');
+        setYarnNeedleSizeMm(item.yarnDetails.needleSizeMm || '');
         setStorage(item.yarnDetails.storageLocation || '');
         setStore(item.yarnDetails.store || '');
         if (item.yarnDetails.purchaseDate) {
           const date = item.yarnDetails.purchaseDate instanceof Date
             ? item.yarnDetails.purchaseDate
             : new Date(item.yarnDetails.purchaseDate);
-          setPurchaseDate(date.toISOString().split('T')[0]);
+          setPurchaseDate(formatEUDate(date));
         } else {
           setPurchaseDate('');
         }
@@ -99,16 +139,71 @@ export default function EditInventoryScreen() {
 
       if (item.hookDetails) {
         setHookSize(item.hookDetails.size || '');
+        setHookBrand(item.hookDetails.brand || '');
+        setHookModel(item.hookDetails.model || '');
+        setHookSizeMm(item.hookDetails.sizeMm?.toString() || '');
+        setHookHandleType(item.hookDetails.handleType || '');
+        setHookMaterial(item.hookDetails.material || '');
+        setHookStore(item.hookDetails.store || '');
+        if (item.hookDetails.purchaseDate) {
+          const date = item.hookDetails.purchaseDate instanceof Date
+            ? item.hookDetails.purchaseDate
+            : new Date(item.hookDetails.purchaseDate);
+          setHookPurchaseDate(formatEUDate(date));
+        } else {
+          setHookPurchaseDate('');
+        }
+        setHookPurchasePrice(item.hookDetails.purchasePrice?.toString() || '');
         setStorage(item.hookDetails.storageLocation || '');
       }
 
       if (item.otherDetails) {
+        setOtherType(item.otherDetails.type || '');
+        setOtherBrand(item.otherDetails.brand || '');
+        setOtherModel(item.otherDetails.model || '');
+        setOtherMaterial(item.otherDetails.material || '');
+        setOtherStore(item.otherDetails.store || '');
+        if (item.otherDetails.purchaseDate) {
+          const date = item.otherDetails.purchaseDate instanceof Date
+            ? item.otherDetails.purchaseDate
+            : new Date(item.otherDetails.purchaseDate);
+          setOtherPurchaseDate(formatEUDate(date));
+        } else {
+          setOtherPurchaseDate('');
+        }
+        setOtherPurchasePrice(item.otherDetails.purchasePrice?.toString() || '');
         setStorage(item.otherDetails.storageLocation || '');
       }
     }
   }, [item]);
 
+  // Auto-set unit based on category
+  useEffect(() => {
+    if (category === 'yarn') {
+      setUnit('skein');
+    } else {
+      setUnit('piece');
+    }
+  }, [category]);
 
+  // Helper function to parse EU date format (DD.MM.YYYY) to Date
+  const parseEUDate = (dateStr: string): Date | undefined => {
+    if (!dateStr) return undefined;
+
+    // Try parsing DD.MM.YYYY format
+    const parts = dateStr.split('.');
+    if (parts.length === 3) {
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+      const year = parseInt(parts[2], 10);
+
+      if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+        return new Date(year, month, day);
+      }
+    }
+
+    return undefined;
+  };
 
   const handleSave = async () => {
     // Validate name based on category
@@ -137,26 +232,52 @@ export default function EditInventoryScreen() {
 
     const yarnDetails: YarnDetails | undefined = category === 'yarn' ? {
       brand: brand.trim() || undefined,
+      line: yarnLine.trim() || undefined,
       colorName: color.trim() || undefined,
       colorCode: colorCode.trim() || undefined,
+      colorFamily: colorFamily.trim() || undefined,
       fiber: fiber.trim() || '',
       weightCategory: weightCategory.trim() || '',
       ballWeightG: ballWeightNum || 0,
       lengthM: lengthNum || 0,
       hookSizeMm: recommendedHookSize.trim() || undefined,
+      needleSizeMm: yarnNeedleSizeMm.trim() || undefined,
       storageLocation: storage.trim() || undefined,
       store: store.trim() || undefined,
-      purchaseDate: purchaseDate ? new Date(purchaseDate) : undefined,
+      purchaseDate: parseEUDate(purchaseDate),
       purchasePrice: priceNum,
+      currency: user?.currency || 'EUR',
     } : undefined;
+
+    const hookPriceNum = hookPurchasePrice ? parseFloat(hookPurchasePrice) : undefined;
 
     const hookDetails: HookDetails | undefined = category === 'hook' ? {
-      size: hookSize.trim() || undefined,
+      brand: hookBrand.trim() || undefined,
+      model: hookModel.trim() || undefined,
+      sizeMm: hookSizeMm ? parseFloat(hookSizeMm) : undefined,
+      handleType: (hookHandleType.trim() || undefined) as 'ergonomic' | 'inline' | 'tapered' | 'standard' | undefined,
+      material: (hookMaterial.trim() || undefined) as 'aluminum' | 'steel' | 'plastic' | 'bamboo' | 'wood' | 'resin' | 'carbonFiber' | 'other' | undefined,
       storageLocation: storage.trim() || undefined,
+      store: hookStore.trim() || undefined,
+      purchaseDate: parseEUDate(hookPurchaseDate),
+      purchasePrice: hookPriceNum,
+      currency: user?.currency || 'EUR',
+      // Keep legacy size field for backwards compatibility
+      size: hookSize.trim() || hookSizeMm.trim() || undefined,
     } : undefined;
 
+    const otherPriceNum = otherPurchasePrice ? parseFloat(otherPurchasePrice) : undefined;
+
     const otherDetails = category === 'other' ? {
+      type: (otherType.trim() || undefined) as 'stitchMarker' | 'scissors' | 'needle' | 'tapestryNeedle' | 'yarnNeedle' | 'gauge' | 'rowCounter' | 'storage' | 'measuringTape' | 'stitchHolder' | 'patternBook' | 'organizer' | 'blockingPins' | 'pompomMaker' | 'other' | undefined,
+      brand: otherBrand.trim() || undefined,
+      model: otherModel.trim() || undefined,
+      material: otherMaterial.trim() || undefined,
       storageLocation: storage.trim() || undefined,
+      store: otherStore.trim() || undefined,
+      purchaseDate: parseEUDate(otherPurchaseDate),
+      purchasePrice: otherPriceNum,
+      currency: user?.currency || 'EUR',
     } : undefined;
 
     // Get name based on category
@@ -171,8 +292,9 @@ export default function EditInventoryScreen() {
       category,
       description: description.trim(),
       quantity: qty,
+      unit,
+      usedInProjects: usedInProjects.length > 0 ? usedInProjects : undefined,
       images,
-      tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [],
       yarnDetails,
       hookDetails,
       otherDetails,
@@ -296,12 +418,57 @@ export default function EditInventoryScreen() {
 
           {/* Quantity - always third */}
           <Input
-            label={t('inventory.quantity')}
+            label={category === 'yarn' ? t('inventory.quantitySkeins') : t('inventory.quantityPieces')}
             placeholder="1"
             value={quantity}
             onChangeText={setQuantity}
             keyboardType="numeric"
           />
+
+          {/* Root level fields - apply to all categories */}
+          <Text style={styles.sectionTitle}>{t('inventory.additionalInfo')}</Text>
+
+          <View style={styles.fieldGroup}>
+            <Text style={styles.sectionLabel}>{t('inventory.usedInProjects')}</Text>
+            <Text style={styles.sectionHint}>{t('inventory.usedInProjectsHint')}</Text>
+            {projects.length > 0 ? (
+              <View style={styles.projectButtons}>
+                {projects.map((project) => (
+                  <TouchableOpacity
+                    key={project.id}
+                    style={[
+                      styles.projectButton,
+                      usedInProjects.includes(project.id) && styles.projectButtonActive,
+                    ]}
+                    onPress={() => {
+                      if (usedInProjects.includes(project.id)) {
+                        setUsedInProjects(usedInProjects.filter(id => id !== project.id));
+                      } else {
+                        setUsedInProjects([...usedInProjects, project.id]);
+                      }
+                    }}
+                    activeOpacity={0.7}
+                    accessible={true}
+                    accessibilityRole="checkbox"
+                    accessibilityLabel={project.title}
+                    accessibilityState={{
+                      selected: usedInProjects.includes(project.id),
+                      checked: usedInProjects.includes(project.id),
+                    }}
+                  >
+                    <Text style={[
+                      styles.projectButtonText,
+                      usedInProjects.includes(project.id) && styles.projectButtonTextActive,
+                    ]}>
+                      {project.title}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.noProjectsText}>{t('inventory.noProjectsYet')}</Text>
+            )}
+          </View>
 
           {/* Category-specific details section */}
           {category === 'yarn' && (
@@ -313,6 +480,13 @@ export default function EditInventoryScreen() {
                 placeholder={t('inventory.brandPlaceholder')}
                 value={brand}
                 onChangeText={setBrand}
+              />
+
+              <Input
+                label={t('inventory.productLine')}
+                placeholder={t('inventory.productLinePlaceholder')}
+                value={yarnLine}
+                onChangeText={setYarnLine}
               />
 
               <View style={styles.row}>
@@ -333,6 +507,13 @@ export default function EditInventoryScreen() {
                   />
                 </View>
               </View>
+
+              <Input
+                label={t('inventory.colorFamily')}
+                placeholder={t('inventory.colorFamilyPlaceholder')}
+                value={colorFamily}
+                onChangeText={setColorFamily}
+              />
 
               <Input
                 label={t('inventory.fiberContent')}
@@ -371,9 +552,16 @@ export default function EditInventoryScreen() {
 
               <Input
                 label={t('inventory.crochetHookSize')}
-                placeholder={t('inventory.hookSizePlaceholder')}
+                placeholder="5.0"
                 value={recommendedHookSize}
                 onChangeText={setRecommendedHookSize}
+              />
+
+              <Input
+                label={t('inventory.needleSizeMm')}
+                placeholder="5.0"
+                value={yarnNeedleSizeMm}
+                onChangeText={setYarnNeedleSizeMm}
               />
 
               <Text style={styles.sectionTitle}>{t('inventory.purchaseInfo')}</Text>
@@ -387,7 +575,7 @@ export default function EditInventoryScreen() {
 
               <Input
                 label={t('inventory.purchaseDate')}
-                placeholder="YYYY-MM-DD"
+                placeholder="DD.MM.YYYY"
                 value={purchaseDate}
                 onChangeText={setPurchaseDate}
               />
@@ -416,10 +604,87 @@ export default function EditInventoryScreen() {
               <Text style={styles.sectionTitle}>{t('inventory.hookDetails')}</Text>
 
               <Input
-                label={t('inventory.size')}
-                placeholder="e.g., 5mm"
-                value={hookSize}
-                onChangeText={setHookSize}
+                label={t('inventory.brand')}
+                placeholder={t('inventory.hookBrandPlaceholder')}
+                value={hookBrand}
+                onChangeText={setHookBrand}
+              />
+
+              <Input
+                label={t('inventory.model')}
+                placeholder={t('inventory.modelPlaceholder')}
+                value={hookModel}
+                onChangeText={setHookModel}
+              />
+
+              <Input
+                label={t('inventory.sizeMm')}
+                placeholder="5.0"
+                value={hookSizeMm}
+                onChangeText={setHookSizeMm}
+                keyboardType="decimal-pad"
+              />
+
+              <View style={styles.fieldGroup}>
+                <Text style={styles.sectionLabel}>{t('inventory.handleType')}</Text>
+                <View style={styles.handleTypeButtons}>
+                  {['ergonomic', 'standard', 'inline', 'tapered'].map((type) => (
+                    <TouchableOpacity
+                      key={type}
+                      style={[
+                        styles.handleTypeButton,
+                        hookHandleType === type && styles.handleTypeButtonActive,
+                      ]}
+                      onPress={() => setHookHandleType(type)}
+                      activeOpacity={0.7}
+                      accessible={true}
+                      accessibilityRole="radio"
+                      accessibilityLabel={t(`inventory.handleType_${type}`)}
+                      accessibilityState={{
+                        selected: hookHandleType === type,
+                        checked: hookHandleType === type,
+                      }}
+                    >
+                      <Text style={[
+                        styles.handleTypeButtonText,
+                        hookHandleType === type && styles.handleTypeButtonTextActive,
+                      ]}>
+                        {t(`inventory.handleType_${type}`)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <Input
+                label={t('inventory.material')}
+                placeholder={t('inventory.materialPlaceholder')}
+                value={hookMaterial}
+                onChangeText={setHookMaterial}
+              />
+
+              <Text style={styles.sectionTitle}>{t('inventory.purchaseInfo')}</Text>
+
+              <Input
+                label={t('inventory.store')}
+                placeholder="e.g., Local craft store"
+                value={hookStore}
+                onChangeText={setHookStore}
+              />
+
+              <Input
+                label={t('inventory.purchaseDate')}
+                placeholder="DD.MM.YYYY"
+                value={hookPurchaseDate}
+                onChangeText={setHookPurchaseDate}
+              />
+
+              <Input
+                label={t('inventory.price')}
+                placeholder="0.00"
+                value={hookPurchasePrice}
+                onChangeText={setHookPurchasePrice}
+                keyboardType="decimal-pad"
               />
 
               <Text style={styles.sectionTitle}>{t('inventory.storageSection')}</Text>
@@ -435,6 +700,100 @@ export default function EditInventoryScreen() {
 
           {category === 'other' && (
             <>
+              <Text style={styles.sectionTitle}>{t('inventory.itemDetails')}</Text>
+
+              <View style={styles.fieldGroup}>
+                <Text style={styles.sectionLabel}>{t('inventory.type')}</Text>
+                <View style={styles.typeButtons}>
+                  {[
+                    'stitchMarker',
+                    'scissors',
+                    'needle',
+                    'tapestryNeedle',
+                    'yarnNeedle',
+                    'gauge',
+                    'rowCounter',
+                    'measuringTape',
+                    'stitchHolder',
+                    'patternBook',
+                    'organizer',
+                    'blockingPins',
+                    'pompomMaker',
+                    'storage',
+                    'other',
+                  ].map((type) => (
+                    <TouchableOpacity
+                      key={type}
+                      style={[
+                        styles.typeButton,
+                        otherType === type && styles.typeButtonActive,
+                      ]}
+                      onPress={() => setOtherType(type)}
+                      activeOpacity={0.7}
+                      accessible={true}
+                      accessibilityRole="radio"
+                      accessibilityLabel={t(`inventory.type_${type}`)}
+                      accessibilityState={{
+                        selected: otherType === type,
+                        checked: otherType === type,
+                      }}
+                    >
+                      <Text style={[
+                        styles.typeButtonText,
+                        otherType === type && styles.typeButtonTextActive,
+                      ]}>
+                        {t(`inventory.type_${type}`)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <Input
+                label={t('inventory.brand')}
+                placeholder={t('inventory.brandPlaceholder')}
+                value={otherBrand}
+                onChangeText={setOtherBrand}
+              />
+
+              <Input
+                label={t('inventory.model')}
+                placeholder={t('inventory.modelPlaceholder')}
+                value={otherModel}
+                onChangeText={setOtherModel}
+              />
+
+              <Input
+                label={t('inventory.material')}
+                placeholder={t('inventory.materialPlaceholder')}
+                value={otherMaterial}
+                onChangeText={setOtherMaterial}
+              />
+
+              <Text style={styles.sectionTitle}>{t('inventory.purchaseInfo')}</Text>
+
+              <Input
+                label={t('inventory.store')}
+                placeholder="e.g., Local craft store"
+                value={otherStore}
+                onChangeText={setOtherStore}
+              />
+
+              <Input
+                label={t('inventory.purchaseDate')}
+                placeholder="DD.MM.YYYY"
+                value={otherPurchaseDate}
+                onChangeText={setOtherPurchaseDate}
+              />
+
+              <Input
+                label={t('inventory.price')}
+                placeholder="0.00"
+                value={otherPurchasePrice}
+                onChangeText={setOtherPurchasePrice}
+                keyboardType="decimal-pad"
+              />
+
               <Text style={styles.sectionTitle}>{t('inventory.storageSection')}</Text>
 
               <Input
@@ -454,14 +813,6 @@ export default function EditInventoryScreen() {
             multiline
             numberOfLines={2}
             style={styles.textArea}
-          />
-
-          {/* Tags */}
-          <Input
-            label={t('inventory.tags')}
-            placeholder={t('inventory.tagsPlaceholder')}
-            value={tags}
-            onChangeText={setTags}
           />
 
           <View style={styles.footer}>
@@ -509,6 +860,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontWeight: '500' as const,
   },
+  sectionHint: {
+    ...Typography.caption,
+    color: Colors.warmGray,
+    marginBottom: 12,
+    fontSize: 13,
+  },
   categoryButtons: {
     flexDirection: 'row',
     gap: 10,
@@ -516,8 +873,9 @@ const styles = StyleSheet.create({
   categoryButton: {
     flex: 1,
     paddingVertical: 14,
+    paddingHorizontal: 16,
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: Colors.border,
     alignItems: 'center',
     backgroundColor: Colors.white,
@@ -531,7 +889,8 @@ const styles = StyleSheet.create({
   },
   categoryButtonActive: {
     backgroundColor: Colors.sage,
-    borderColor: Colors.sage,
+    borderColor: Colors.deepSage,
+    borderWidth: 2,
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 4,
@@ -539,7 +898,7 @@ const styles = StyleSheet.create({
   categoryButtonText: {
     ...Typography.body,
     color: Colors.charcoal,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '500' as const,
   },
   categoryButtonTextActive: {
@@ -565,5 +924,161 @@ const styles = StyleSheet.create({
   footer: {
     marginTop: 24,
     gap: 12,
+  },
+  fieldGroup: {
+    marginBottom: 16,
+  },
+  switchField: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: 16,
+  },
+  switchLabelContainer: {
+    flex: 1,
+    marginRight: 16,
+  },
+  switchLabel: {
+    ...Typography.body,
+    color: Colors.charcoal,
+    fontWeight: '600' as const,
+    marginBottom: 4,
+  },
+  switchHint: {
+    ...Typography.caption,
+    color: Colors.warmGray,
+    fontSize: 12,
+  },
+  projectButtons: {
+    gap: 8,
+  },
+  projectButton: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    backgroundColor: Colors.white,
+    minHeight: 48,
+    justifyContent: 'center',
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  projectButtonActive: {
+    backgroundColor: Colors.sage,
+    borderColor: Colors.deepSage,
+    borderWidth: 2,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  projectButtonText: {
+    ...Typography.body,
+    color: Colors.charcoal,
+    fontSize: 14,
+    fontWeight: '500' as const,
+  },
+  projectButtonTextActive: {
+    color: Colors.white,
+    fontWeight: '600' as const,
+  },
+  handleTypeButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  handleTypeButton: {
+    flex: 1,
+    minWidth: '45%',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    backgroundColor: Colors.white,
+    minHeight: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  handleTypeButtonActive: {
+    backgroundColor: Colors.sage,
+    borderColor: Colors.deepSage,
+    borderWidth: 2,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  handleTypeButtonText: {
+    ...Typography.body,
+    color: Colors.charcoal,
+    fontSize: 14,
+    fontWeight: '500' as const,
+    textAlign: 'center',
+  },
+  handleTypeButtonTextActive: {
+    color: Colors.white,
+    fontWeight: '600' as const,
+  },
+  typeButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  typeButton: {
+    flex: 1,
+    minWidth: '30%',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    backgroundColor: Colors.white,
+    minHeight: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  typeButtonActive: {
+    backgroundColor: Colors.sage,
+    borderColor: Colors.deepSage,
+    borderWidth: 2,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  typeButtonText: {
+    ...Typography.body,
+    color: Colors.charcoal,
+    fontSize: 14,
+    fontWeight: '500' as const,
+    textAlign: 'center',
+  },
+  typeButtonTextActive: {
+    color: Colors.white,
+    fontWeight: '600' as const,
+  },
+  noProjectsText: {
+    ...Typography.body,
+    color: Colors.warmGray,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingVertical: 16,
   },
 });

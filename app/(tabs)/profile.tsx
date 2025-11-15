@@ -20,6 +20,7 @@ import {
   HelpCircle,
   Globe,
   FileText,
+  DollarSign,
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -36,7 +37,7 @@ import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 
 export default function ProfileScreen() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const { projects, completedCount, inProgressCount } = useProjects();
   const { items } = useInventory();
   const { language, changeLanguage, t } = useLanguage();
@@ -75,15 +76,35 @@ export default function ProfileScreen() {
     );
   };
 
+  const handleCurrencyChange = () => {
+    Alert.alert(
+      t('profile.currency'),
+      t('profile.selectCurrency'),
+      [
+        { text: 'EUR (€)', onPress: () => updateUser({ currency: 'EUR' }) },
+        { text: 'USD ($)', onPress: () => updateUser({ currency: 'USD' }) },
+        { text: 'GBP (£)', onPress: () => updateUser({ currency: 'GBP' }) },
+        { text: 'RUB (₽)', onPress: () => updateUser({ currency: 'RUB' }) },
+        { text: t('common.cancel'), style: 'cancel' },
+      ]
+    );
+  };
+
   const menuItems = [
     {
       icon: <Globe size={20} color={Colors.charcoal} />,
       label: t('profile.language'),
-      value: language === 'en' ? t('profile.english') : 
+      value: language === 'en' ? t('profile.english') :
              language === 'sl' ? t('profile.slovene') :
              language === 'ru' ? t('profile.russian') :
              t('profile.german'),
       onPress: handleLanguageChange,
+    },
+    {
+      icon: <DollarSign size={20} color={Colors.charcoal} />,
+      label: t('profile.currency'),
+      value: user?.currency || 'EUR',
+      onPress: handleCurrencyChange,
     },
     {
       icon: <Settings size={20} color={Colors.charcoal} />,

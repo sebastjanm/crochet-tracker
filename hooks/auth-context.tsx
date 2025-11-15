@@ -68,6 +68,14 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     setUser(null);
   };
 
+  const updateUser = async (updates: Partial<User>) => {
+    if (!user) return;
+
+    const updatedUser = { ...user, ...updates };
+    await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+    setUser(updatedUser);
+  };
+
   return {
     user,
     isLoading,
@@ -76,5 +84,6 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     register,
     resetPassword,
     logout,
+    updateUser,
   };
 });

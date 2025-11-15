@@ -9,13 +9,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
-import { 
-  Edit, 
-  Trash2, 
-  Link, 
+import {
+  Edit,
+  Trash2,
+  Link,
   FileText,
   CheckCircle,
   Clock,
+  Lightbulb,
+  Calendar,
 } from 'lucide-react-native';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
@@ -25,6 +27,7 @@ import { useProjects } from '@/hooks/projects-context';
 import { useLanguage } from '@/hooks/language-context';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
+import type { ProjectStatus } from '@/types';
 
 export default function ProjectDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -68,9 +71,78 @@ export default function ProjectDetailScreen() {
     );
   };
 
-  const toggleStatus = async () => {
-    const newStatus = project.status === 'completed' ? 'in-progress' : 'completed';
-    await updateProject(project.id, { status: newStatus });
+  const handleStatusChange = () => {
+    Alert.alert(
+      t('projects.changeStatus'),
+      t('projects.selectNewStatus'),
+      [
+        {
+          text: t('projects.idea'),
+          onPress: async () => await updateProject(project.id, { status: 'idea' as ProjectStatus }),
+        },
+        {
+          text: t('projects.inProgress'),
+          onPress: async () => await updateProject(project.id, { status: 'in-progress' as ProjectStatus }),
+        },
+        {
+          text: t('projects.completed'),
+          onPress: async () => await updateProject(project.id, { status: 'completed' as ProjectStatus }),
+        },
+        {
+          text: t('projects.maybeSomeday'),
+          onPress: async () => await updateProject(project.id, { status: 'maybe-someday' as ProjectStatus }),
+        },
+        {
+          text: t('common.cancel'),
+          style: 'cancel',
+        },
+      ]
+    );
+  };
+
+  const getStatusColor = (status: ProjectStatus): string => {
+    switch (status) {
+      case 'idea':
+        return '#FFB84D';
+      case 'in-progress':
+        return Colors.sage;
+      case 'completed':
+        return '#4CAF50';
+      case 'maybe-someday':
+        return '#9C27B0';
+      default:
+        return Colors.sage;
+    }
+  };
+
+  const getStatusIcon = (status: ProjectStatus) => {
+    switch (status) {
+      case 'idea':
+        return <Lightbulb size={16} color={Colors.white} />;
+      case 'in-progress':
+        return <Clock size={16} color={Colors.white} />;
+      case 'completed':
+        return <CheckCircle size={16} color={Colors.white} />;
+      case 'maybe-someday':
+        return <Calendar size={16} color={Colors.white} />;
+      default:
+        return <Clock size={16} color={Colors.white} />;
+    }
+  };
+
+  const getStatusLabel = (status: ProjectStatus): string => {
+    switch (status) {
+      case 'idea':
+        return t('projects.idea');
+      case 'in-progress':
+        return t('projects.inProgress');
+      case 'completed':
+        return t('projects.completed');
+      case 'maybe-someday':
+        return t('projects.maybeSomeday');
+      default:
+        return t('projects.inProgress');
+    }
   };
 
   return (
@@ -119,22 +191,18 @@ export default function ProjectDetailScreen() {
             <TouchableOpacity
               style={[
                 styles.statusBadge,
-                project.status === 'completed' && styles.statusCompleted,
+                { backgroundColor: getStatusColor(project.status) },
               ]}
-              onPress={toggleStatus}
+              onPress={handleStatusChange}
               activeOpacity={0.7}
               accessible={true}
               accessibilityRole="button"
-              accessibilityLabel={project.status === 'completed' ? t('projects.completed') : t('projects.inProgress')}
-              accessibilityHint={`Toggle status between completed and in progress. Currently ${project.status === 'completed' ? 'completed' : 'in progress'}`}
+              accessibilityLabel={getStatusLabel(project.status)}
+              accessibilityHint={`Change project status. Currently ${getStatusLabel(project.status)}`}
             >
-              {project.status === 'completed' ? (
-                <CheckCircle size={16} color={Colors.white} />
-              ) : (
-                <Clock size={16} color={Colors.white} />
-              )}
+              {getStatusIcon(project.status)}
               <Text style={styles.statusText}>
-                {project.status === 'completed' ? t('projects.completed') : t('projects.inProgress')}
+                {getStatusLabel(project.status)}
               </Text>
             </TouchableOpacity>
           </View>
@@ -255,18 +323,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: Colors.warning,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 20,
-  },
-  statusCompleted: {
-    backgroundColor: Colors.success,
+    borderRadius: 16,
   },
   statusText: {
     ...Typography.body,
     color: Colors.white,
     fontWeight: '600',
+    fontSize: 13,
   },
   descriptionCard: {
     marginBottom: 16,

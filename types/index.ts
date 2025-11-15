@@ -236,4 +236,5 @@ export interface User {
   name: string;
   email: string;
   avatar?: string;
+  currency?: string; // Default currency for purchases (EUR, USD, etc.)
 }

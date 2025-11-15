@@ -27,6 +27,15 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
             dateAdded: new Date(item.dateAdded),
             lastUpdated: new Date(item.lastUpdated),
             lastUsed: item.lastUsed ? new Date(item.lastUsed) : undefined,
+            // Convert nested dates in category details
+            yarnDetails: item.yarnDetails ? {
+              ...item.yarnDetails,
+              purchase_date: item.yarnDetails.purchase_date ? new Date(item.yarnDetails.purchase_date) : undefined,
+            } : undefined,
+            hookDetails: item.hookDetails ? {
+              ...item.hookDetails,
+              purchaseDate: item.hookDetails.purchaseDate ? new Date(item.hookDetails.purchaseDate) : undefined,
+            } : undefined,
           })));
         } catch (parseError) {
           console.error('Failed to parse inventory data, resetting:', parseError);
@@ -156,12 +165,16 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     await saveInventory(updated);
   };
 
+  const getItemById = (id: string) => {
+    return items.find(item => item.id === id);
+  };
+
   const getItemsByCategory = (category: InventoryItem['category']) => {
     return items.filter(item => item.category === category);
   };
 
   const getLowStockItems = () => {
-    return items.filter(item => 
+    return items.filter(item =>
       item.minQuantity && item.quantity <= item.minQuantity
     );
   };
@@ -291,6 +304,7 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     removeImage,
     
     // Queries
+    getItemById,
     getItemsByCategory,
     getLowStockItems,
     getItemByBarcode,

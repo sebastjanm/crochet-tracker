@@ -53,12 +53,12 @@ export default function InventoryScreen() {
     return (
       <TouchableOpacity
         style={styles.itemWrapper}
-        onPress={() => router.push(`/edit-inventory/${item.id}`)}
+        onPress={() => router.push(`/inventory/${item.id}`)}
         activeOpacity={0.7}
         accessible={true}
         accessibilityRole="button"
         accessibilityLabel={`${displayName}${item.yarnDetails?.brand ? `, ${item.yarnDetails.brand}` : ''}`}
-        accessibilityHint={`Edit ${displayName} details`}
+        accessibilityHint={`View ${displayName} details`}
       >
         <View style={styles.itemCard}>
           {item.images && item.images.length > 0 ? (

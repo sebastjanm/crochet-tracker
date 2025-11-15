@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Package, Volleyball, Wrench } from 'lucide-react-native';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { ModalHeader } from '@/components/ModalHeader';
@@ -24,7 +23,7 @@ import { InventoryItem, YarnDetails, HookDetails } from '@/types';
 
 export default function EditInventoryScreen() {
   const { id } = useLocalSearchParams();
-  const { items, updateItem, deleteItem } = useInventory();
+  const { items, updateItem } = useInventory();
   const { t } = useLanguage();
   
   const item = items.find(i => i.id === id);
@@ -81,7 +80,14 @@ export default function EditInventoryScreen() {
         setRecommendedHookSize(item.yarnDetails.hook_size || '');
         setStorage(item.yarnDetails.storage || '');
         setStore(item.yarnDetails.store || '');
-        setPurchaseDate(item.yarnDetails.purchase_date ? item.yarnDetails.purchase_date.toISOString().split('T')[0] : '');
+        if (item.yarnDetails.purchase_date) {
+          const date = item.yarnDetails.purchase_date instanceof Date
+            ? item.yarnDetails.purchase_date
+            : new Date(item.yarnDetails.purchase_date);
+          setPurchaseDate(date.toISOString().split('T')[0]);
+        } else {
+          setPurchaseDate('');
+        }
         setPurchasePrice(item.yarnDetails.purchase_price?.toString() || '');
       }
 
@@ -167,25 +173,6 @@ export default function EditInventoryScreen() {
     router.dismiss();
   };
 
-  const handleDelete = () => {
-    Alert.alert(
-      t('common.confirm'),
-      t('inventory.deleteConfirm'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('common.delete'),
-          style: 'destructive',
-          onPress: async () => {
-            if (item) {
-              await deleteItem(item.id);
-              router.dismiss();
-            }
-          },
-        },
-      ]
-    );
-  };
 
   if (!item) {
     return (
@@ -194,13 +181,6 @@ export default function EditInventoryScreen() {
       </SafeAreaView>
     );
   }
-
-  // Get display name for accessibility
-  const displayName = item.category === 'yarn'
-    ? (item.yarnDetails?.name || 'this yarn')
-    : item.category === 'hook'
-    ? (item.hookDetails?.name || 'this hook')
-    : (item.otherDetails?.name || 'this item');
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -462,17 +442,6 @@ export default function EditInventoryScreen() {
               onPress={handleSave}
               size="large"
             />
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={handleDelete}
-              activeOpacity={0.7}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel={t('common.delete')}
-              accessibilityHint={`Delete ${displayName} from inventory permanently`}
-            >
-              <Text style={styles.deleteButtonText}>{t('common.delete')}</Text>
-            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -568,19 +537,5 @@ const styles = StyleSheet.create({
   footer: {
     marginTop: 24,
     gap: 12,
-  },
-  deleteButton: {
-    backgroundColor: Colors.error,
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-  },
-  deleteButtonText: {
-    ...Typography.body,
-    color: Colors.white,
-    fontWeight: '600' as const,
   },
 });

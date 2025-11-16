@@ -23,6 +23,7 @@ import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { ModalHeader } from '@/components/ModalHeader';
 import { ImageGallery } from '@/components/ImageGallery';
+import { ProjectTypeBadge } from '@/components/ProjectTypeBadge';
 import { useProjects } from '@/hooks/projects-context';
 import { useLanguage } from '@/hooks/language-context';
 import Colors from '@/constants/colors';
@@ -186,8 +187,12 @@ export default function ProjectDetailScreen() {
         </View>
 
         <View style={styles.content}>
-          
-          <View style={styles.statusContainer}>
+
+          <View style={styles.badgesContainer}>
+            {project.projectType && (
+              <ProjectTypeBadge type={project.projectType} />
+            )}
+
             <TouchableOpacity
               style={[
                 styles.statusBadge,
@@ -206,6 +211,15 @@ export default function ProjectDetailScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+
+          {project.startDate && (
+            <View style={styles.dateContainer}>
+              <Calendar size={16} color={Colors.warmGray} />
+              <Text style={styles.dateText}>
+                {t('projects.started')}: {new Date(project.startDate).toLocaleDateString()}
+              </Text>
+            </View>
+          )}
 
           <Card style={styles.descriptionCard}>
             <Text style={styles.sectionTitle}>{t('projects.description')}</Text>
@@ -315,9 +329,11 @@ const styles = StyleSheet.create({
     padding: 16,
   },
 
-  statusContainer: {
+  badgesContainer: {
     flexDirection: 'row',
-    marginBottom: 20,
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
   },
   statusBadge: {
     flexDirection: 'row',
@@ -332,6 +348,17 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontWeight: '600',
     fontSize: 13,
+  },
+  dateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  dateText: {
+    ...Typography.body,
+    color: Colors.warmGray,
+    fontSize: 14,
   },
   descriptionCard: {
     marginBottom: 16,

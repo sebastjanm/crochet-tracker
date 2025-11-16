@@ -335,7 +335,7 @@ export default function ImageGenerator() {
                     onPress={() => handleExamplePrompt(example)}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.examplePromptText}>"{example}"</Text>
+                    <Text style={styles.examplePromptText}>&quot;{example}&quot;</Text>
                   </TouchableOpacity>
                 ))}
               </View>

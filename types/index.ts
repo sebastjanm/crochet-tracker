@@ -1,5 +1,14 @@
 export type ProjectStatus = 'idea' | 'in-progress' | 'completed' | 'maybe-someday';
 
+export type ProjectType =
+  | 'blanket'
+  | 'amigurumi'
+  | 'garment'
+  | 'accessory'
+  | 'home-decor'
+  | 'toy'
+  | 'other';
+
 export interface Project {
   id: string;
   title: string;
@@ -13,6 +22,11 @@ export interface Project {
   updatedAt: Date;
   notes?: string;
   yarnUsed?: string[];
+
+  // Phase 1: Basic metadata additions
+  projectType?: ProjectType;
+  startDate?: Date;
+  completedDate?: Date; // Auto-set when status becomes 'completed'
 }
 
 // Yarn weight standard (Craft Yarn Council)

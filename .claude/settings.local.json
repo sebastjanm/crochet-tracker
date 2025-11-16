@@ -52,7 +52,15 @@
       "Bash(echo:*)",
       "Bash(else)",
       "Bash(fi)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(git push:*)",
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)",
+      "Bash(for type in stitchMarker scissors needle tapestryNeedle yarnNeedle gauge rowCounter measuringTape stitchHolder patternBook organizer blockingPins pompomMaker storage other)",
+      "Bash(do grep -q \"type_$type:\" /Users/sebastjanm/dev/SeboAI-crochet-tracker/translations/en.ts)",
+      "Bash(perl -i -pe:*)",
+      "Bash(node:*)",
+      "mcp__expo-mcp__search_documentation"
     ],
     "deny": [],
     "ask": []

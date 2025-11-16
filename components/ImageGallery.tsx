@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { GestureHandlerRootView, PinchGestureHandler, State } from 'react-native-gesture-handler';
-import { X, ImageIcon, Trash2, Plus, Crop } from 'lucide-react-native';
+import { X, ImageIcon, Trash2, Plus } from 'lucide-react-native';
 import { useImagePicker } from '@/hooks/useImagePicker';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
@@ -38,7 +38,7 @@ export const ImageGallery = memo(function ImageGallery({
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
   const [loadingImages, setLoadingImages] = useState<Record<number, boolean>>({});
-  const { showImagePickerOptions, isPickingImage, editExistingImage } = useImagePicker();
+  const { showImagePickerOptions, isPickingImage } = useImagePicker();
 
   // Zoom state for fullscreen images
   const scale = useRef(new Animated.Value(1)).current;
@@ -58,9 +58,9 @@ export const ImageGallery = memo(function ImageGallery({
   }, []);
 
   const handleAddImages = useCallback(async () => {
-    const newImages = await showImagePickerOptions();
-    if (newImages.length > 0) {
-      const updatedImages = [...images, ...newImages].slice(0, maxImages);
+    const newImage = await showImagePickerOptions();
+    if (newImage) {
+      const updatedImages = [...images, newImage].slice(0, maxImages);
       onImagesChange(updatedImages);
     }
   }, [images, maxImages, onImagesChange, showImagePickerOptions]);
@@ -84,14 +84,6 @@ export const ImageGallery = memo(function ImageGallery({
     );
   }, [images, onImagesChange, t]);
 
-  const handleEditImage = useCallback(async (index: number) => {
-    const editedImageUri = await editExistingImage(images[index]);
-    if (editedImageUri) {
-      const updatedImages = [...images];
-      updatedImages[index] = editedImageUri;
-      onImagesChange(updatedImages);
-    }
-  }, [editExistingImage, images, onImagesChange]);
 
   const onPinchGestureEvent = Animated.event(
     [{ nativeEvent: { scale: scale } }],
@@ -229,22 +221,12 @@ export const ImageGallery = memo(function ImageGallery({
           </TouchableOpacity>
 
           {editable && (
-            <>
-              <TouchableOpacity
-                style={styles.editButton}
-                onPress={() => handleEditImage(selectedImageIndex)}
-                disabled={isPickingImage}
-              >
-                <Crop size={24} color={Colors.white} />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={() => removeImage(selectedImageIndex)}
-              >
-                <Trash2 size={24} color={Colors.white} />
-              </TouchableOpacity>
-            </>
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={() => removeImage(selectedImageIndex)}
+            >
+              <Trash2 size={24} color={Colors.white} />
+            </TouchableOpacity>
           )}
 
           {/* Reset Zoom Button */}
@@ -459,15 +441,6 @@ const styles = StyleSheet.create({
     left: 20,
     zIndex: 10,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 20,
-    padding: 8,
-  },
-  editButton: {
-    position: 'absolute',
-    top: 50,
-    right: 80,
-    zIndex: 10,
-    backgroundColor: Colors.deepTeal,
     borderRadius: 20,
     padding: 8,
   },

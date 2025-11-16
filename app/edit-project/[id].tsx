@@ -16,13 +16,16 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Lightbulb, Clock, CheckCircle, Calendar, Star, Trash2, Plus } from 'lucide-react-native';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
+import { Select } from '@/components/Select';
+import { DatePicker } from '@/components/DatePicker';
 import { ModalHeader } from '@/components/ModalHeader';
 import { useProjects } from '@/hooks/projects-context';
 import { useLanguage } from '@/hooks/language-context';
 import { useImagePicker } from '@/hooks/useImagePicker';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
-import { ProjectStatus } from '@/types';
+import { ProjectStatus, ProjectType } from '@/types';
+import { getProjectTypeOptions } from '@/constants/projectTypes';
 
 export default function EditProjectScreen() {
   const { id } = useLocalSearchParams();
@@ -38,6 +41,8 @@ export default function EditProjectScreen() {
   const [images, setImages] = useState<string[]>([]);
   const [defaultImageIndex, setDefaultImageIndex] = useState<number>(0);
   const [status, setStatus] = useState<ProjectStatus>('idea');
+  const [projectType, setProjectType] = useState<ProjectType | undefined>(undefined);
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -49,6 +54,8 @@ export default function EditProjectScreen() {
       setImages(project.images || []);
       setDefaultImageIndex(project.defaultImageIndex || 0);
       setStatus(project.status);
+      setProjectType(project.projectType);
+      setStartDate(project.startDate);
     }
   }, [project]);
 
@@ -106,6 +113,8 @@ export default function EditProjectScreen() {
         images,
         defaultImageIndex: images.length > 0 ? defaultImageIndex : undefined,
         status,
+        projectType,
+        startDate,
       });
       router.dismiss();
     } catch (error) {
@@ -142,6 +151,22 @@ export default function EditProjectScreen() {
             multiline
             numberOfLines={3}
             style={styles.textArea}
+          />
+
+          <Select<ProjectType>
+            label={t('projects.projectType')}
+            value={projectType}
+            options={getProjectTypeOptions()}
+            onChange={setProjectType}
+            placeholder={t('projects.selectProjectType')}
+          />
+
+          <DatePicker
+            label={t('projects.startDate')}
+            value={startDate}
+            onChange={setStartDate}
+            placeholder={t('projects.selectStartDate')}
+            maxDate={new Date()}
           />
 
           <View style={styles.statusSection}>

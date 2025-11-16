@@ -21,6 +21,9 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
             ...p,
             createdAt: new Date(p.createdAt),
             updatedAt: new Date(p.updatedAt),
+            // Migration: handle new optional date fields
+            startDate: p.startDate ? new Date(p.startDate) : undefined,
+            completedDate: p.completedDate ? new Date(p.completedDate) : undefined,
           })));
         } catch (parseError) {
           console.error('Failed to parse projects data, resetting:', parseError);
@@ -59,11 +62,24 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
   };
 
   const updateProject = async (id: string, updates: Partial<Project>) => {
-    const updated = projects.map(p => 
-      p.id === id 
-        ? { ...p, ...updates, updatedAt: new Date() }
-        : p
-    );
+    const updated = projects.map(p => {
+      if (p.id === id) {
+        const updatedProject = { ...p, ...updates, updatedAt: new Date() };
+
+        // Auto-set completedDate when status changes to 'completed'
+        if (updates.status === 'completed' && p.status !== 'completed') {
+          updatedProject.completedDate = new Date();
+        }
+        // Clear completedDate if status changes away from 'completed'
+        else if (updates.status && updates.status !== 'completed' && p.status === 'completed') {
+          updatedProject.completedDate = undefined;
+        }
+
+        return updatedProject;
+      }
+      return p;
+    });
+
     setProjects(updated);
     await saveProjects(updated);
   };

@@ -8,9 +8,9 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Image,
   FlatList,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Lightbulb, Clock, CheckCircle, Calendar, Star, Trash2, Plus } from 'lucide-react-native';
@@ -163,7 +163,16 @@ export default function AddProjectScreen() {
                 keyExtractor={(item, index) => index.toString()}
                 renderItem={({ item, index }) => (
                   <View style={styles.imageContainer}>
-                    <Image source={{ uri: item }} style={styles.imagePreview} />
+                    <Image
+                      source={{ uri: item }}
+                      style={styles.imagePreview}
+                      contentFit="cover"
+                      transition={200}
+                      cachePolicy="memory-disk"
+                      onError={(error) => {
+                        console.warn('Image load error:', error);
+                      }}
+                    />
                     {index === defaultImageIndex && (
                       <View style={styles.defaultBadge}>
                         <Star size={16} color={Colors.white} fill={Colors.white} />

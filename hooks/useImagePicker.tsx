@@ -66,63 +66,32 @@ export const useImagePicker = () => {
     }
   };
 
-  const editExistingImage = async (imageUri: string): Promise<string | null> => {
-    try {
-      setIsPickingImage(true);
 
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Please grant permission to access your photos');
-        return null;
-      }
-
-      // Use launchImageLibraryAsync with editing enabled to crop existing image
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsMultipleSelection: false,
-        allowsEditing: true, // Enable cropping/editing
-        aspect: [4, 3],
-        quality: 0.8,
-        base64: false,
-      });
-
-      if (!result.canceled && result.assets && result.assets[0]) {
-        return result.assets[0].uri;
-      }
-      return null;
-    } catch (error) {
-      console.error('Error editing image:', error);
-      Alert.alert('Error', 'Failed to edit image');
-      return null;
-    } finally {
-      setIsPickingImage(false);
-    }
-  };
-
-  const showImagePickerOptions = async (): Promise<string[]> => {
+  const showImagePickerOptions = async (): Promise<string | null> => {
     return new Promise((resolve) => {
       Alert.alert(
-        'Add Photos',
-        'Choose how you want to add photos',
+        'Add Photo',
+        'Choose how you want to add a photo',
         [
           {
             text: 'Take Photo',
             onPress: async () => {
               const photo = await takePhotoWithCamera();
-              resolve(photo ? [photo] : []);
+              resolve(photo);
             }
           },
           {
             text: 'Choose from Gallery',
             onPress: async () => {
               const photos = await pickImagesFromGallery();
-              resolve(photos);
+              // Return first photo from gallery selection
+              resolve(photos.length > 0 ? photos[0] : null);
             }
           },
           {
             text: 'Cancel',
             style: 'cancel',
-            onPress: () => resolve([])
+            onPress: () => resolve(null)
           }
         ]
       );
@@ -133,7 +102,6 @@ export const useImagePicker = () => {
     isPickingImage,
     pickImagesFromGallery,
     takePhotoWithCamera,
-    showImagePickerOptions,
-    editExistingImage
+    showImagePickerOptions
   };
 };

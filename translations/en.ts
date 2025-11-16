@@ -185,6 +185,10 @@ export default {
     deleteJournalEntry: 'Delete Journal Entry',
     deleteJournalEntryConfirm: 'Are you sure you want to delete this journal entry?',
     deleteThisEntry: 'Delete this journal entry permanently',
+    journalIsProFeature: 'Journal is a Pro feature',
+    journalProDescription: 'Track your project progress with detailed journal entries. Available with Pro subscription.',
+    inspirationIsProFeature: 'Inspiration is a Pro feature',
+    inspirationProDescription: 'Save and organize your creative inspiration sources. Available with Pro subscription.',
     today: 'Today',
     yesterday: 'Yesterday',
     // Inspiration

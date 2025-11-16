@@ -39,7 +39,6 @@ export default function EditProjectScreen() {
   const project = getProjectById(id as string);
 
   const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
   const [notes, setNotes] = useState('');
   const [inspirationUrl, setInspirationUrl] = useState('');
   const [images, setImages] = useState<string[]>([]);
@@ -58,7 +57,6 @@ export default function EditProjectScreen() {
   useEffect(() => {
     if (project) {
       setTitle(project.title);
-      setDescription(project.description || '');
       setNotes(project.notes || '');
       setInspirationUrl(project.inspirationUrl || '');
       setImages(project.images || []);
@@ -265,7 +263,6 @@ export default function EditProjectScreen() {
     try {
       await updateProject(project.id, {
         title,
-        description,
         notes,
         inspirationUrl,
         images,
@@ -626,20 +623,22 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   sectionContent: {
-    backgroundColor: Colors.white,
-    borderRadius: 8,
+    backgroundColor: Colors.linen,
+    borderRadius: 16,
     paddingHorizontal: 24,
     paddingVertical: 20,
-    marginBottom: 32,
+    marginBottom: 20,
+    borderWidth: 0.5,
+    borderColor: 'rgba(139, 154, 123, 0.12)',
     ...Platform.select({
       ios: {
-        shadowColor: Colors.charcoal,
-        shadowOffset: { width: 0, height: 1 },
+        shadowColor: '#2D2D2D',
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.04,
-        shadowRadius: 4,
+        shadowRadius: 8,
       },
       android: {
-        elevation: 1,
+        elevation: 2,
       },
       default: {},
     }),
@@ -892,13 +891,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: `${Colors.sage}30`,
-    backgroundColor: 'transparent',
-    minHeight: 36,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    borderWidth: 0,
+    backgroundColor: 'rgba(139, 154, 123, 0.12)',
+    minHeight: 32,
   },
   statusOptionActive: {
     borderColor: 'transparent',
@@ -949,7 +947,7 @@ const styles = StyleSheet.create({
   imagePreview: {
     width: 130,
     height: 130,
-    borderRadius: 6,
+    borderRadius: 12,
     backgroundColor: Colors.warmGray,
   },
   defaultBadge: {

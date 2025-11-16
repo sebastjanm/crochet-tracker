@@ -10,7 +10,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import {
-  Edit,
   Trash2,
   Package,
   MapPin,
@@ -42,7 +41,7 @@ function formatEUDate(date: Date): string {
 
 export default function InventoryDetailScreen() {
   const { id } = useLocalSearchParams();
-  const { getItemById, deleteItem, updateItem } = useInventory();
+  const { getItemById, deleteItem } = useInventory();
   const { projects } = useProjects();
   const { t } = useLanguage();
   const item = getItemById(id as string);
@@ -109,30 +108,17 @@ export default function InventoryDetailScreen() {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ModalHeader title={displayName} />
 
-      <View style={styles.actionButtons}>
+      <View style={styles.editButtonContainer}>
         <TouchableOpacity
-          style={styles.actionButton}
           onPress={() => router.push(`/edit-inventory/${item.id}`)}
-          activeOpacity={0.7}
+          activeOpacity={0.6}
+          style={styles.editButton}
           accessible={true}
           accessibilityRole="button"
           accessibilityLabel={t('common.edit')}
           accessibilityHint={`Edit ${displayName} details`}
         >
-          <Edit size={20} color={Colors.charcoal} />
-          <Text style={styles.actionText}>{t('common.edit')}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={handleDelete}
-          activeOpacity={0.7}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel={t('common.delete')}
-          accessibilityHint={`Delete ${displayName} permanently`}
-        >
-          <Trash2 size={20} color={Colors.error} />
-          <Text style={[styles.actionText, { color: Colors.error }]}>{t('common.delete')}</Text>
+          <Text style={styles.editButtonText}>{t('common.edit')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -141,8 +127,7 @@ export default function InventoryDetailScreen() {
           <View style={styles.imageGalleryContainer}>
             <ImageGallery
               images={item.images}
-              onImagesChange={(images) => updateItem(item.id, { images })}
-              editable={true}
+              editable={false}
             />
           </View>
         )}
@@ -1006,6 +991,19 @@ export default function InventoryDetailScreen() {
               </Text>
             )}
           </View>
+
+          <TouchableOpacity
+            onPress={handleDelete}
+            style={styles.deleteButton}
+            activeOpacity={0.7}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.delete')}
+            accessibilityHint={`Delete ${displayName} permanently`}
+          >
+            <Trash2 size={20} color={Colors.error} />
+            <Text style={styles.deleteButtonText}>{t('common.delete')}</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -1017,29 +1015,26 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.cream,
   },
-  actionButtons: {
+  editButtonContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    justifyContent: 'flex-end',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(139, 154, 123, 0.15)',
   },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: Colors.cream,
-    borderRadius: 8,
+  editButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     minHeight: 44,
-    minWidth: 44,
+    justifyContent: 'center',
   },
-  actionText: {
+  editButtonText: {
     ...Typography.body,
-    color: Colors.charcoal,
-    fontWeight: '500',
+    color: Colors.deepSage,
+    fontSize: 17,
+    fontWeight: '400' as const,
+    letterSpacing: -0.2,
   },
   errorContainer: {
     flex: 1,
@@ -1059,7 +1054,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   content: {
-    padding: 16,
+    padding: 24,
   },
   categoryContainer: {
     flexDirection: 'row',
@@ -1072,15 +1067,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 999,
     minHeight: 36,
   },
   categoryText: {
     color: Colors.white,
-    fontWeight: '600',
+    fontWeight: '600' as const,
     fontSize: 14,
+    letterSpacing: -0.1,
   },
   quantityBadge: {
     flexDirection: 'row',
@@ -1404,5 +1400,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: Colors.deepTeal,
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 40,
+    marginBottom: 32,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(200, 117, 99, 0.3)',
+    minHeight: 52,
+    shadowColor: 'rgba(200, 117, 99, 0.2)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  deleteButtonText: {
+    ...Typography.body,
+    color: Colors.error,
+    fontWeight: '500' as const,
+    fontSize: 16,
+    letterSpacing: -0.1,
   },
 });

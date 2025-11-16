@@ -16,8 +16,10 @@ import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { ModalHeader } from '@/components/ModalHeader';
 import { EmptyState } from '@/components/EmptyState';
+import { LockedProFeature } from '@/components/LockedProFeature';
 import { useProjects } from '@/hooks/projects-context';
 import { useLanguage } from '@/hooks/language-context';
+import { useAuth } from '@/hooks/auth-context';
 import { useImagePicker } from '@/hooks/useImagePicker';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
@@ -27,6 +29,7 @@ export default function ProjectInspirationScreen() {
   const { id } = useLocalSearchParams();
   const { getProjectById, updateProject } = useProjects();
   const { t } = useLanguage();
+  const { user } = useAuth();
   const { showImagePickerOptions } = useImagePicker();
   const project = getProjectById(id as string);
 
@@ -127,14 +130,23 @@ export default function ProjectInspirationScreen() {
     });
   };
 
+  // Check if user is Pro
+  const isPro = user?.isPro === true;
+
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ModalHeader title={t('projects.inspiration')} />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
+      {!isPro ? (
+        <LockedProFeature
+          title={t('projects.inspirationIsProFeature')}
+          description={t('projects.inspirationProDescription')}
+        />
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
         <TouchableOpacity
           style={styles.addButton}
           onPress={handleAddInspiration}
@@ -268,7 +280,8 @@ export default function ProjectInspirationScreen() {
             </View>
           ))
         )}
-      </ScrollView>
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }

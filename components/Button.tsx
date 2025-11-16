@@ -101,18 +101,18 @@ const styles = StyleSheet.create({
   base: {
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 0,
     borderColor: 'transparent',
     ...Platform.select({
       ios: {
-        shadowColor: Colors.shadow,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 4,
+        shadowColor: '#2D2D2D',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.06,
+        shadowRadius: 12,
       },
       android: {
-        elevation: 2,
+        elevation: 4,
       },
       default: {},
     }),
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     paddingVertical: 16,
     minHeight: 56,
-    borderRadius: 8,
+    borderRadius: 12,
   },
   medium: {
     paddingHorizontal: 28,

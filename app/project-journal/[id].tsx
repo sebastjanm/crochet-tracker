@@ -16,8 +16,10 @@ import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { ModalHeader } from '@/components/ModalHeader';
 import { EmptyState } from '@/components/EmptyState';
+import { LockedProFeature } from '@/components/LockedProFeature';
 import { useProjects } from '@/hooks/projects-context';
 import { useLanguage } from '@/hooks/language-context';
+import { useAuth } from '@/hooks/auth-context';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import type { WorkProgressEntry } from '@/types';
@@ -26,6 +28,7 @@ export default function ProjectJournalScreen() {
   const { id } = useLocalSearchParams();
   const { getProjectById, updateProject } = useProjects();
   const { t } = useLanguage();
+  const { user } = useAuth();
   const project = getProjectById(id as string);
 
   const [isAddingEntry, setIsAddingEntry] = useState(false);
@@ -120,10 +123,19 @@ export default function ProjectJournalScreen() {
     }
   };
 
+  // Check if user is Pro
+  const isPro = user?.isPro === true;
+
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ModalHeader title={t('projects.projectJournal')} />
 
+      {!isPro ? (
+        <LockedProFeature
+          title={t('projects.journalIsProFeature')}
+          description={t('projects.journalProDescription')}
+        />
+      ) : (
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -220,6 +232,7 @@ export default function ProjectJournalScreen() {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+      )}
     </SafeAreaView>
   );
 }

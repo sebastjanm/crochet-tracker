@@ -190,6 +190,10 @@ export default {
     deleteJournalEntry: 'Izbriši vnos v dnevniku',
     deleteJournalEntryConfirm: 'Si prepričan/a, da želiš izbrisati ta vnos v dnevniku?',
     deleteThisEntry: 'Trajno izbriši ta vnos v dnevniku',
+    journalIsProFeature: 'Dnevnik je Pro funkcija',
+    journalProDescription: 'Spremljaj napredek svojih projektov z podrobnimi vnosi v dnevnik. Na voljo s Pro naročnino.',
+    inspirationIsProFeature: 'Inspiracija je Pro funkcija',
+    inspirationProDescription: 'Shrani in organiziraj svoje kreativne vire navdiha. Na voljo s Pro naročnino.',
     today: 'Danes',
     yesterday: 'Včeraj',
     // Inspiration

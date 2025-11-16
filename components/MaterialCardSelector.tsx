@@ -180,20 +180,20 @@ const styles = StyleSheet.create({
   },
   card: {
     width: CARD_WIDTH,
-    backgroundColor: Colors.white,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: `${Colors.sage}20`,
+    backgroundColor: Colors.linen,
+    borderRadius: 12,
+    borderWidth: 0.5,
+    borderColor: 'rgba(139, 154, 123, 0.12)',
     overflow: 'hidden',
     ...Platform.select({
       ios: {
-        shadowColor: Colors.shadow,
-        shadowOffset: { width: 0, height: 1 },
+        shadowColor: '#2D2D2D',
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.04,
-        shadowRadius: 2,
+        shadowRadius: 8,
       },
       android: {
-        elevation: 1,
+        elevation: 2,
       },
       default: {},
     }),
@@ -201,15 +201,16 @@ const styles = StyleSheet.create({
   cardSelected: {
     borderColor: Colors.deepSage,
     borderWidth: 1.5,
+    backgroundColor: Colors.ivory,
     ...Platform.select({
       ios: {
-        shadowColor: Colors.charcoal,
-        shadowOffset: { width: 0, height: 2 },
+        shadowColor: '#2D2D2D',
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.08,
-        shadowRadius: 4,
+        shadowRadius: 12,
       },
       android: {
-        elevation: 2,
+        elevation: 4,
       },
       default: {},
     }),

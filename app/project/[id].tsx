@@ -10,7 +10,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import {
-  Edit,
   Trash2,
   Link,
   FileText,
@@ -166,30 +165,17 @@ export default function ProjectDetailScreen() {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ModalHeader title={project.title} />
       
-      <View style={styles.actionButtons}>
+      <View style={styles.editButtonContainer}>
         <TouchableOpacity
-          style={styles.actionButton}
           onPress={() => router.push(`/edit-project/${project.id}`)}
-          activeOpacity={0.7}
+          activeOpacity={0.6}
+          style={styles.editButton}
           accessible={true}
           accessibilityRole="button"
           accessibilityLabel={t('common.edit')}
           accessibilityHint={`Edit ${project.title} project details`}
         >
-          <Edit size={20} color={Colors.charcoal} />
-          <Text style={styles.actionText}>{t('common.edit')}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={handleDelete}
-          activeOpacity={0.7}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel={t('common.delete')}
-          accessibilityHint={`Delete ${project.title} project permanently`}
-        >
-          <Trash2 size={20} color={Colors.error} />
-          <Text style={[styles.actionText, { color: Colors.error }]}>{t('common.delete')}</Text>
+          <Text style={styles.editButtonText}>{t('common.edit')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -197,8 +183,7 @@ export default function ProjectDetailScreen() {
         <View style={styles.imageGalleryContainer}>
           <ImageGallery
             images={project.images}
-            onImagesChange={(images) => updateProject(project.id, { images })}
-            editable={true}
+            editable={false}
           />
         </View>
 
@@ -237,12 +222,7 @@ export default function ProjectDetailScreen() {
             </View>
           )}
 
-          <Card style={styles.descriptionCard}>
-            <Text style={styles.sectionTitle}>{t('projects.description')}</Text>
-            <Text style={styles.description}>{project.description}</Text>
-          </Card>
-
-          {(project.yarnUsedIds?.length || project.hookUsedId || project.colorNotes) && (
+          {(project.yarnUsedIds?.length || project.hookUsedIds?.length || project.colorNotes) && (
             <Card style={styles.materialsCard}>
               <Text style={styles.sectionTitle}>{t('projects.materials')}</Text>
 
@@ -268,22 +248,25 @@ export default function ProjectDetailScreen() {
                 </View>
               )}
 
-              {project.hookUsedId && (
+              {project.hookUsedIds && project.hookUsedIds.length > 0 && (
                 <View style={styles.materialItem}>
                   <Text style={styles.materialLabel}>{t('projects.hookUsed')}:</Text>
-                  {(() => {
-                    const hook = getItemById(project.hookUsedId);
-                    return hook ? (
-                      <TouchableOpacity
-                        onPress={() => router.push(`/inventory/${project.hookUsedId}`)}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.materialValue}>{hook.name}</Text>
-                      </TouchableOpacity>
-                    ) : (
-                      <Text style={styles.materialDeletedValue}>{t('projects.deletedItem')}</Text>
-                    );
-                  })()}
+                  <View style={styles.yarnList}>
+                    {project.hookUsedIds.map((hookId) => {
+                      const hook = getItemById(hookId);
+                      if (!hook) return null;
+                      return (
+                        <TouchableOpacity
+                          key={hookId}
+                          style={styles.yarnChip}
+                          onPress={() => router.push(`/inventory/${hookId}`)}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.yarnChipText}>{hook.name}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
                 </View>
               )}
 
@@ -395,6 +378,19 @@ export default function ProjectDetailScreen() {
               {t('projects.updated')}: {new Date(project.updatedAt).toLocaleDateString()}
             </Text>
           </View>
+
+          <TouchableOpacity
+            onPress={handleDelete}
+            style={styles.deleteButton}
+            activeOpacity={0.7}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.delete')}
+            accessibilityHint={`Delete ${project.title} project permanently`}
+          >
+            <Trash2 size={20} color={Colors.error} />
+            <Text style={styles.deleteButtonText}>{t('common.delete')}</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -406,29 +402,26 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.cream,
   },
-  actionButtons: {
+  editButtonContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    justifyContent: 'flex-end',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(139, 154, 123, 0.15)',
   },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: Colors.cream,
-    borderRadius: 8,
+  editButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     minHeight: 44,
-    minWidth: 44,
+    justifyContent: 'center',
   },
-  actionText: {
+  editButtonText: {
     ...Typography.body,
-    color: Colors.charcoal,
-    fontWeight: '500',
+    color: Colors.deepSage,
+    fontSize: 17,
+    fontWeight: '400' as const,
+    letterSpacing: -0.2,
   },
   errorContainer: {
     flex: 1,
@@ -448,7 +441,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   content: {
-    padding: 16,
+    padding: 24,
   },
 
   badgesContainer: {
@@ -461,15 +454,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 16,
+    borderRadius: 999,
+    minHeight: 36,
   },
   statusText: {
     ...Typography.body,
     color: Colors.white,
-    fontWeight: '600',
-    fontSize: 13,
+    fontWeight: '600' as const,
+    fontSize: 14,
+    letterSpacing: -0.1,
   },
   dateContainer: {
     flexDirection: 'row',
@@ -482,18 +477,13 @@ const styles = StyleSheet.create({
     color: Colors.warmGray,
     fontSize: 14,
   },
-  descriptionCard: {
-    marginBottom: 16,
-  },
   sectionTitle: {
     ...Typography.title3,
     color: Colors.charcoal,
-    marginBottom: 8,
-  },
-  description: {
-    ...Typography.bodyLarge,
-    color: Colors.warmGray,
-    lineHeight: 24,
+    fontWeight: '500' as const,
+    fontSize: 18,
+    letterSpacing: -0.2,
+    marginBottom: 12,
   },
   materialsCard: {
     marginBottom: 16,
@@ -524,15 +514,18 @@ const styles = StyleSheet.create({
   },
   yarnChip: {
     backgroundColor: Colors.sage,
-    borderRadius: 16,
-    paddingHorizontal: 12,
+    borderRadius: 999,
+    paddingHorizontal: 14,
     paddingVertical: 6,
+    minHeight: 32,
+    justifyContent: 'center',
   },
   yarnChipText: {
     ...Typography.body,
     color: Colors.white,
     fontSize: 14,
-    fontWeight: '600' as const,
+    fontWeight: '500' as const,
+    letterSpacing: -0.1,
   },
   linksCard: {
     marginBottom: 16,
@@ -557,17 +550,17 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   previewCard: {
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: Colors.linen,
+    borderRadius: 16,
+    padding: 20,
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    shadowColor: Colors.shadow,
+    borderWidth: 0.5,
+    borderColor: 'rgba(139, 154, 123, 0.12)',
+    shadowColor: '#2D2D2D',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
   previewHeader: {
     flexDirection: 'row',
@@ -583,8 +576,9 @@ const styles = StyleSheet.create({
   previewTitle: {
     ...Typography.title3,
     color: Colors.charcoal,
-    fontWeight: '600' as const,
+    fontWeight: '500' as const,
     fontSize: 16,
+    letterSpacing: -0.2,
   },
   previewText: {
     ...Typography.body,
@@ -598,14 +592,41 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   metadata: {
-    marginTop: 24,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    marginTop: 32,
+    paddingTop: 20,
+    borderTopWidth: 0.5,
+    borderTopColor: 'rgba(139, 154, 123, 0.15)',
   },
   metaText: {
     ...Typography.caption,
     color: Colors.warmGray,
     marginBottom: 4,
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 40,
+    marginBottom: 32,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(200, 117, 99, 0.3)',
+    minHeight: 52,
+    shadowColor: 'rgba(200, 117, 99, 0.2)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  deleteButtonText: {
+    ...Typography.body,
+    color: Colors.error,
+    fontWeight: '500' as const,
+    fontSize: 16,
+    letterSpacing: -0.1,
   },
 });

@@ -37,6 +37,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       id: '1',
       name,
       email,
+      isPro: false, // Default to non-Pro
     };
 
     await AsyncStorage.setItem('user', JSON.stringify(mockUser));
@@ -50,6 +51,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       id: Date.now().toString(),
       name,
       email,
+      isPro: false, // Default to non-Pro
     };
 
     await AsyncStorage.setItem('user', JSON.stringify(mockUser));

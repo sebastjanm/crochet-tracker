@@ -112,14 +112,9 @@ export default function ProjectsScreen() {
           {getStatusIcon(item.status)}
         </View>
         <View style={styles.overlay}>
-          <View style={styles.projectInfo}>
-            <Text style={styles.projectTitle} numberOfLines={2}>
-              {item.title}
-            </Text>
-            <Text style={styles.projectDescription} numberOfLines={1}>
-              {item.description}
-            </Text>
-          </View>
+          <Text style={styles.projectTitle} numberOfLines={2}>
+            {item.title}
+          </Text>
         </View>
         </View>
       </TouchableOpacity>
@@ -355,79 +350,73 @@ const styles = StyleSheet.create({
   categoryChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 26,
+    backgroundColor: 'rgba(139, 154, 123, 0.08)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 999,
     marginRight: 12,
-    borderWidth: 2.5,
-    borderColor: Colors.sage,
-    gap: 10,
-    minHeight: 50,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 154, 123, 0.15)',
+    gap: 8,
+    minHeight: 44,
     ...Platform.select({
       ios: {
-        shadowColor: Colors.sage,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
+        shadowColor: '#2D2D2D',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.02,
+        shadowRadius: 2,
       },
       android: {
-        elevation: 3,
+        elevation: 1,
       },
       default: {},
     }),
   },
   categoryChipActive: {
+    backgroundColor: Colors.linen,
     borderColor: Colors.deepSage,
-    borderWidth: 3,
     ...Platform.select({
       ios: {
-        shadowColor: Colors.sage,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.25,
-        shadowRadius: 8,
-        transform: [{ scale: 1.03 }],
+        shadowColor: '#2D2D2D',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 4,
       },
       android: {
-        elevation: 6,
+        elevation: 2,
       },
       default: {},
     }),
   },
   categoryLabel: {
     ...Typography.body,
-    color: Colors.deepSage,
-    fontSize: 16,
-    fontWeight: '700' as const,
+    color: Colors.charcoal,
+    fontSize: 15,
+    fontWeight: '500' as const,
     letterSpacing: -0.1,
   },
   categoryLabelActive: {
-    color: Colors.white,
-    fontWeight: '700' as const,
-    textShadowColor: 'rgba(0,0,0,0.1)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 1,
+    color: Colors.charcoal,
+    fontWeight: '600' as const,
   },
   categoryCount: {
     ...Typography.caption,
-    color: Colors.white,
-    backgroundColor: Colors.deepSage,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 14,
-    fontSize: 14,
-    fontWeight: '700' as const,
-    minWidth: 28,
+    color: Colors.deepSage,
+    backgroundColor: 'rgba(139, 154, 123, 0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+    fontSize: 13,
+    fontWeight: '500' as const,
+    minWidth: 24,
     textAlign: 'center',
-    lineHeight: 20,
-    borderWidth: 1,
-    borderColor: Colors.sage,
+    lineHeight: 18,
+    borderWidth: 0,
   },
   categoryCountActive: {
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    color: Colors.deepSage,
-    fontWeight: '800' as const,
-    borderColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: Colors.deepSage,
+    color: Colors.white,
+    fontWeight: '600' as const,
   },
   stats: {
     flexDirection: 'row',
@@ -540,8 +529,9 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    padding: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    padding: 16,
+    justifyContent: 'flex-end',
   },
   statusBadge: {
     position: 'absolute',
@@ -555,20 +545,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backdropFilter: 'blur(10px)',
   },
-  projectInfo: {
-    marginTop: 8,
-  },
   projectTitle: {
     ...Typography.title3,
     color: Colors.white,
-    fontWeight: '700' as const,
-    marginBottom: 4,
-    fontSize: 16,
-  },
-  projectDescription: {
-    ...Typography.caption,
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontSize: 12,
+    fontWeight: '600' as const,
+    fontSize: 17,
+    lineHeight: 22,
+    letterSpacing: -0.2,
   },
   projectStatus: {
     flexDirection: 'row',

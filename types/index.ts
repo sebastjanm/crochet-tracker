@@ -27,7 +27,6 @@ export interface InspirationSource {
 export interface Project {
   id: string;
   title: string;
-  description: string;
   status: ProjectStatus;
   images: string[];
   defaultImageIndex?: number; // Index of the default image in the images array
@@ -277,4 +276,5 @@ export interface User {
   email: string;
   avatar?: string;
   currency?: string; // Default currency for purchases (EUR, USD, etc.)
+  isPro?: boolean; // Pro subscription status
 }

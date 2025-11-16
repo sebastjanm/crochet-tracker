@@ -29,26 +29,28 @@ export const Card: React.FC<CardProps> = ({
 
 const styles = StyleSheet.create({
   base: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.linen,
     borderRadius: 16,
-    padding: 16,
+    padding: 20,
   },
   elevated: {
+    borderWidth: 0.5,
+    borderColor: 'rgba(139, 154, 123, 0.12)',
     ...Platform.select({
       ios: {
-        shadowColor: Colors.shadow,
+        shadowColor: '#2D2D2D',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
+        shadowOpacity: 0.04,
         shadowRadius: 8,
       },
       android: {
-        elevation: 3,
+        elevation: 2,
       },
       default: {},
     }),
   },
   outlined: {
-    borderWidth: 1,
-    borderColor: Colors.border,
+    borderWidth: 0.5,
+    borderColor: 'rgba(139, 154, 123, 0.12)',
   },
 });

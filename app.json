@@ -51,7 +51,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "The app accesses your photos to let you share them with your friends."
+          "photosPermission": "The app accesses your photos to let you add images to your projects and inventory items.",
+          "cameraPermission": "The app accesses your camera to let you take photos of your crochet projects and supplies."
         }
       ],
       [

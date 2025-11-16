@@ -13,13 +13,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
-import { Camera, Image as ImageIcon, Lightbulb, Clock, CheckCircle, Calendar, Star, Trash2, Plus } from 'lucide-react-native';
+import { Lightbulb, Clock, CheckCircle, Calendar, Star, Trash2, Plus } from 'lucide-react-native';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { ModalHeader } from '@/components/ModalHeader';
 import { useProjects } from '@/hooks/projects-context';
 import { useLanguage } from '@/hooks/language-context';
+import { useImagePicker } from '@/hooks/useImagePicker';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { ProjectStatus } from '@/types';
@@ -28,8 +28,9 @@ export default function EditProjectScreen() {
   const { id } = useLocalSearchParams();
   const { getProjectById, updateProject } = useProjects();
   const { t } = useLanguage();
+  const { showImagePickerOptions } = useImagePicker();
   const project = getProjectById(id as string);
-  
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [notes, setNotes] = useState('');
@@ -66,23 +67,10 @@ export default function EditProjectScreen() {
     );
   }
 
-  const pickImage = async (useCamera: boolean) => {
-    const result = useCamera
-      ? await ImagePicker.launchCameraAsync({
-          mediaTypes: ['images'],
-          allowsEditing: true,
-          aspect: [1, 1],
-          quality: 0.8,
-        })
-      : await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ['images'],
-          allowsMultipleSelection: !useCamera,
-          quality: 0.8,
-        });
-
-    if (!result.canceled) {
-      const newImages = result.assets.map(asset => asset.uri);
-      setImages([...images, ...newImages]);
+  const handleAddImage = async () => {
+    const uri = await showImagePickerOptions();
+    if (uri) {
+      setImages([...images, uri]);
     }
   };
 
@@ -240,12 +228,12 @@ export default function EditProjectScreen() {
                 ListFooterComponent={
                   <TouchableOpacity
                     style={styles.addImageButton}
-                    onPress={() => pickImage(false)}
+                    onPress={handleAddImage}
                     activeOpacity={0.7}
                     accessible={true}
                     accessibilityRole="button"
                     accessibilityLabel={t('projects.addMorePhotos')}
-                    accessibilityHint={t('projects.chooseFromGallery')}
+                    accessibilityHint="Choose from camera or gallery"
                   >
                     <Plus size={24} color={Colors.sage} />
                     <Text style={styles.addImageText}>{t('common.add')}</Text>
@@ -256,32 +244,18 @@ export default function EditProjectScreen() {
             )}
             
             {images.length === 0 && (
-              <View style={styles.imageButtons}>
-                <TouchableOpacity
-                  style={styles.imageButton}
-                  onPress={() => pickImage(false)}
-                  activeOpacity={0.7}
-                  accessible={true}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('common.gallery')}
-                  accessibilityHint={t('projects.chooseFromGallery')}
-                >
-                  <ImageIcon size={24} color={Colors.sage} />
-                  <Text style={styles.imageButtonText}>{t('common.gallery')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.imageButton}
-                  onPress={() => pickImage(true)}
-                  activeOpacity={0.7}
-                  accessible={true}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('common.camera')}
-                  accessibilityHint={t('projects.takePhotoWithCamera')}
-                >
-                  <Camera size={24} color={Colors.sage} />
-                  <Text style={styles.imageButtonText}>{t('common.camera')}</Text>
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity
+                style={styles.addPhotoButton}
+                onPress={handleAddImage}
+                activeOpacity={0.7}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={t('projects.addPhoto')}
+                accessibilityHint="Choose to take a photo or select from gallery"
+              >
+                <Plus size={32} color={Colors.sage} />
+                <Text style={styles.addPhotoButtonText}>{t('projects.addPhoto')}</Text>
+              </TouchableOpacity>
             )}
             
             {images.length > 0 && (
@@ -506,5 +480,23 @@ const styles = StyleSheet.create({
     ...Typography.caption,
     color: Colors.sage,
     fontWeight: '600' as const,
+  },
+  addPhotoButton: {
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: Colors.sage,
+    borderStyle: 'dashed',
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    minHeight: 120,
+  },
+  addPhotoButtonText: {
+    ...Typography.body,
+    color: Colors.sage,
+    fontWeight: '600' as const,
+    fontSize: 16,
   },
 });

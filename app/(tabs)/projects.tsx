@@ -576,8 +576,8 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    right: 20,
-    bottom: Platform.select({ ios: 100, android: 90, default: 100 }),
+    right: 16,
+    bottom: Platform.select({ ios: 24, android: 24, default: 24 }),
     width: 68,
     height: 68,
     borderRadius: 34,
@@ -588,13 +588,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...Platform.select({
       ios: {
-        shadowColor: Colors.sage,
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.4,
-        shadowRadius: 16,
+        shadowColor: Colors.black,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
       },
       android: {
-        elevation: 10,
+        elevation: 8,
       },
       default: {},
     }),

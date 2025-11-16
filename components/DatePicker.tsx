@@ -80,18 +80,11 @@ export function DatePicker({
 
   return (
     <View style={styles.container}>
-      <View style={styles.labelContainer}>
-        <Text style={styles.label}>
-          {label}
-          {required && <Text style={styles.required}> *</Text>}
-        </Text>
-      </View>
-
       <TouchableOpacity
         style={[
-          styles.dateButton,
-          error && styles.dateButtonError,
-          disabled && styles.dateButtonDisabled,
+          styles.dateRow,
+          error && styles.dateRowError,
+          disabled && styles.dateRowDisabled,
         ]}
         onPress={handlePress}
         disabled={disabled}
@@ -104,30 +97,24 @@ export function DatePicker({
           disabled,
         }}
       >
-        <Calendar size={20} color={disabled ? Colors.warmGray : Colors.charcoal} />
-
-        <Text
-          style={[
-            styles.dateText,
-            !value && styles.placeholderText,
-            disabled && styles.disabledText,
-          ]}
-        >
-          {displayValue}
+        <Text style={styles.label}>
+          {label}
+          {required && <Text style={styles.required}> *</Text>}
         </Text>
 
-        {value && !disabled && (
-          <TouchableOpacity
-            onPress={handleClear}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel="Clear date"
-            accessibilityHint="Double tap to remove selected date"
+        <View style={styles.dateValueContainer}>
+          <Text
+            style={[
+              styles.dateText,
+              !value && styles.placeholderText,
+              disabled && styles.disabledText,
+            ]}
           >
-            <X size={20} color={Colors.charcoal} />
-          </TouchableOpacity>
-        )}
+            {displayValue}
+          </Text>
+
+          <Calendar size={20} color={disabled ? Colors.warmGray : Colors.charcoal} />
+        </View>
       </TouchableOpacity>
 
       {error && (
@@ -177,44 +164,51 @@ export function DatePicker({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    marginBottom: 0,
   },
-  labelContainer: {
-    marginBottom: 8,
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'transparent',
+    borderRadius: 0,
+    borderWidth: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: `${Colors.sage}26`, // 15% opacity
+    paddingHorizontal: 0,
+    paddingVertical: 14,
+    minHeight: 44,
+  },
+  dateRowError: {
+    borderBottomColor: Colors.error,
+    borderBottomWidth: 2,
+  },
+  dateRowDisabled: {
+    opacity: 0.5,
   },
   label: {
     ...Typography.body,
     color: Colors.charcoal,
-    fontWeight: '500' as const,
-    fontSize: 16,
+    fontSize: 17,
+    fontWeight: '400' as const,
+    flex: 0,
+    marginRight: 12,
   },
   required: {
     color: Colors.error,
   },
-  dateButton: {
+  dateValueContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    minHeight: 52,
-  },
-  dateButtonError: {
-    borderColor: Colors.error,
-  },
-  dateButtonDisabled: {
-    backgroundColor: Colors.beige,
-    opacity: 0.6,
+    gap: 8,
+    flex: 1,
+    justifyContent: 'flex-end',
   },
   dateText: {
     ...Typography.body,
     color: Colors.charcoal,
-    fontSize: 16,
-    flex: 1,
+    fontSize: 17,
+    textAlign: 'right',
   },
   placeholderText: {
     color: Colors.warmGray,
@@ -222,11 +216,15 @@ const styles = StyleSheet.create({
   disabledText: {
     color: Colors.warmGray,
   },
+  clearButton: {
+    padding: 4,
+  },
   errorText: {
-    ...Typography.caption,
+    ...Typography.caption2,
     color: Colors.error,
-    marginTop: 4,
-    fontSize: 13,
+    marginTop: 6,
+    marginLeft: 0,
+    fontSize: 11,
   },
   iosPicker: {
     backgroundColor: Colors.white,

@@ -106,9 +106,10 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
     deleteProject,
     getProjectById,
     getProjectsByStatus,
-    ideaCount: projects.filter(p => p.status === 'idea').length,
+    planningCount: projects.filter(p => p.status === 'planning').length,
     inProgressCount: projects.filter(p => p.status === 'in-progress').length,
+    onHoldCount: projects.filter(p => p.status === 'on-hold').length,
     completedCount: projects.filter(p => p.status === 'completed').length,
-    maybeSomedayCount: projects.filter(p => p.status === 'maybe-someday').length,
+    froggedCount: projects.filter(p => p.status === 'frogged').length,
   };
 });

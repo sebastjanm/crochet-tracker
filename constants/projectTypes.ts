@@ -38,6 +38,11 @@ export const PROJECT_TYPE_CONFIGS: Record<ProjectType, ProjectTypeConfig> = {
     icon: 'Heart',
     color: '#9C27B0', // Purple
   },
+  'leg-warmer': {
+    label: 'Leg Warmer',
+    icon: 'Footprints',
+    color: '#FF6B9D', // Pink
+  },
   other: {
     label: 'Other',
     icon: 'MoreHorizontal',

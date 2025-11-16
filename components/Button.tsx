@@ -101,18 +101,18 @@ const styles = StyleSheet.create({
   base: {
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 14,
-    borderWidth: 2,
+    borderRadius: 8,
+    borderWidth: 0,
     borderColor: 'transparent',
     ...Platform.select({
       ios: {
         shadowColor: Colors.shadow,
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.15,
-        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 4,
       },
       android: {
-        elevation: 4,
+        elevation: 2,
       },
       default: {},
     }),
@@ -124,17 +124,17 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   primary: {
-    backgroundColor: Colors.sage,
-    borderColor: Colors.deepSage,
+    backgroundColor: Colors.deepSage,
+    borderColor: 'transparent',
     ...Platform.select({
       ios: {
-        shadowColor: Colors.sage,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.25,
-        shadowRadius: 8,
+        shadowColor: Colors.charcoal,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.12,
+        shadowRadius: 6,
       },
       android: {
-        elevation: 6,
+        elevation: 3,
       },
       default: {},
     }),
@@ -187,10 +187,10 @@ const styles = StyleSheet.create({
     }),
   },
   large: {
-    paddingHorizontal: 36,
-    paddingVertical: 18,
-    minHeight: 60,
-    borderRadius: 18,
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    minHeight: 56,
+    borderRadius: 8,
   },
   medium: {
     paddingHorizontal: 28,

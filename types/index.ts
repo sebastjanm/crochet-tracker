@@ -1,4 +1,4 @@
-export type ProjectStatus = 'idea' | 'in-progress' | 'completed' | 'maybe-someday';
+export type ProjectStatus = 'planning' | 'in-progress' | 'on-hold' | 'completed' | 'frogged';
 
 export type ProjectType =
   | 'blanket'
@@ -7,7 +7,22 @@ export type ProjectType =
   | 'accessory'
   | 'home-decor'
   | 'toy'
+  | 'leg-warmer'
   | 'other';
+
+export interface WorkProgressEntry {
+  id: string;
+  date: Date; // Auto-set, not displayed in UI
+  notes: string; // Combined work notes (what was done + what's next)
+}
+
+export interface InspirationSource {
+  id: string;
+  url?: string; // Optional URL
+  patternSource?: string; // Pattern source text
+  images?: string[]; // Extra inspiration images
+  description?: string; // Multiline description
+}
 
 export interface Project {
   id: string;
@@ -17,6 +32,8 @@ export interface Project {
   images: string[];
   defaultImageIndex?: number; // Index of the default image in the images array
   patternPdf?: string;
+  patternUrl?: string; // Pattern URL (e.g., Ravelry, blog post)
+  patternImages?: string[]; // Photos of written patterns
   inspirationUrl?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -27,6 +44,15 @@ export interface Project {
   projectType?: ProjectType;
   startDate?: Date;
   completedDate?: Date; // Auto-set when status becomes 'completed'
+
+  // Phase 2: Materials
+  yarnUsedIds?: string[]; // Array of inventory item IDs (yarn category)
+  hookUsedIds?: string[]; // Array of inventory item IDs (hook category)
+  colorNotes?: string; // Free-form color notes
+
+  // Phase 3: Work progress and inspiration
+  workProgress?: WorkProgressEntry[]; // Array of work entries
+  inspirationSources?: InspirationSource[]; // Array of inspiration sources
 }
 
 // Yarn weight standard (Craft Yarn Council)

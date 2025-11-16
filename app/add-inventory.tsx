@@ -12,7 +12,7 @@ import {
   Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { QrCode, Barcode } from 'lucide-react-native';
@@ -29,11 +29,14 @@ import { InventoryItem, YarnDetails, HookDetails } from '@/types';
 import { useLanguage } from '@/hooks/language-context';
 
 export default function AddInventoryScreen() {
+  const params = useLocalSearchParams();
   const { addItem } = useInventory();
   const { projects } = useProjects();
   const { user } = useAuth();
   const { t } = useLanguage();
-  const [category, setCategory] = useState<InventoryItem['category']>('yarn');
+  const [category, setCategory] = useState<InventoryItem['category']>(
+    (params.category as InventoryItem['category']) || 'yarn'
+  );
   const [description, setDescription] = useState('');
   const [quantity, setQuantity] = useState('1');
   const [images, setImages] = useState<string[]>([]);

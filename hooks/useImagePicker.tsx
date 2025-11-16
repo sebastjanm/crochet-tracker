@@ -47,8 +47,7 @@ export const useImagePicker = () => {
       }
 
       const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true, // Allow cropping after taking photo
-        aspect: [4, 3],
+        allowsEditing: false, // Accept photos without forced cropping
         quality: 0.8,
         base64: false,
       });
@@ -98,10 +97,41 @@ export const useImagePicker = () => {
     });
   };
 
+  const showImagePickerOptionsMultiple = async (): Promise<string[]> => {
+    return new Promise((resolve) => {
+      Alert.alert(
+        'Add Photos',
+        'Choose how you want to add photos',
+        [
+          {
+            text: 'Take Photo',
+            onPress: async () => {
+              const photo = await takePhotoWithCamera();
+              resolve(photo ? [photo] : []);
+            }
+          },
+          {
+            text: 'Choose from Gallery',
+            onPress: async () => {
+              const photos = await pickImagesFromGallery();
+              resolve(photos);
+            }
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel',
+            onPress: () => resolve([])
+          }
+        ]
+      );
+    });
+  };
+
   return {
     isPickingImage,
     pickImagesFromGallery,
     takePhotoWithCamera,
-    showImagePickerOptions
+    showImagePickerOptions,
+    showImagePickerOptionsMultiple,
   };
 };

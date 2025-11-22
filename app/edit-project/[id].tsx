@@ -525,9 +525,6 @@ export default function EditProjectScreen() {
               )}
           </View>
 
-          {/* SECTION 2: MATERIALS */}
-          <SectionHeader title={t('projects.materials')} badge="2" />
-
           <SectionHeaderWithAdd
             title={t('projects.materialsYarn')}
             onAdd={handleAddYarn}

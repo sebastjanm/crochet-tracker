@@ -23,6 +23,7 @@ import { useAuth } from '@/hooks/auth-context';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import type { WorkProgressEntry } from '@/types';
+import { normalizeBorder, buttonShadow } from '@/constants/pixelRatio';
 
 export default function ProjectJournalScreen() {
   const { id } = useLocalSearchParams();
@@ -273,11 +274,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 16,
     minHeight: 50,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...Platform.select({
+      ...buttonShadow,
+      default: {},
+    }),
   },
   addButtonText: {
     ...Typography.body,
@@ -290,13 +290,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
-    borderWidth: 1.5,
+    borderWidth: normalizeBorder(1.5),
     borderColor: Colors.sage,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...Platform.select({
+      ...buttonShadow,
+      default: {},
+    }),
   },
   formTitle: {
     ...Typography.title3,
@@ -320,7 +319,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
-    borderWidth: 1,
+    borderWidth: normalizeBorder(1),
     borderColor: Colors.border,
     minHeight: 44,
     justifyContent: 'center',
@@ -356,13 +355,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     borderRadius: 12,
     padding: 16,
-    borderWidth: 1,
+    borderWidth: normalizeBorder(1),
     borderColor: Colors.border,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
+    ...Platform.select({
+      ...buttonShadow,
+      default: {},
+    }),
   },
   entryHeader: {
     flexDirection: 'row',

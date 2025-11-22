@@ -3,7 +3,7 @@ export const Colors = {
   cream: '#FAF8F5',           // Soft wool cream (main bg)
   linen: '#F5F3EF',           // Warm linen (cards)
   ivory: '#FEFDFB',           // Pure ivory (elevated cards)
-  beige: '#F5F0E8',           // Legacy beige (keep for compatibility)
+  beige: '#efece5',           // Page background (subtle contrast)
 
   // Neutrals - Swiss precision
   charcoal: '#2D2D2D',        // Deep charcoal (primary text)
@@ -33,6 +33,7 @@ export const Colors = {
   border: '#E5E0D8',
   shadow: 'rgba(45, 45, 45, 0.04)',  // Warm, subtle shadow
   overlay: 'rgba(26, 26, 26, 0.5)',
+  filterBar: '#e5e1d6',          // Filter/categories container background
 };
 
 export default Colors;

@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -32,6 +33,7 @@ import { useInventory } from '@/hooks/inventory-context';
 import { useLanguage } from '@/hooks/language-context';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
+import { normalizeBorder, cardShadow } from '@/constants/pixelRatio';
 import type { ProjectStatus } from '@/types';
 
 export default function ProjectDetailScreen() {
@@ -163,21 +165,13 @@ export default function ProjectDetailScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ModalHeader title={project.title} />
-      
-      <View style={styles.editButtonContainer}>
-        <TouchableOpacity
-          onPress={() => router.push(`/edit-project/${project.id}`)}
-          activeOpacity={0.6}
-          style={styles.editButton}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel={t('common.edit')}
-          accessibilityHint={`Edit ${project.title} project details`}
-        >
-          <Text style={styles.editButtonText}>{t('common.edit')}</Text>
-        </TouchableOpacity>
-      </View>
+      <ModalHeader
+        title={project.title}
+        rightAction={{
+          label: t('common.edit'),
+          onPress: () => router.push(`/edit-project/${project.id}`),
+        }}
+      />
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.imageGalleryContainer}>
@@ -402,27 +396,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.cream,
   },
-  editButtonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(139, 154, 123, 0.15)',
-  },
-  editButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  editButtonText: {
-    ...Typography.body,
-    color: Colors.deepSage,
-    fontSize: 17,
-    fontWeight: '400' as const,
-    letterSpacing: -0.2,
-  },
   errorContainer: {
     flex: 1,
     alignItems: 'center',
@@ -554,13 +527,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
-    borderWidth: 0.5,
+    borderWidth: normalizeBorder(0.5),
     borderColor: 'rgba(139, 154, 123, 0.12)',
-    shadowColor: '#2D2D2D',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    ...Platform.select({
+      ...cardShadow,
+      default: {},
+    }),
   },
   previewHeader: {
     flexDirection: 'row',
@@ -594,7 +566,7 @@ const styles = StyleSheet.create({
   metadata: {
     marginTop: 32,
     paddingTop: 20,
-    borderTopWidth: 0.5,
+    borderTopWidth: normalizeBorder(0.5),
     borderTopColor: 'rgba(139, 154, 123, 0.15)',
   },
   metaText: {
@@ -613,14 +585,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     backgroundColor: Colors.white,
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: normalizeBorder(1),
     borderColor: 'rgba(200, 117, 99, 0.3)',
     minHeight: 52,
-    shadowColor: 'rgba(200, 117, 99, 0.2)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 2,
+    ...Platform.select({
+      ...cardShadow,
+      default: {},
+    }),
   },
   deleteButtonText: {
     ...Typography.body,

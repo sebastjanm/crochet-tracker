@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, ViewProps, Platform } from 'react-native';
 import Colors from '@/constants/colors';
+import { normalizeBorder, cardShadow, normalizeBorderOpacity } from '@/constants/pixelRatio';
 
 interface CardProps extends ViewProps {
   children: React.ReactNode;
@@ -34,23 +35,15 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   elevated: {
-    borderWidth: 0.5,
-    borderColor: 'rgba(139, 154, 123, 0.12)',
+    borderWidth: normalizeBorder(0.5),
+    borderColor: `rgba(139, 154, 123, ${normalizeBorderOpacity(0.12)})`,
     ...Platform.select({
-      ios: {
-        shadowColor: '#2D2D2D',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
+      ...cardShadow,
       default: {},
     }),
   },
   outlined: {
-    borderWidth: 0.5,
-    borderColor: 'rgba(139, 154, 123, 0.12)',
+    borderWidth: normalizeBorder(0.5),
+    borderColor: `rgba(139, 154, 123, ${normalizeBorderOpacity(0.12)})`,
   },
 });

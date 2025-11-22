@@ -28,6 +28,7 @@ import { useAuth } from '@/hooks/auth-context';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { Project, ProjectStatus } from '@/types';
+import { normalizeBorder, normalizeBorderOpacity, cardShadow, buttonShadow } from '@/constants/pixelRatio';
 
 export default function ProjectsScreen() {
   const { projects, planningCount, inProgressCount, onHoldCount, completedCount, froggedCount } = useProjects();
@@ -264,18 +265,10 @@ const styles = StyleSheet.create({
   customHeader: {
     backgroundColor: Colors.cream,
     paddingBottom: isSmallDevice ? 12 : 16,
-    borderBottomWidth: 1,
+    borderBottomWidth: normalizeBorder(1),
     borderBottomColor: Colors.border,
     ...Platform.select({
-      ios: {
-        shadowColor: Colors.black,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
+      ...cardShadow,
       default: {},
     }),
   },
@@ -288,7 +281,7 @@ const styles = StyleSheet.create({
     maxWidth: isTablet ? 1200 : '100%',
     alignSelf: 'center',
     width: '100%',
-    minHeight: 56,
+    height: isSmallDevice ? 72 : isTablet ? 92 : 96,
   },
   textContainer: {
     flex: 1,
@@ -321,15 +314,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...Platform.select({
-      ios: {
-        shadowColor: Colors.deepSage,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 1,
-      },
+      ...cardShadow,
       default: {},
     }),
   },
@@ -339,8 +324,9 @@ const styles = StyleSheet.create({
   },
   categoriesContainer: {
     maxHeight: 80,
-    backgroundColor: Colors.beige,
-    marginTop: 12,
+    backgroundColor: Colors.filterBar,
+    marginTop: 0,
+    paddingVertical: 8,
   },
   categoriesContent: {
     paddingHorizontal: 16,
@@ -355,36 +341,21 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 999,
     marginRight: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(139, 154, 123, 0.15)',
+    borderWidth: normalizeBorder(1),
+    borderColor: `rgba(139, 154, 123, ${normalizeBorderOpacity(0.2)})`,
     gap: 8,
     minHeight: 44,
     ...Platform.select({
-      ios: {
-        shadowColor: '#2D2D2D',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.02,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 1,
-      },
+      ...cardShadow,
       default: {},
     }),
   },
   categoryChipActive: {
     backgroundColor: Colors.linen,
+    borderWidth: normalizeBorder(1),
     borderColor: Colors.deepSage,
     ...Platform.select({
-      ios: {
-        shadowColor: '#2D2D2D',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
+      ...cardShadow,
       default: {},
     }),
   },
@@ -392,6 +363,7 @@ const styles = StyleSheet.create({
     ...Typography.body,
     color: Colors.charcoal,
     fontSize: 15,
+    lineHeight: 20,
     fontWeight: '500' as const,
     letterSpacing: -0.1,
   },
@@ -403,20 +375,28 @@ const styles = StyleSheet.create({
     ...Typography.caption,
     color: Colors.deepSage,
     backgroundColor: 'rgba(139, 154, 123, 0.12)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 999,
     fontSize: 13,
     fontWeight: '500' as const,
-    minWidth: 24,
+    minWidth: 28,
     textAlign: 'center',
     lineHeight: 18,
-    borderWidth: 0,
+    borderWidth: normalizeBorder(0),
+    height: 26,
+    overflow: 'visible',
   },
   categoryCountActive: {
     backgroundColor: Colors.deepSage,
     color: Colors.white,
     fontWeight: '600' as const,
+    borderWidth: normalizeBorder(0),
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    minWidth: 28,
+    height: 26,
+    overflow: 'visible',
   },
   stats: {
     flexDirection: 'row',
@@ -504,18 +484,11 @@ const styles = StyleSheet.create({
   },
   projectCard: {
     borderRadius: 16,
-    overflow: 'hidden',
     backgroundColor: Colors.white,
+    borderWidth: normalizeBorder(0.5),
+    borderColor: `rgba(0, 0, 0, ${normalizeBorderOpacity(0.04)})`,
     ...Platform.select({
-      ios: {
-        shadowColor: Colors.charcoal,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 6,
-      },
+      ...cardShadow,
       default: {},
     }),
   },
@@ -523,6 +496,8 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 220,
     backgroundColor: Colors.beige,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
   },
   overlay: {
     position: 'absolute',
@@ -570,20 +545,12 @@ const styles = StyleSheet.create({
     height: 68,
     borderRadius: 34,
     backgroundColor: Colors.sage,
-    borderWidth: 3,
+    borderWidth: normalizeBorder(3),
     borderColor: Colors.deepSage,
     alignItems: 'center',
     justifyContent: 'center',
     ...Platform.select({
-      ios: {
-        shadowColor: Colors.black,
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 8,
-      },
+      ...buttonShadow,
       default: {},
     }),
   },

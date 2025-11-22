@@ -18,6 +18,7 @@ import { useAuth } from '@/hooks/auth-context';
 import { useLanguage } from '@/hooks/language-context';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
+import { buttonShadow } from '@/constants/pixelRatio';
 
 const { width, height } = Dimensions.get('window');
 const isSmallDevice = width < 375;
@@ -148,14 +149,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.terracotta,
     paddingVertical: isSmallDevice ? 8 : 12,
     paddingHorizontal: isSmallDevice ? 40 : 60,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    ...Platform.select({
+      ...buttonShadow,
+      default: {},
+    }),
   },
   badgeText: {
     color: Colors.cream,

@@ -1,9 +1,10 @@
 import { Redirect } from 'expo-router';
 import { useAuth } from '@/hooks/auth-context';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { View, Text, StyleSheet, Animated, Platform } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Colors from '@/constants/colors';
+import { buttonShadow } from '@/constants/pixelRatio';
 
 export default function RootIndex() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -92,14 +93,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
-    shadowColor: Colors.shadow,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    ...Platform.select({
+      ...buttonShadow,
+      default: {},
+    }),
   },
   logoText: {
     fontSize: 48,

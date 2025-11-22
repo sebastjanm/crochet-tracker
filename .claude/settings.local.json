@@ -60,7 +60,8 @@
       "Bash(do grep -q \"type_$type:\" /Users/sebastjanm/dev/SeboAI-crochet-tracker/translations/en.ts)",
       "Bash(perl -i -pe:*)",
       "Bash(node:*)",
-      "mcp__expo-mcp__search_documentation"
+      "mcp__expo-mcp__search_documentation",
+      "Bash(bunx simple-git-hooks)"
     ],
     "deny": [],
     "ask": []

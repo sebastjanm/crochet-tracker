@@ -22,7 +22,11 @@ import { useAuth } from '@/hooks/auth-context';
 import { useLanguage } from '@/hooks/language-context';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
+import { normalizeBorder, cardShadow, buttonShadow, getPixelRatio } from '@/constants/pixelRatio';
 import { InventoryItem, YarnDetails, HookDetails } from '@/types';
+
+// DEBUG: Log pixel ratio on load
+console.log('🔍 DEBUG [edit-inventory]: Device pixel ratio =', getPixelRatio());
 
 export default function EditInventoryScreen() {
   const { id } = useLocalSearchParams();
@@ -875,25 +879,25 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 12,
-    borderWidth: 1.5,
+    borderWidth: normalizeBorder(1.5),
     borderColor: Colors.border,
     alignItems: 'center',
     backgroundColor: Colors.white,
     minHeight: 48,
     justifyContent: 'center',
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    ...Platform.select({
+      ...cardShadow,
+      default: {},
+    }),
   },
   categoryButtonActive: {
     backgroundColor: Colors.sage,
     borderColor: Colors.deepSage,
-    borderWidth: 2,
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
+    borderWidth: normalizeBorder(2),
+    ...Platform.select({
+      ...buttonShadow,
+      default: {},
+    }),
   },
   categoryButtonText: {
     ...Typography.body,
@@ -935,7 +939,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     padding: 16,
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: normalizeBorder(1),
     borderColor: Colors.border,
     marginBottom: 16,
   },
@@ -961,24 +965,24 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 12,
-    borderWidth: 1.5,
+    borderWidth: normalizeBorder(1.5),
     borderColor: Colors.border,
     backgroundColor: Colors.white,
     minHeight: 48,
     justifyContent: 'center',
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    ...Platform.select({
+      ...cardShadow,
+      default: {},
+    }),
   },
   projectButtonActive: {
     backgroundColor: Colors.sage,
     borderColor: Colors.deepSage,
-    borderWidth: 2,
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
+    borderWidth: normalizeBorder(2),
+    ...Platform.select({
+      ...buttonShadow,
+      default: {},
+    }),
   },
   projectButtonText: {
     ...Typography.body,
@@ -1001,25 +1005,25 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 12,
-    borderWidth: 1.5,
+    borderWidth: normalizeBorder(1.5),
     borderColor: Colors.border,
     backgroundColor: Colors.white,
     minHeight: 48,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    ...Platform.select({
+      ...cardShadow,
+      default: {},
+    }),
   },
   handleTypeButtonActive: {
     backgroundColor: Colors.sage,
     borderColor: Colors.deepSage,
-    borderWidth: 2,
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
+    borderWidth: normalizeBorder(2),
+    ...Platform.select({
+      ...buttonShadow,
+      default: {},
+    }),
   },
   handleTypeButtonText: {
     ...Typography.body,
@@ -1043,25 +1047,25 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 12,
-    borderWidth: 1.5,
+    borderWidth: normalizeBorder(1.5),
     borderColor: Colors.border,
     backgroundColor: Colors.white,
     minHeight: 48,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    ...Platform.select({
+      ...cardShadow,
+      default: {},
+    }),
   },
   typeButtonActive: {
     backgroundColor: Colors.sage,
     borderColor: Colors.deepSage,
-    borderWidth: 2,
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
+    borderWidth: normalizeBorder(2),
+    ...Platform.select({
+      ...buttonShadow,
+      default: {},
+    }),
   },
   typeButtonText: {
     ...Typography.body,

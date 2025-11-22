@@ -21,6 +21,7 @@ import { useLanguage } from '@/hooks/language-context';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { InventoryItem } from '@/types';
+import { normalizeBorder, normalizeBorderOpacity, cardShadow, buttonShadow } from '@/constants/pixelRatio';
 
 const { width } = Dimensions.get('window');
 const isSmallDevice = width < 375;
@@ -133,20 +134,21 @@ export default function InventoryScreen() {
         </View>
       </SafeAreaView>
 
-      <View style={styles.container}>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.categoriesContainer}
-        contentContainerStyle={styles.categoriesContent}
-      >
+      <View style={styles.filterWrapper}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.categoriesContainer}
+          contentContainerStyle={styles.categoriesContent}
+          nestedScrollEnabled={false}
+          scrollEventThrottle={16}
+        >
         {categories.map(category => (
           <TouchableOpacity
             key={category.id}
             style={[
               styles.categoryChip,
-              selectedCategory === category.id && [styles.categoryChipActive, { backgroundColor: category.color }]
+              selectedCategory === category.id && styles.categoryChipActive
             ]}
             onPress={() => setSelectedCategory(category.id as any)}
             activeOpacity={0.75}
@@ -159,7 +161,9 @@ export default function InventoryScreen() {
               checked: selectedCategory === category.id,
             }}
           >
-            {category.icon}
+            <View style={styles.iconContainer}>
+              {category.icon}
+            </View>
             <Text style={[
               styles.categoryLabel,
               selectedCategory === category.id && styles.categoryLabelActive,
@@ -174,8 +178,10 @@ export default function InventoryScreen() {
             </Text>
           </TouchableOpacity>
         ))}
-      </ScrollView>
+        </ScrollView>
+      </View>
 
+      <View style={styles.container}>
       {filteredItems.length === 0 ? (
         <EmptyState
           icon={<Package size={64} color={Colors.warmGray} />}
@@ -194,28 +200,32 @@ export default function InventoryScreen() {
         />
       ) : (
         <FlatList
+          key={selectedCategory}
           data={filteredItems}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           numColumns={2}
           columnWrapperStyle={styles.row}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          windowSize={5}
         />
       )}
 
-      {items.length > 0 && (
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={() => router.push('/add-inventory')}
-          activeOpacity={0.8}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel={t('inventory.addItem')}
-          accessibilityHint={t('inventory.addNewItemToInventory')}
-        >
-          <Plus size={32} color={Colors.white} strokeWidth={3} />
-        </TouchableOpacity>
-      )}
+        {items.length > 0 && (
+          <TouchableOpacity
+            style={styles.fab}
+            onPress={() => router.push('/add-inventory')}
+            activeOpacity={0.8}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel={t('inventory.addItem')}
+            accessibilityHint={t('inventory.addNewItemToInventory')}
+          >
+            <Plus size={32} color={Colors.white} strokeWidth={3} />
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -232,18 +242,10 @@ const styles = StyleSheet.create({
   customHeader: {
     backgroundColor: Colors.cream,
     paddingBottom: isSmallDevice ? 12 : 16,
-    borderBottomWidth: 1,
+    borderBottomWidth: normalizeBorder(1),
     borderBottomColor: Colors.border,
     ...Platform.select({
-      ios: {
-        shadowColor: Colors.black,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
+      ...cardShadow,
       default: {},
     }),
   },
@@ -260,7 +262,7 @@ const styles = StyleSheet.create({
     maxWidth: isTablet ? 1200 : '100%',
     alignSelf: 'center',
     width: '100%',
-    minHeight: 56,
+    height: isSmallDevice ? 72 : isTablet ? 92 : 96,
   },
   titleContainer: {
     flex: 1,
@@ -292,27 +294,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...Platform.select({
-      ios: {
-        shadowColor: Colors.deepSage,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 1,
-      },
+      ...cardShadow,
       default: {},
     }),
   },
+  filterWrapper: {
+    backgroundColor: Colors.filterBar,
+    marginTop: 0,
+  },
   categoriesContainer: {
     maxHeight: 80,
-    backgroundColor: Colors.beige,
-    marginTop: 12,
+    backgroundColor: 'transparent',
   },
   categoriesContent: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     alignItems: 'center',
+  },
+  iconContainer: {
+    width: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   categoryChip: {
     flexDirection: 'row',
@@ -322,36 +325,21 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 999,
     marginRight: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(139, 154, 123, 0.15)',
+    borderWidth: normalizeBorder(1),
+    borderColor: `rgba(139, 154, 123, ${normalizeBorderOpacity(0.2)})`,
     gap: 8,
     minHeight: 44,
     ...Platform.select({
-      ios: {
-        shadowColor: '#2D2D2D',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.02,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 1,
-      },
+      ...cardShadow,
       default: {},
     }),
   },
   categoryChipActive: {
     backgroundColor: Colors.linen,
+    borderWidth: normalizeBorder(1),
     borderColor: Colors.deepSage,
     ...Platform.select({
-      ios: {
-        shadowColor: '#2D2D2D',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
+      ...cardShadow,
       default: {},
     }),
   },
@@ -359,6 +347,7 @@ const styles = StyleSheet.create({
     ...Typography.body,
     color: Colors.charcoal,
     fontSize: 15,
+    lineHeight: 20,
     fontWeight: '500' as const,
     letterSpacing: -0.1,
   },
@@ -370,20 +359,28 @@ const styles = StyleSheet.create({
     ...Typography.caption,
     color: Colors.deepSage,
     backgroundColor: 'rgba(139, 154, 123, 0.12)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 999,
     fontSize: 13,
     fontWeight: '500' as const,
-    minWidth: 24,
+    minWidth: 28,
     textAlign: 'center',
     lineHeight: 18,
-    borderWidth: 0,
+    borderWidth: normalizeBorder(0),
+    height: 26,
+    overflow: 'visible',
   },
   categoryCountActive: {
     backgroundColor: Colors.deepSage,
     color: Colors.white,
     fontWeight: '600' as const,
+    borderWidth: normalizeBorder(0),
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    minWidth: 28,
+    height: 26,
+    overflow: 'visible',
   },
   list: {
     padding: 16,
@@ -402,19 +399,10 @@ const styles = StyleSheet.create({
     minHeight: 240,
     backgroundColor: Colors.linen,
     borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 0.5,
-    borderColor: 'rgba(139, 154, 123, 0.12)',
+    borderWidth: normalizeBorder(0.5),
+    borderColor: `rgba(139, 154, 123, ${normalizeBorderOpacity(0.12)})`,
     ...Platform.select({
-      ios: {
-        shadowColor: '#2D2D2D',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
+      ...cardShadow,
       default: {},
     }),
   },
@@ -422,6 +410,8 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 160,
     resizeMode: 'cover',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
   },
   placeholderImage: {
     backgroundColor: Colors.beige,
@@ -477,7 +467,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
     paddingTop: 8,
-    borderTopWidth: 1,
+    borderTopWidth: normalizeBorder(1),
     borderTopColor: Colors.border,
   },
   itemQuantity: {
@@ -499,7 +489,7 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    borderWidth: 1,
+    borderWidth: normalizeBorder(1),
     borderColor: Colors.border,
   },
   fab: {
@@ -510,20 +500,12 @@ const styles = StyleSheet.create({
     height: 68,
     borderRadius: 34,
     backgroundColor: Colors.sage,
-    borderWidth: 3,
+    borderWidth: normalizeBorder(3),
     borderColor: Colors.deepSage,
     alignItems: 'center',
     justifyContent: 'center',
     ...Platform.select({
-      ios: {
-        shadowColor: Colors.black,
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 8,
-      },
+      ...buttonShadow,
       default: {},
     }),
   },

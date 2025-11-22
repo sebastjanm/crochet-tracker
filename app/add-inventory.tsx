@@ -25,6 +25,7 @@ import { useProjects } from '@/hooks/projects-context';
 import { useAuth } from '@/hooks/auth-context';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
+import { normalizeBorder, cardShadow, buttonShadow } from '@/constants/pixelRatio';
 import { InventoryItem, YarnDetails, HookDetails } from '@/types';
 import { useLanguage } from '@/hooks/language-context';
 
@@ -878,24 +879,24 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: normalizeBorder(1),
     borderColor: Colors.border,
     alignItems: 'center',
     backgroundColor: Colors.white,
     minHeight: 48,
     justifyContent: 'center',
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    ...Platform.select({
+      ...cardShadow,
+      default: {},
+    }),
   },
   categoryButtonActive: {
     backgroundColor: Colors.sage,
     borderColor: Colors.sage,
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
+    ...Platform.select({
+      ...buttonShadow,
+      default: {},
+    }),
   },
   categoryButtonText: {
     ...Typography.body,
@@ -945,11 +946,10 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 16,
     minHeight: 54,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...Platform.select({
+      ...buttonShadow,
+      default: {},
+    }),
   },
   barcodeButton: {
     backgroundColor: Colors.terracotta,
@@ -973,7 +973,7 @@ const styles = StyleSheet.create({
   scannerFrame: {
     width: 250,
     height: 250,
-    borderWidth: 2,
+    borderWidth: normalizeBorder(2),
     borderColor: Colors.white,
     borderRadius: 12,
     backgroundColor: 'transparent',
@@ -993,7 +993,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     padding: 16,
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: normalizeBorder(1),
     borderColor: Colors.border,
     marginBottom: 16,
   },
@@ -1019,7 +1019,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 10,
-    borderWidth: 1.5,
+    borderWidth: normalizeBorder(1.5),
     borderColor: Colors.border,
     backgroundColor: Colors.white,
     minHeight: 48,
@@ -1028,7 +1028,7 @@ const styles = StyleSheet.create({
   projectButtonActive: {
     backgroundColor: Colors.sage,
     borderColor: Colors.deepSage,
-    borderWidth: 2,
+    borderWidth: normalizeBorder(2),
   },
   projectButtonText: {
     ...Typography.body,
@@ -1051,7 +1051,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 12,
     borderRadius: 10,
-    borderWidth: 1.5,
+    borderWidth: normalizeBorder(1.5),
     borderColor: Colors.border,
     backgroundColor: Colors.white,
     minHeight: 44,
@@ -1061,7 +1061,7 @@ const styles = StyleSheet.create({
   handleTypeButtonActive: {
     backgroundColor: Colors.sage,
     borderColor: Colors.deepSage,
-    borderWidth: 2,
+    borderWidth: normalizeBorder(2),
   },
   handleTypeButtonText: {
     ...Typography.body,
@@ -1085,7 +1085,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 10,
     borderRadius: 10,
-    borderWidth: 1.5,
+    borderWidth: normalizeBorder(1.5),
     borderColor: Colors.border,
     backgroundColor: Colors.white,
     minHeight: 44,
@@ -1095,7 +1095,7 @@ const styles = StyleSheet.create({
   typeButtonActive: {
     backgroundColor: Colors.sage,
     borderColor: Colors.deepSage,
-    borderWidth: 2,
+    borderWidth: normalizeBorder(2),
   },
   typeButtonText: {
     ...Typography.body,

@@ -23,7 +23,7 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 interface ImageGalleryProps {
   images: string[];
-  onImagesChange: (images: string[]) => void;
+  onImagesChange?: (images: string[]) => void;
   maxImages?: number;
   editable?: boolean;
 }
@@ -59,13 +59,15 @@ export const ImageGallery = memo(function ImageGallery({
 
   const handleAddImages = useCallback(async () => {
     const newImage = await showImagePickerOptions();
-    if (newImage) {
+    if (newImage && onImagesChange) {
       const updatedImages = [...images, newImage].slice(0, maxImages);
       onImagesChange(updatedImages);
     }
   }, [images, maxImages, onImagesChange, showImagePickerOptions]);
 
   const removeImage = useCallback((index: number) => {
+    if (!onImagesChange) return;
+
     Alert.alert(
       t('common.confirm'),
       'Remove this image?',

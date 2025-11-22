@@ -27,6 +27,7 @@ import { useLanguage } from '@/hooks/language-context';
 import { useImagePicker } from '@/hooks/useImagePicker';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
+import { normalizeBorder, cardShadow, buttonShadow } from '@/constants/pixelRatio';
 import { ProjectStatus, ProjectType, InventoryItem } from '@/types';
 import { getProjectTypeOptions } from '@/constants/projectTypes';
 
@@ -628,18 +629,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 20,
     marginBottom: 20,
-    borderWidth: 0.5,
+    borderWidth: normalizeBorder(0.5),
     borderColor: 'rgba(139, 154, 123, 0.12)',
     ...Platform.select({
-      ios: {
-        shadowColor: '#2D2D2D',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
+      ...cardShadow,
       default: {},
     }),
   },
@@ -707,7 +700,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginTop: 16,
-    borderWidth: 1,
+    borderWidth: normalizeBorder(1),
     borderColor: Colors.border,
   },
   pdfText: {
@@ -726,16 +719,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     backgroundColor: Colors.white,
-    borderWidth: 1.5,
+    borderWidth: normalizeBorder(1.5),
     borderColor: Colors.sage,
     borderRadius: 14,
     paddingVertical: 16,
     minHeight: 54,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
+    ...Platform.select({
+      ...buttonShadow,
+      default: {},
+    }),
   },
   imageButtonText: {
     ...Typography.body,
@@ -788,7 +780,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    borderWidth: 1,
+    borderWidth: normalizeBorder(1),
     borderColor: Colors.border,
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -811,7 +803,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
-    borderWidth: 1.5,
+    borderWidth: normalizeBorder(1.5),
     borderColor: Colors.sage,
   },
   formButtons: {
@@ -824,7 +816,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
-    borderWidth: 1,
+    borderWidth: normalizeBorder(1),
     borderColor: Colors.border,
     minHeight: 44,
     justifyContent: 'center',
@@ -864,7 +856,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
-    borderWidth: 1,
+    borderWidth: normalizeBorder(1),
     borderColor: Colors.deepSage,
   },
   inspirationHeader: {
@@ -894,22 +886,14 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 14,
     borderRadius: 999,
-    borderWidth: 0,
+    borderWidth: normalizeBorder(0),
     backgroundColor: 'rgba(139, 154, 123, 0.12)',
     minHeight: 32,
   },
   statusOptionActive: {
     borderColor: 'transparent',
     ...Platform.select({
-      ios: {
-        shadowColor: Colors.charcoal,
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.15,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 4,
-      },
+      ...buttonShadow,
       default: {},
     }),
   },
@@ -985,7 +969,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 12,
-    borderWidth: 2,
+    borderWidth: normalizeBorder(2),
     borderColor: Colors.sage,
     borderStyle: 'dashed',
     alignItems: 'center',
@@ -1001,7 +985,7 @@ const styles = StyleSheet.create({
   addPhotoButton: {
     backgroundColor: Colors.white,
     borderRadius: 12,
-    borderWidth: 2,
+    borderWidth: normalizeBorder(2),
     borderColor: Colors.sage,
     borderStyle: 'dashed',
     padding: 24,

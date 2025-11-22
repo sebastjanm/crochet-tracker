@@ -16,6 +16,7 @@ import { Lightbulb, RotateCcw, Sparkles } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { useLanguage } from '@/hooks/language-context';
+import { cardShadow } from '@/constants/pixelRatio';
 
 const CHAT_API_URL = 'https://toolkit.rork.com/text/llm/';
 
@@ -46,15 +47,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 16,
     ...Platform.select({
-      ios: {
-        shadowColor: Colors.black,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 3,
-      },
+      ...cardShadow,
       default: {},
     }),
   },
@@ -95,15 +88,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 16,
     ...Platform.select({
-      ios: {
-        shadowColor: Colors.black,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 3,
-      },
+      ...cardShadow,
       default: {},
     }),
   },

@@ -8,7 +8,12 @@
     "start:ios": "bunx expo start --ios",
     "start:android": "bunx expo start --android",
     "start:web": "bunx expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "postinstall": "simple-git-hooks"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "bun run lint && bunx tsc --noEmit",
+    "pre-push": "bunx expo doctor"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
@@ -62,6 +67,7 @@
     "@types/react": "~19.1.10",
     "eslint": "^9.31.0",
     "eslint-config-expo": "~10.0.0",
+    "simple-git-hooks": "^2.13.1",
     "typescript": "~5.9.2"
   },
   "private": true

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   FlatList,
+  Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,6 +25,7 @@ import { useImagePicker } from '@/hooks/useImagePicker';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import type { InspirationSource } from '@/types';
+import { normalizeBorder, buttonShadow } from '@/constants/pixelRatio';
 
 export default function ProjectInspirationScreen() {
   const { id } = useLocalSearchParams();
@@ -319,11 +321,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 16,
     minHeight: 50,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...Platform.select({
+      ...buttonShadow,
+      default: {},
+    }),
   },
   addButtonText: {
     ...Typography.body,
@@ -336,13 +337,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
-    borderWidth: 1,
+    borderWidth: normalizeBorder(1),
     borderColor: Colors.sage,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...Platform.select({
+      ...buttonShadow,
+      default: {},
+    }),
   },
   inspirationHeader: {
     flexDirection: 'row',
@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 12,
-    borderWidth: 2,
+    borderWidth: normalizeBorder(2),
     borderColor: Colors.sage,
     borderStyle: 'dashed',
     alignItems: 'center',
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
   addPhotoButton: {
     backgroundColor: Colors.white,
     borderRadius: 12,
-    borderWidth: 2,
+    borderWidth: normalizeBorder(2),
     borderColor: Colors.sage,
     borderStyle: 'dashed',
     padding: 24,

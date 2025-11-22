@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Colors from '@/constants/colors';
 import { Card } from '@/components/Card';
 import { useLanguage } from '@/hooks/language-context';
+import { normalizeBorder } from '@/constants/pixelRatio';
 
 interface FAQItem {
   id: string;
@@ -191,7 +192,7 @@ const styles = StyleSheet.create({
   answerContainer: {
     marginTop: 12,
     paddingTop: 12,
-    borderTopWidth: 1,
+    borderTopWidth: normalizeBorder(1),
     borderTopColor: Colors.border,
   },
   answer: {

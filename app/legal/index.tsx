@@ -12,6 +12,7 @@ import { Card } from '@/components/Card';
 import { useLanguage } from '@/hooks/language-context';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
+import { normalizeBorder } from '@/constants/pixelRatio';
 
 export default function LegalScreen() {
   const { t } = useLanguage();
@@ -122,7 +123,7 @@ const styles = StyleSheet.create({
   footer: {
     marginTop: 32,
     paddingTop: 16,
-    borderTopWidth: 1,
+    borderTopWidth: normalizeBorder(1),
     borderTopColor: Colors.border,
   },
   footerText: {

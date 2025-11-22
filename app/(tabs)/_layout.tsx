@@ -1,10 +1,11 @@
 import { Tabs, router } from "expo-router";
-import { Volleyball, Box, User, Sparkles } from "lucide-react-native";
+import { Volleyball, Box, User, Wrench } from "lucide-react-native";
 import React, { useEffect } from "react";
 import { Platform } from "react-native";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/hooks/auth-context";
 import { useLanguage } from "@/hooks/language-context";
+import { normalizeBorder } from "@/constants/pixelRatio";
 
 export default function TabLayout() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -30,7 +31,7 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: Colors.white,
           borderTopColor: Colors.border,
-          borderTopWidth: 1,
+          borderTopWidth: normalizeBorder(1),
           ...Platform.select({
             ios: {
               shadowColor: Colors.black,
@@ -103,18 +104,18 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="yarnai"
+        name="tools"
         options={{
-          title: t('tabs.yarnai'),
+          title: t('tabs.tools'),
           headerShown: false,
           tabBarIcon: ({ color, focused }) => (
-            <Sparkles
+            <Wrench
               color={focused ? Colors.deepTeal : Colors.warmGray}
               size={26}
               strokeWidth={focused ? 3 : 2}
             />
           ),
-          tabBarAccessibilityLabel: t('tabs.yarnai'),
+          tabBarAccessibilityLabel: t('tabs.tools'),
           tabBarItemStyle: {
             paddingVertical: 2,
           },

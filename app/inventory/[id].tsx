@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -30,6 +31,7 @@ import { useProjects } from '@/hooks/projects-context';
 import { useLanguage } from '@/hooks/language-context';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
+import { normalizeBorder, cardShadow, normalizeBorderOpacity } from '@/constants/pixelRatio';
 
 // Helper function to format Date to EU format (DD.MM.YYYY)
 function formatEUDate(date: Date): string {
@@ -106,21 +108,13 @@ export default function InventoryDetailScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ModalHeader title={displayName} />
-
-      <View style={styles.editButtonContainer}>
-        <TouchableOpacity
-          onPress={() => router.push(`/edit-inventory/${item.id}`)}
-          activeOpacity={0.6}
-          style={styles.editButton}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel={t('common.edit')}
-          accessibilityHint={`Edit ${displayName} details`}
-        >
-          <Text style={styles.editButtonText}>{t('common.edit')}</Text>
-        </TouchableOpacity>
-      </View>
+      <ModalHeader
+        title={displayName}
+        rightAction={{
+          label: t('common.edit'),
+          onPress: () => router.push(`/edit-inventory/${item.id}`),
+        }}
+      />
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {item.images && item.images.length > 0 && (
@@ -1015,27 +1009,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.cream,
   },
-  editButtonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(139, 154, 123, 0.15)',
-  },
-  editButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  editButtonText: {
-    ...Typography.body,
-    color: Colors.deepSage,
-    fontSize: 17,
-    fontWeight: '400' as const,
-    letterSpacing: -0.2,
-  },
   errorContainer: {
     flex: 1,
     alignItems: 'center',
@@ -1121,7 +1094,7 @@ const styles = StyleSheet.create({
   usedInProjectsCard: {
     marginBottom: 16,
     backgroundColor: '#F5FAF7',
-    borderLeftWidth: 4,
+    borderLeftWidth: normalizeBorder(4),
     borderLeftColor: Colors.deepSage,
   },
   descriptionCard: {
@@ -1152,8 +1125,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     gap: 16,
     alignItems: 'flex-start',
-    borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(0, 0, 0, 0.15)',
+    borderBottomWidth: normalizeBorder(0.5),
+    borderBottomColor: `rgba(0, 0, 0, ${normalizeBorderOpacity(0.15)})`,
   },
   detailLabel: {
     fontSize: 16,
@@ -1265,7 +1238,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     backgroundColor: Colors.white,
     borderRadius: 8,
-    borderWidth: 1.5,
+    borderWidth: normalizeBorder(1.5),
     borderColor: Colors.deepSage,
     borderStyle: 'dashed',
   },
@@ -1286,7 +1259,7 @@ const styles = StyleSheet.create({
   metadata: {
     marginTop: 24,
     paddingTop: 16,
-    borderTopWidth: 1,
+    borderTopWidth: normalizeBorder(1),
     borderTopColor: Colors.border,
   },
   metaText: {
@@ -1304,7 +1277,7 @@ const styles = StyleSheet.create({
   gaugeSection: {
     marginTop: 16,
     paddingTop: 16,
-    borderTopWidth: 1,
+    borderTopWidth: normalizeBorder(1),
     borderTopColor: Colors.border,
   },
   gaugeSubtitle: {
@@ -1393,7 +1366,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     backgroundColor: Colors.beige,
     borderRadius: 8,
-    borderWidth: 1,
+    borderWidth: normalizeBorder(1),
     borderColor: Colors.deepTeal,
   },
   productUrlText: {
@@ -1412,14 +1385,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     backgroundColor: Colors.white,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(200, 117, 99, 0.3)',
+    borderWidth: normalizeBorder(1),
+    borderColor: `rgba(200, 117, 99, ${normalizeBorderOpacity(0.3)})`,
     minHeight: 52,
-    shadowColor: 'rgba(200, 117, 99, 0.2)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 2,
+    ...Platform.select({
+      ...cardShadow,
+      default: {},
+    }),
   },
   deleteButtonText: {
     ...Typography.body,

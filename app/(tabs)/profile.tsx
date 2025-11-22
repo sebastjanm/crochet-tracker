@@ -35,6 +35,7 @@ import { useInventory } from '@/hooks/inventory-context';
 import { useLanguage } from '@/hooks/language-context';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
+import { normalizeBorder, cardShadow } from '@/constants/pixelRatio';
 
 export default function ProfileScreen() {
   const { user, logout, updateUser } = useAuth();
@@ -252,18 +253,10 @@ const styles = StyleSheet.create({
   customHeader: {
     backgroundColor: Colors.cream,
     paddingBottom: isSmallDevice ? 12 : 16,
-    borderBottomWidth: 1,
+    borderBottomWidth: normalizeBorder(1),
     borderBottomColor: Colors.border,
     ...Platform.select({
-      ios: {
-        shadowColor: Colors.black,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
+      ...cardShadow,
       default: {},
     }),
   },
@@ -276,6 +269,7 @@ const styles = StyleSheet.create({
     maxWidth: isTablet ? 1200 : '100%',
     alignSelf: 'center',
     width: '100%',
+    height: isSmallDevice ? 72 : isTablet ? 92 : 96,
   },
   titleContainer: {
     flex: 1,
@@ -305,15 +299,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...Platform.select({
-      ios: {
-        shadowColor: Colors.deepSage,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 1,
-      },
+      ...cardShadow,
       default: {},
     }),
   },
@@ -364,7 +350,7 @@ const styles = StyleSheet.create({
     color: Colors.warmGray,
   },
   statDivider: {
-    width: 1,
+    width: normalizeBorder(1),
     height: 60,
     backgroundColor: Colors.border,
   },
@@ -392,7 +378,7 @@ const styles = StyleSheet.create({
     color: Colors.sage,
   },
   progressDivider: {
-    height: 1,
+    height: normalizeBorder(1),
     backgroundColor: Colors.border,
   },
   menuContainer: {
@@ -416,7 +402,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   menuDivider: {
-    height: 1,
+    height: normalizeBorder(1),
     backgroundColor: Colors.border,
   },
   footer: {

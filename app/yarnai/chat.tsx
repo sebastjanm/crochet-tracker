@@ -16,7 +16,7 @@ import { Send, MessageSquare, User, Bot } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { useLanguage } from '@/hooks/language-context';
-import { UniversalHeader } from '@/components/UniversalHeader';
+import { normalizeBorder, cardShadow } from '@/constants/pixelRatio';
 
 const CHAT_API_URL = 'https://toolkit.rork.com/text/llm/';
 
@@ -53,15 +53,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     ...Platform.select({
-      ios: {
-        shadowColor: Colors.black,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
+      ...cardShadow,
       default: {},
     }),
   },
@@ -114,7 +106,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     backgroundColor: Colors.white,
-    borderTopWidth: 1,
+    borderTopWidth: normalizeBorder(1),
     borderTopColor: Colors.beige,
     padding: 16,
     flexDirection: 'row',
@@ -173,15 +165,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     ...Platform.select({
-      ios: {
-        shadowColor: Colors.black,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
+      ...cardShadow,
       default: {},
     }),
   },

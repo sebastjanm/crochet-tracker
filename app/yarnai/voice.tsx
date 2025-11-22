@@ -16,6 +16,7 @@ import * as Audio from 'expo-audio';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { useLanguage } from '@/hooks/language-context';
+import { normalizeBorder, cardShadow, modalShadow } from '@/constants/pixelRatio';
 
 const STT_API_URL = 'https://toolkit.rork.com/stt/transcribe/';
 const CHAT_API_URL = 'https://toolkit.rork.com/text/llm/';
@@ -59,15 +60,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     alignItems: 'center',
     ...Platform.select({
-      ios: {
-        shadowColor: Colors.black,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 4,
-      },
+      ...modalShadow,
       default: {},
     }),
   },
@@ -112,15 +105,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 16,
     ...Platform.select({
-      ios: {
-        shadowColor: Colors.black,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 3,
-      },
+      ...cardShadow,
       default: {},
     }),
   },
@@ -132,7 +117,7 @@ const styles = StyleSheet.create({
   conversationItem: {
     marginBottom: 16,
     paddingBottom: 16,
-    borderBottomWidth: 1,
+    borderBottomWidth: normalizeBorder(1),
     borderBottomColor: Colors.beige,
   },
   conversationHeader: {

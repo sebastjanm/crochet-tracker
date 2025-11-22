@@ -8,6 +8,7 @@ import {
   Alert,
   Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import {
@@ -22,6 +23,7 @@ import {
   RotateCcw,
   BookOpen,
   ChevronRight,
+  ExternalLink,
 } from 'lucide-react-native';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
@@ -185,42 +187,91 @@ export default function ProjectDetailScreen() {
               <Text style={styles.sectionTitle}>{t('projects.materials')}</Text>
 
               {project.yarnUsedIds && project.yarnUsedIds.length > 0 && (
-                <View style={styles.materialItem}>
-                  <Text style={styles.materialLabel}>{t('projects.yarnUsed')}:</Text>
-                  <View style={styles.yarnList}>
+                <View style={styles.materialsSection}>
+                  <Text style={styles.subsectionTitle}>{t('projects.yarnUsed')}</Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.materialsScroll}
+                  >
                     {project.yarnUsedIds.map((yarnId) => {
                       const yarn = getItemById(yarnId);
                       if (!yarn) return null;
                       return (
                         <TouchableOpacity
                           key={yarnId}
-                          style={styles.yarnChip}
+                          style={styles.materialCard}
                           onPress={() => router.push(`/inventory/${yarnId}`)}
-                          activeOpacity={0.7}
+                          activeOpacity={0.8}
                         >
-                          <Text style={styles.yarnChipText}>{yarn.name}</Text>
+                          {yarn.images && yarn.images.length > 0 ? (
+                            <Image
+                              source={{ uri: yarn.images[0] }}
+                              style={styles.materialImage}
+                              contentFit="cover"
+                              transition={200}
+                            />
+                          ) : (
+                            <View style={[styles.materialImage, styles.materialImagePlaceholder]}>
+                              <FileText size={32} color={Colors.warmGray} />
+                            </View>
+                          )}
+                          {yarn.yarnDetails?.brand && (
+                            <View style={styles.brandBadge}>
+                              <Text style={styles.brandBadgeText} numberOfLines={1}>
+                                {yarn.yarnDetails.brand}
+                              </Text>
+                            </View>
+                          )}
+                          <View style={styles.materialInfo}>
+                            <Text style={styles.materialName} numberOfLines={1}>
+                              {yarn.name}
+                            </Text>
+                            <Text style={styles.materialDetail} numberOfLines={1}>
+                              {yarn.yarnDetails?.colorName || yarn.yarnDetails?.fiber || yarn.yarnDetails?.weightCategory || ''}
+                            </Text>
+                          </View>
                         </TouchableOpacity>
                       );
                     })}
-                  </View>
+                  </ScrollView>
                 </View>
               )}
 
               {project.hookUsedIds && project.hookUsedIds.length > 0 && (
-                <View style={styles.materialItem}>
-                  <Text style={styles.materialLabel}>{t('projects.hookUsed')}:</Text>
-                  <View style={styles.yarnList}>
+                <View style={styles.materialsSection}>
+                  <Text style={styles.subsectionTitle}>{t('projects.hookUsed')}</Text>
+                  <View style={styles.hooksRow}>
                     {project.hookUsedIds.map((hookId) => {
                       const hook = getItemById(hookId);
                       if (!hook) return null;
                       return (
                         <TouchableOpacity
                           key={hookId}
-                          style={styles.yarnChip}
+                          style={styles.hookCard}
                           onPress={() => router.push(`/inventory/${hookId}`)}
-                          activeOpacity={0.7}
+                          activeOpacity={0.8}
                         >
-                          <Text style={styles.yarnChipText}>{hook.name}</Text>
+                          {hook.images && hook.images.length > 0 ? (
+                            <Image
+                              source={{ uri: hook.images[0] }}
+                              style={styles.hookImage}
+                              contentFit="contain"
+                              transition={200}
+                            />
+                          ) : (
+                            <View style={[styles.hookImage, styles.materialImagePlaceholder]}>
+                              <FileText size={24} color={Colors.warmGray} />
+                            </View>
+                          )}
+                          <Text style={styles.hookName} numberOfLines={1}>
+                            {hook.hookDetails?.size || hook.name}
+                          </Text>
+                          {hook.hookDetails?.brand && (
+                            <Text style={styles.hookBrand} numberOfLines={1}>
+                              {hook.hookDetails.brand}
+                            </Text>
+                          )}
                         </TouchableOpacity>
                       );
                     })}
@@ -229,43 +280,95 @@ export default function ProjectDetailScreen() {
               )}
 
               {project.colorNotes && (
-                <View style={styles.materialItem}>
-                  <Text style={styles.materialLabel}>{t('projects.colorNotes')}:</Text>
-                  <Text style={styles.materialValue}>{project.colorNotes}</Text>
+                <View style={styles.colorNotesContainer}>
+                  <Text style={styles.subsectionTitle}>{t('projects.colorNotes')}</Text>
+                  <Text style={styles.colorNotesText}>{project.colorNotes}</Text>
                 </View>
               )}
             </Card>
           )}
 
-          {(project.patternPdf || project.inspirationUrl) && (
-            <Card style={styles.linksCard}>
-              <Text style={styles.sectionTitle}>{t('projects.resources')}</Text>
-              {project.patternPdf && (
-                <TouchableOpacity
-                  style={styles.linkItem}
-                  activeOpacity={0.7}
-                  accessible={true}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('projects.patternPDF')}
-                  accessibilityHint="Open pattern PDF file"
+          {(project.patternPdf || project.patternUrl || project.patternImages?.length || project.inspirationUrl) && (
+            <Card style={styles.patternCard}>
+              <Text style={styles.sectionTitle}>{t('projects.pattern')}</Text>
+
+              {project.patternImages && project.patternImages.length > 0 && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.patternImagesScroll}
+                  contentContainerStyle={styles.patternImagesContent}
                 >
-                  <FileText size={20} color={Colors.teal} />
-                  <Text style={styles.linkText}>{t('projects.patternPDF')}</Text>
-                </TouchableOpacity>
+                  {project.patternImages.map((imgUri, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.patternImagePreview}
+                      activeOpacity={0.9}
+                    >
+                      <Image
+                        source={{ uri: imgUri }}
+                        style={styles.patternPreviewImage}
+                        contentFit="cover"
+                        transition={200}
+                      />
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
               )}
-              {project.inspirationUrl && (
-                <TouchableOpacity
-                  style={styles.linkItem}
-                  activeOpacity={0.7}
-                  accessible={true}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('projects.inspirationLink')}
-                  accessibilityHint="Open inspiration link in browser"
-                >
-                  <Link size={20} color={Colors.teal} />
-                  <Text style={styles.linkText}>{t('projects.inspirationLink')}</Text>
-                </TouchableOpacity>
-              )}
+
+              <View style={styles.resourcesList}>
+                {project.patternPdf && (
+                  <TouchableOpacity
+                    style={styles.resourceButton}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.resourceIcon, styles.resourceIconPdf]}>
+                      <FileText size={24} color={Colors.white} />
+                    </View>
+                    <View style={styles.resourceContent}>
+                      <Text style={styles.resourceTitle}>{t('projects.patternPDF')}</Text>
+                      <Text style={styles.resourceSubtitle}>View full pattern</Text>
+                    </View>
+                    <ChevronRight size={20} color={Colors.warmGray} />
+                  </TouchableOpacity>
+                )}
+
+                {project.patternUrl && (
+                  <TouchableOpacity
+                    style={styles.resourceButton}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.resourceIcon, styles.resourceIconLink]}>
+                      <Link size={24} color={Colors.white} />
+                    </View>
+                    <View style={styles.resourceContent}>
+                      <Text style={styles.resourceTitle}>Pattern Link</Text>
+                      <Text style={styles.resourceSubtitle} numberOfLines={1}>
+                        {project.patternUrl.replace(/^https?:\/\//i, '').split('/')[0]}
+                      </Text>
+                    </View>
+                    <ExternalLink size={20} color={Colors.warmGray} />
+                  </TouchableOpacity>
+                )}
+
+                {project.inspirationUrl && (
+                  <TouchableOpacity
+                    style={styles.resourceButton}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.resourceIcon, styles.resourceIconInspiration]}>
+                      <Lightbulb size={24} color={Colors.white} />
+                    </View>
+                    <View style={styles.resourceContent}>
+                      <Text style={styles.resourceTitle}>{t('projects.inspirationLink')}</Text>
+                      <Text style={styles.resourceSubtitle} numberOfLines={1}>
+                        {project.inspirationUrl.replace(/^https?:\/\//i, '').split('/')[0]}
+                      </Text>
+                    </View>
+                    <ExternalLink size={20} color={Colors.warmGray} />
+                  </TouchableOpacity>
+                )}
+              </View>
             </Card>
           )}
 
@@ -288,18 +391,32 @@ export default function ProjectDetailScreen() {
           >
             <View style={styles.previewHeader}>
               <View style={styles.previewTitleContainer}>
-                <BookOpen size={20} color={Colors.sage} />
+                <BookOpen size={20} color={Colors.deepSage} />
                 <Text style={styles.previewTitle}>{t('projects.projectJournal')}</Text>
+                {project.workProgress && project.workProgress.length > 0 && (
+                  <View style={styles.countBadge}>
+                    <Text style={styles.countText}>{project.workProgress.length}</Text>
+                  </View>
+                )}
               </View>
               <ChevronRight size={20} color={Colors.warmGray} />
             </View>
             {project.workProgress && project.workProgress.length > 0 ? (
-              <Text style={styles.previewText} numberOfLines={2}>
-                {project.workProgress[project.workProgress.length - 1].notes}
-              </Text>
+              <>
+                <Text style={styles.entryDate}>
+                  {new Date(project.workProgress[project.workProgress.length - 1].date).toLocaleDateString()}
+                </Text>
+                <Text style={styles.previewText} numberOfLines={2}>
+                  {project.workProgress[project.workProgress.length - 1].notes}
+                </Text>
+              </>
             ) : (
               <Text style={styles.previewEmptyText}>{t('projects.noJournalEntries')}</Text>
             )}
+            <View style={styles.previewFooter}>
+              <Text style={styles.viewAllText}>View all entries</Text>
+              <ChevronRight size={16} color={Colors.deepSage} />
+            </View>
           </TouchableOpacity>
 
           {/* Inspiration Preview */}
@@ -314,19 +431,82 @@ export default function ProjectDetailScreen() {
           >
             <View style={styles.previewHeader}>
               <View style={styles.previewTitleContainer}>
-                <Lightbulb size={20} color={Colors.sage} />
+                <Lightbulb size={20} color={Colors.deepSage} />
                 <Text style={styles.previewTitle}>{t('projects.inspiration')}</Text>
+                {project.inspirationSources && project.inspirationSources.length > 0 && (
+                  <View style={styles.countBadge}>
+                    <Text style={styles.countText}>{project.inspirationSources.length}</Text>
+                  </View>
+                )}
               </View>
               <ChevronRight size={20} color={Colors.warmGray} />
             </View>
             {project.inspirationSources && project.inspirationSources.length > 0 ? (
-              <Text style={styles.previewText} numberOfLines={2}>
-                {project.inspirationSources[0].description || project.inspirationSources[0].patternSource || project.inspirationSources[0].url || t('projects.inspirationSourceAdded')}
-              </Text>
+              <>
+                {project.inspirationSources[0].images && project.inspirationSources[0].images.length > 0 && (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.inspirationImagesScroll}
+                  >
+                    {project.inspirationSources[0].images.slice(0, 3).map((img, index) => (
+                      <Image
+                        key={index}
+                        source={{ uri: img }}
+                        style={styles.inspirationPreviewImage}
+                        contentFit="cover"
+                        transition={200}
+                      />
+                    ))}
+                  </ScrollView>
+                )}
+                <Text style={styles.previewText} numberOfLines={2}>
+                  {project.inspirationSources[0].description || project.inspirationSources[0].patternSource || project.inspirationSources[0].url || t('projects.inspirationSourceAdded')}
+                </Text>
+              </>
             ) : (
               <Text style={styles.previewEmptyText}>{t('projects.noInspirationSources')}</Text>
             )}
+            <View style={styles.previewFooter}>
+              <Text style={styles.viewAllText}>View all sources</Text>
+              <ChevronRight size={16} color={Colors.deepSage} />
+            </View>
           </TouchableOpacity>
+
+          {/* Timeline */}
+          {(project.startDate || project.completedDate) && (
+            <Card style={styles.timelineCard}>
+              <Text style={styles.sectionTitle}>Timeline</Text>
+              <View style={styles.timeline}>
+                {project.startDate && (
+                  <View style={styles.timelineItem}>
+                    <View style={[styles.timelineDot, styles.timelineDotActive]} />
+                    <View style={styles.timelineContent}>
+                      <Text style={styles.timelineLabel}>{t('projects.started')}</Text>
+                      <Text style={styles.timelineDate}>
+                        {new Date(project.startDate).toLocaleDateString()}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
+                <View style={styles.timelineItem}>
+                  <View style={[
+                    styles.timelineDot,
+                    project.status === 'completed' && styles.timelineDotActive,
+                  ]} />
+                  <View style={styles.timelineContent}>
+                    <Text style={styles.timelineLabel}>{getStatusLabel(project.status)}</Text>
+                    {project.status === 'completed' && project.completedDate && (
+                      <Text style={styles.timelineDate}>
+                        {new Date(project.completedDate).toLocaleDateString()}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              </View>
+            </Card>
+          )}
 
           <View style={styles.metadata}>
             <Text style={styles.metaText}>
@@ -424,59 +604,179 @@ const styles = StyleSheet.create({
   },
   materialsCard: {
     marginBottom: 16,
+    overflow: 'visible',
   },
-  materialItem: {
-    marginBottom: 12,
+  materialsSection: {
+    marginBottom: 20,
   },
-  materialLabel: {
+  subsectionTitle: {
     ...Typography.body,
     color: Colors.charcoal,
     fontWeight: '600' as const,
-    marginBottom: 6,
+    marginBottom: 12,
+    fontSize: 15,
   },
-  materialValue: {
-    ...Typography.body,
-    color: Colors.teal,
-    textDecorationLine: 'underline',
+  materialsScroll: {
+    paddingRight: 24,
   },
-  materialDeletedValue: {
-    ...Typography.body,
-    color: Colors.warmGray,
-    fontStyle: 'italic',
+  materialCard: {
+    width: 120,
+    marginRight: 12,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: Colors.white,
+    ...cardShadow,
   },
-  yarnList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+  materialImage: {
+    width: 120,
+    height: 120,
+    backgroundColor: Colors.beige,
   },
-  yarnChip: {
-    backgroundColor: Colors.sage,
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    minHeight: 32,
+  materialImagePlaceholder: {
+    alignItems: 'center',
     justifyContent: 'center',
   },
-  yarnChipText: {
-    ...Typography.body,
-    color: Colors.white,
-    fontSize: 14,
-    fontWeight: '500' as const,
-    letterSpacing: -0.1,
+  brandBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    maxWidth: 100,
   },
-  linksCard: {
+  brandBadgeText: {
+    ...Typography.caption,
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: Colors.charcoal,
+  },
+  materialInfo: {
+    padding: 12,
+  },
+  materialName: {
+    ...Typography.caption,
+    color: Colors.charcoal,
+    fontWeight: '600' as const,
+    marginBottom: 4,
+    fontSize: 13,
+  },
+  materialDetail: {
+    ...Typography.caption,
+    color: Colors.warmGray,
+    fontSize: 11,
+  },
+  hooksRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  hookCard: {
+    width: 90,
+    height: 110,
+    borderRadius: 12,
+    backgroundColor: Colors.white,
+    padding: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...cardShadow,
+  },
+  hookImage: {
+    width: 50,
+    height: 50,
+    marginBottom: 8,
+  },
+  hookName: {
+    ...Typography.caption,
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: Colors.charcoal,
+    textAlign: 'center',
+  },
+  hookBrand: {
+    ...Typography.caption,
+    fontSize: 10,
+    color: Colors.warmGray,
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  colorNotesContainer: {
+    marginTop: 8,
+  },
+  colorNotesText: {
+    ...Typography.body,
+    color: Colors.warmGray,
+    fontSize: 14,
+    fontStyle: 'italic',
+  },
+  patternCard: {
+    marginBottom: 16,
+    overflow: 'visible',
+  },
+  patternImagesScroll: {
     marginBottom: 16,
   },
-  linkItem: {
+  patternImagesContent: {
+    paddingRight: 24,
+  },
+  patternImagePreview: {
+    width: 150,
+    height: 200,
+    marginRight: 12,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: Colors.beige,
+    ...cardShadow,
+  },
+  patternPreviewImage: {
+    width: '100%',
+    height: '100%',
+  },
+  resourcesList: {
+    gap: 12,
+  },
+  resourceButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 8,
+    padding: 16,
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    borderWidth: normalizeBorder(1),
+    borderColor: Colors.border,
+    ...cardShadow,
   },
-  linkText: {
+  resourceIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  resourceIconPdf: {
+    backgroundColor: Colors.deepTeal,
+  },
+  resourceIconLink: {
+    backgroundColor: Colors.deepSage,
+  },
+  resourceIconInspiration: {
+    backgroundColor: '#9C27B0',
+  },
+  resourceContent: {
+    flex: 1,
+  },
+  resourceTitle: {
     ...Typography.body,
-    color: Colors.teal,
-    textDecorationLine: 'underline',
+    color: Colors.charcoal,
+    fontWeight: '600' as const,
+    marginBottom: 4,
+    fontSize: 15,
+  },
+  resourceSubtitle: {
+    ...Typography.caption,
+    color: Colors.warmGray,
+    fontSize: 13,
   },
   notesCard: {
     marginBottom: 16,
@@ -516,6 +816,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     letterSpacing: -0.2,
   },
+  countBadge: {
+    backgroundColor: Colors.deepSage,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    minWidth: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  countText: {
+    ...Typography.caption,
+    color: Colors.white,
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  entryDate: {
+    ...Typography.caption,
+    color: Colors.warmGray,
+    fontSize: 12,
+    marginBottom: 8,
+  },
   previewText: {
     ...Typography.body,
     color: Colors.warmGray,
@@ -526,6 +847,70 @@ const styles = StyleSheet.create({
     color: Colors.warmGray,
     fontStyle: 'italic',
     lineHeight: 22,
+  },
+  previewFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: normalizeBorder(0.5),
+    borderTopColor: 'rgba(139, 154, 123, 0.15)',
+  },
+  viewAllText: {
+    ...Typography.caption,
+    color: Colors.deepSage,
+    fontWeight: '600' as const,
+    fontSize: 13,
+  },
+  inspirationImagesScroll: {
+    marginBottom: 12,
+  },
+  inspirationPreviewImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    marginRight: 8,
+    backgroundColor: Colors.beige,
+  },
+  timelineCard: {
+    marginBottom: 16,
+  },
+  timeline: {
+    paddingLeft: 8,
+  },
+  timelineItem: {
+    flexDirection: 'row',
+    marginBottom: 24,
+  },
+  timelineDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: Colors.warmGray,
+    backgroundColor: Colors.cream,
+    marginRight: 16,
+    marginTop: 2,
+  },
+  timelineDotActive: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
+  },
+  timelineContent: {
+    flex: 1,
+  },
+  timelineLabel: {
+    ...Typography.body,
+    color: Colors.charcoal,
+    fontWeight: '500' as const,
+    marginBottom: 4,
+    fontSize: 15,
+  },
+  timelineDate: {
+    ...Typography.caption,
+    color: Colors.warmGray,
+    fontSize: 13,
   },
   metadata: {
     marginTop: 32,

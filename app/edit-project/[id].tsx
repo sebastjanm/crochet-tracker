@@ -379,6 +379,9 @@ export default function EditProjectScreen() {
             style={styles.textArea}
           />
 
+          {/* Divider between Basic Info and rest */}
+          <View style={styles.sectionDivider} />
+
           <SectionHeaderWithAdd
             title={t('projects.photos')}
             onAdd={handleAddPhoto}
@@ -595,6 +598,12 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginVertical: 24,
+    opacity: 0.3,
   },
   textArea: {
     height: 100,

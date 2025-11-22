@@ -16,6 +16,7 @@ interface MaterialCardSelectorProps {
   addButtonLabel: string;
   emptyMessage: string;
   showTitle?: boolean;
+  showAddCard?: boolean;
 }
 
 export function MaterialCardSelector({
@@ -28,6 +29,7 @@ export function MaterialCardSelector({
   addButtonLabel,
   emptyMessage,
   showTitle = true,
+  showAddCard = true,
 }: MaterialCardSelectorProps) {
   const isSelected = (id: string) => selectedIds.includes(id);
 
@@ -150,7 +152,7 @@ export function MaterialCardSelector({
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.list}
-        ListFooterComponent={renderAddCard}
+        ListFooterComponent={showAddCard ? renderAddCard : null}
       />
     </View>
   );

@@ -302,24 +302,23 @@ export default function EditProjectScreen() {
           {/* SECTION 1: BASIC INFO */}
           <SectionHeader title={t('projects.basicInfo')} badge="1" isFirst={true} />
 
-          <View style={styles.sectionContent}>
-            <Input
-              label={t('projects.projectTitle')}
-              placeholder={t('projects.enterProjectName')}
-              value={title}
-              onChangeText={setTitle}
-              required
-            />
+          <Input
+            label={t('projects.projectTitle')}
+            placeholder={t('projects.enterProjectName')}
+            value={title}
+            onChangeText={setTitle}
+            required
+          />
 
-            <Select<ProjectType>
-              label={t('projects.projectType')}
-              value={projectType}
-              options={getProjectTypeOptions()}
-              onChange={setProjectType}
-              placeholder={t('projects.selectProjectType')}
-            />
+          <Select<ProjectType>
+            label={t('projects.projectType')}
+            value={projectType}
+            options={getProjectTypeOptions()}
+            onChange={setProjectType}
+            placeholder={t('projects.selectProjectType')}
+          />
 
-            <View style={styles.statusSection}>
+          <View style={styles.statusSection}>
             <Text style={styles.sectionLabel}>{t('projects.status')}</Text>
             <ScrollView
               horizontal
@@ -370,16 +369,15 @@ export default function EditProjectScreen() {
             maxDate={new Date()}
           />
 
-            <Input
-              label={t('projects.notes')}
-              placeholder={t('projects.additionalNotes')}
-              value={notes}
-              onChangeText={setNotes}
-              multiline
-              numberOfLines={3}
-              style={styles.textArea}
-            />
-          </View>
+          <Input
+            label={t('projects.notes')}
+            placeholder={t('projects.additionalNotes')}
+            value={notes}
+            onChangeText={setNotes}
+            multiline
+            numberOfLines={3}
+            style={styles.textArea}
+          />
 
           <SectionHeaderWithAdd
             title={t('projects.photos')}
@@ -544,8 +542,7 @@ export default function EditProjectScreen() {
           {/* SECTION 2: MATERIALS */}
           <SectionHeader title={t('projects.materials')} badge="2" />
 
-          <View style={styles.sectionContent}>
-            <SectionHeaderWithAdd
+          <SectionHeaderWithAdd
             title={t('projects.materialsYarn')}
             onAdd={handleAddYarn}
             addButtonLabel={t('projects.addYarnToInventory')}
@@ -579,15 +576,14 @@ export default function EditProjectScreen() {
             showTitle={false}
           />
 
-            <Input
-              label={t('projects.colorNotes')}
-              placeholder={t('projects.colorNotesPlaceholder')}
-              value={colorNotes}
-              onChangeText={setColorNotes}
-              multiline
-              numberOfLines={2}
-            />
-          </View>
+          <Input
+            label={t('projects.colorNotes')}
+            placeholder={t('projects.colorNotesPlaceholder')}
+            value={colorNotes}
+            onChangeText={setColorNotes}
+            multiline
+            numberOfLines={2}
+          />
 
           <View style={styles.footer}>
             <Button
@@ -614,19 +610,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-  },
-  sectionContent: {
-    backgroundColor: Colors.linen,
-    borderRadius: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    marginBottom: 20,
-    borderWidth: normalizeBorder(0.5),
-    borderColor: 'rgba(139, 154, 123, 0.12)',
-    ...Platform.select({
-      ...cardShadow,
-      default: {},
-    }),
   },
   textArea: {
     height: 100,

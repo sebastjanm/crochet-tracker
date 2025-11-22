@@ -13,7 +13,7 @@ import {
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Lightbulb, Clock, CheckCircle, Star, Trash2, Plus, PauseCircle, RotateCcw, FileText, Camera, Link } from 'lucide-react-native';
+import { Lightbulb, Clock, CheckCircle, Star, Trash2, PauseCircle, RotateCcw, FileText, Link } from 'lucide-react-native';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { Select } from '@/components/Select';
@@ -29,7 +29,7 @@ import { useImagePicker } from '@/hooks/useImagePicker';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, cardShadow, buttonShadow } from '@/constants/pixelRatio';
-import { ProjectStatus, ProjectType, InventoryItem } from '@/types';
+import { ProjectStatus, ProjectType } from '@/types';
 import { getProjectTypeOptions } from '@/constants/projectTypes';
 
 export default function EditProjectScreen() {

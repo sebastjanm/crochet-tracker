@@ -386,12 +386,6 @@ export default function EditProjectScreen() {
           />
 
           <View style={styles.imageSection}>
-              {!images.length && (
-              <Text style={styles.emptyText}>
-                {t('projects.addPhotosDescription')}
-              </Text>
-            )}
-
             {images.length > 0 && (
               <FlatList
                 data={images}
@@ -460,12 +454,6 @@ export default function EditProjectScreen() {
           />
 
           <View style={styles.patternSection}>
-              {!patternImages.length && !patternPdf && !patternUrl && (
-              <Text style={styles.emptyText}>
-                {t('projects.addPatternDescription')}
-              </Text>
-            )}
-
             {patternImages.length > 0 && (
               <View style={styles.patternPreviewSection}>
                 <FlatList
@@ -626,13 +614,6 @@ const styles = StyleSheet.create({
     color: Colors.charcoal,
     marginBottom: 8,
     fontWeight: '500',
-  },
-  emptyText: {
-    ...Typography.body,
-    color: Colors.warmGray,
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 16,
   },
   patternSection: {
     marginBottom: 24,
@@ -877,8 +858,8 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   imagePreview: {
-    width: 130,
-    height: 130,
+    width: 100,
+    height: 178, // 9:16 aspect ratio (100 * 16/9 ≈ 178)
     borderRadius: 12,
     backgroundColor: Colors.warmGray,
   },

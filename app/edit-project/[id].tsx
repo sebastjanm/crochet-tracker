@@ -453,41 +453,39 @@ export default function EditProjectScreen() {
             addButtonLabel={t('projects.addPattern')}
           />
 
-          <View style={styles.patternSection}>
+          <View style={styles.imageSection}>
             {patternImages.length > 0 && (
-              <View style={styles.patternPreviewSection}>
-                <FlatList
-                  data={patternImages}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  keyExtractor={(item, index) => index.toString()}
-                  renderItem={({ item, index }) => (
-                    <View style={styles.imageContainer}>
-                      <Image
-                        source={{ uri: item }}
-                        style={styles.imagePreview}
-                        contentFit="cover"
-                        transition={200}
-                        cachePolicy="memory-disk"
-                      />
-                      <View style={styles.imageActions}>
-                        <TouchableOpacity
-                          style={[styles.imageActionButton, styles.deleteButton]}
-                          onPress={() => removePatternImage(index)}
-                          activeOpacity={0.7}
-                          accessible={true}
-                          accessibilityRole="button"
-                          accessibilityLabel={t('common.delete')}
-                          accessibilityHint={t('projects.removeThisPhoto')}
-                        >
-                          <Trash2 size={16} color={Colors.white} />
-                        </TouchableOpacity>
-                      </View>
+              <FlatList
+                data={patternImages}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(item, index) => index.toString()}
+                renderItem={({ item, index }) => (
+                  <View style={styles.imageContainer}>
+                    <Image
+                      source={{ uri: item }}
+                      style={styles.imagePreview}
+                      contentFit="cover"
+                      transition={200}
+                      cachePolicy="memory-disk"
+                    />
+                    <View style={styles.imageActions}>
+                      <TouchableOpacity
+                        style={[styles.imageActionButton, styles.deleteButton]}
+                        onPress={() => removePatternImage(index)}
+                        activeOpacity={0.7}
+                        accessible={true}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('common.delete')}
+                        accessibilityHint={t('projects.removeThisPhoto')}
+                      >
+                        <Trash2 size={16} color={Colors.white} />
+                      </TouchableOpacity>
                     </View>
-                  )}
-                  contentContainerStyle={styles.imageList}
-                />
-              </View>
+                  </View>
+                )}
+                contentContainerStyle={styles.imageList}
+              />
             )}
 
             {patternPdf && (
@@ -614,12 +612,6 @@ const styles = StyleSheet.create({
     color: Colors.charcoal,
     marginBottom: 8,
     fontWeight: '500',
-  },
-  patternSection: {
-    marginBottom: 24,
-  },
-  patternPreviewSection: {
-    marginTop: 16,
   },
   pdfPreview: {
     flexDirection: 'row',

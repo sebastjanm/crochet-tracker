@@ -542,11 +542,6 @@ export default function EditProjectScreen() {
           {/* SECTION 2: MATERIALS */}
           <SectionHeader title={t('projects.materials')} badge="2" />
 
-          <SectionHeaderWithAdd
-            title={t('projects.materialsYarn')}
-            onAdd={handleAddYarn}
-            addButtonLabel={t('projects.addYarnToInventory')}
-          />
           <MaterialCardSelector
             items={inventory.filter((item) => item.category === 'yarn')}
             selectedIds={yarnUsedIds}
@@ -556,14 +551,8 @@ export default function EditProjectScreen() {
             title={t('projects.materialsYarn')}
             addButtonLabel={t('projects.addYarnToInventory')}
             emptyMessage={t('projects.noYarnAvailable')}
-            showTitle={false}
           />
 
-          <SectionHeaderWithAdd
-            title={t('projects.materialsHooks')}
-            onAdd={handleAddHook}
-            addButtonLabel={t('projects.addHookToInventory')}
-          />
           <MaterialCardSelector
             items={inventory.filter((item) => item.category === 'hook')}
             selectedIds={hookUsedIds}
@@ -573,7 +562,6 @@ export default function EditProjectScreen() {
             title={t('projects.materialsHooks')}
             addButtonLabel={t('projects.addHookToInventory')}
             emptyMessage={t('projects.noHooksAvailable')}
-            showTitle={false}
           />
 
           <Input

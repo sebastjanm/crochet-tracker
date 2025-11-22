@@ -275,9 +275,6 @@ export default function AddProjectScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          {/* SECTION 1: BASIC INFO */}
-          <SectionHeader title={t('projects.basicInfo')} badge="1" isFirst={true} />
-
           <View style={styles.sectionContent}>
             <Input
               label={t('projects.projectTitle')}
@@ -616,8 +613,6 @@ const styles = StyleSheet.create({
   },
   textArea: {
     height: 100,
-    textAlignVertical: 'top',
-    paddingTop: 12,
   },
   photosHeader: {
     flexDirection: 'row',
@@ -659,10 +654,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sectionLabel: {
-    ...Typography.body,
-    color: Colors.charcoal,
+    fontSize: 12,
+    color: Colors.warmGray,
     marginBottom: 8,
     fontWeight: '500',
+    letterSpacing: 0.2,
+    paddingHorizontal: 16,
   },
   patternHeader: {
     flexDirection: 'row',

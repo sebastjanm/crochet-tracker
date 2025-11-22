@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   Platform,
+  Animated,
 } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Calendar, X } from 'lucide-react-native';
@@ -37,6 +38,17 @@ export function DatePicker({
 }: DatePickerProps) {
   const { language } = useLanguage();
   const [showPicker, setShowPicker] = useState(false);
+  const [animatedLabelSize] = useState(new Animated.Value(value ? 1 : 0));
+
+  const hasValue = !!value;
+
+  useEffect(() => {
+    Animated.timing(animatedLabelSize, {
+      toValue: hasValue ? 1 : 0,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  }, [hasValue]);
 
   const formatDate = (date: Date): string => {
     const day = date.getDate().toString().padStart(2, '0');
@@ -78,6 +90,13 @@ export function DatePicker({
     ? `Selected date: ${formatDate(value)}`
     : 'No date selected';
 
+  const labelStyle = {
+    fontSize: animatedLabelSize.interpolate({
+      inputRange: [0, 1],
+      outputRange: [17, 12],
+    }),
+  };
+
   return (
     <View style={styles.container}>
       <TouchableOpacity
@@ -97,24 +116,24 @@ export function DatePicker({
           disabled,
         }}
       >
-        <Text style={styles.label}>
-          {label}
-          {required && <Text style={styles.required}> *</Text>}
-        </Text>
-
-        <View style={styles.dateValueContainer}>
-          <Text
-            style={[
-              styles.dateText,
-              !value && styles.placeholderText,
-              disabled && styles.disabledText,
-            ]}
-          >
-            {displayValue}
-          </Text>
-
-          <Calendar size={20} color={disabled ? Colors.warmGray : Colors.charcoal} />
+        <View style={styles.labelContainer}>
+          <Animated.Text style={[styles.label, labelStyle]}>
+            {label}
+            {required && <Text style={styles.required}> *</Text>}
+          </Animated.Text>
+          {value && (
+            <Text
+              style={[
+                styles.dateText,
+                disabled && styles.disabledText,
+              ]}
+            >
+              {formatDate(value)}
+            </Text>
+          )}
         </View>
+
+        <Calendar size={20} color={disabled ? Colors.warmGray : Colors.sage} />
       </TouchableOpacity>
 
       {error && (
@@ -164,51 +183,45 @@ export function DatePicker({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 0,
+    marginBottom: 20,
   },
   dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'transparent',
-    borderRadius: 0,
-    borderWidth: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: `${Colors.sage}26`, // 15% opacity
-    paddingHorizontal: 0,
-    paddingVertical: 14,
-    minHeight: 44,
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: 16,
+    paddingVertical: 18,
+    minHeight: 64,
   },
   dateRowError: {
-    borderBottomColor: Colors.error,
-    borderBottomWidth: 2,
+    borderColor: Colors.error,
+    borderWidth: 2,
   },
   dateRowDisabled: {
     opacity: 0.5,
   },
+  labelContainer: {
+    flex: 1,
+    justifyContent: 'center',
+  },
   label: {
-    ...Typography.body,
-    color: Colors.charcoal,
-    fontSize: 17,
-    fontWeight: '400' as const,
-    flex: 0,
-    marginRight: 12,
+    color: Colors.warmGray,
+    fontWeight: '500' as const,
+    letterSpacing: 0.2,
+    marginBottom: 2,
   },
   required: {
     color: Colors.error,
   },
-  dateValueContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
   dateText: {
-    ...Typography.body,
     color: Colors.charcoal,
     fontSize: 17,
-    textAlign: 'right',
+    fontWeight: '500' as const,
+    lineHeight: 20,
   },
   placeholderText: {
     color: Colors.warmGray,

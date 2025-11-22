@@ -21,7 +21,6 @@ import { Select } from '@/components/Select';
 import { MaterialCardSelector } from '@/components/MaterialCardSelector';
 import { DatePicker } from '@/components/DatePicker';
 import { ModalHeader } from '@/components/ModalHeader';
-import { SectionHeader } from '@/components/SectionHeader';
 import { SectionHeaderWithAdd } from '@/components/SectionHeaderWithAdd';
 import { FullscreenImageModal } from '@/components/FullscreenImageModal';
 import { useProjects } from '@/hooks/projects-context';
@@ -326,9 +325,6 @@ export default function EditProjectScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          {/* SECTION 1: BASIC INFO */}
-          <SectionHeader title={t('projects.basicInfo')} badge="1" isFirst={true} />
-
           <Input
             label={t('projects.projectTitle')}
             placeholder={t('projects.enterProjectName')}
@@ -405,9 +401,6 @@ export default function EditProjectScreen() {
             numberOfLines={3}
             style={styles.textArea}
           />
-
-          {/* Divider between Basic Info and rest */}
-          <View style={styles.sectionDivider} />
 
           <View>
             <SectionHeaderWithAdd
@@ -647,17 +640,17 @@ const styles = StyleSheet.create({
   },
   textArea: {
     height: 100,
-    textAlignVertical: 'top',
-    paddingTop: 12,
   },
   imageSection: {
     marginBottom: 0,
   },
   sectionLabel: {
-    ...Typography.body,
-    color: Colors.charcoal,
+    fontSize: 12,
+    color: Colors.warmGray,
     marginBottom: 8,
     fontWeight: '500',
+    letterSpacing: 0.2,
+    paddingHorizontal: 16,
   },
   pdfPreview: {
     flexDirection: 'row',

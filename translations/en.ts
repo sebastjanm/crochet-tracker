@@ -171,7 +171,6 @@ export default {
     patternPhoto: 'Pattern photo',
     longPressForOptions: 'Long press to see options',
     // New sectioned form labels
-    basicInfo: 'Basic Info',
     workProgress: 'Work Progress',
     addWorkEntry: 'Add Work Entry',
     workEntryLabel: 'Work Notes',

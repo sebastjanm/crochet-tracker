@@ -39,7 +39,7 @@ export function Select<T extends string = string>({
 }: SelectProps<T>) {
   const [showModal, setShowModal] = useState(false);
   const selectedOption = options.find((opt) => opt.value === value);
-  const displayValue = selectedOption?.label || placeholder;
+  const hasValue = !!selectedOption;
 
   const handleSelect = (selectedValue: T) => {
     onChange(selectedValue);
@@ -52,34 +52,35 @@ export function Select<T extends string = string>({
 
   return (
     <View style={styles.container}>
-      <View style={styles.labelContainer}>
-        <Text style={styles.label}>
+      <View style={styles.selectContainer}>
+        <Text style={[styles.label, hasValue && styles.labelFloating]}>
           {label}
           {required && <Text style={styles.required}> *</Text>}
         </Text>
-      </View>
 
-      <TouchableOpacity
-        style={[
-          styles.selectButton,
-          error && styles.selectButtonError,
-        ]}
-        onPress={() => setShowModal(true)}
-        activeOpacity={0.7}
-        accessible={true}
-        accessibilityRole="button"
-        accessibilityLabel={`${label}. ${selectedOption ? `Selected: ${selectedOption.label}` : placeholder}`}
-        accessibilityHint="Double tap to change selection"
-        accessibilityState={{ disabled: false }}
-      >
-        <Text style={[
-          styles.selectText,
-          !selectedOption && styles.placeholderText,
-        ]}>
-          {displayValue}
-        </Text>
-        <ChevronDown size={20} color={Colors.charcoal} />
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.selectButton,
+            error && styles.selectButtonError,
+          ]}
+          onPress={() => setShowModal(true)}
+          activeOpacity={0.7}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel={`${label}. ${selectedOption ? `Selected: ${selectedOption.label}` : placeholder}`}
+          accessibilityHint="Double tap to change selection"
+          accessibilityState={{ disabled: false }}
+        >
+          <View style={styles.selectContent}>
+            {hasValue && (
+              <Text style={styles.selectText}>
+                {selectedOption.label}
+              </Text>
+            )}
+          </View>
+          <ChevronDown size={20} color={Colors.charcoal} />
+        </TouchableOpacity>
+      </View>
 
       {error && (
         <View
@@ -162,16 +163,25 @@ const styles = StyleSheet.create({
   container: {
     marginBottom: 20,
   },
-  labelContainer: {
-    marginBottom: 6,
+  selectContainer: {
+    position: 'relative',
   },
   label: {
-    ...Typography.footnote,
+    position: 'absolute' as const,
+    left: 16,
+    top: 21,
     color: Colors.warmGray,
-    fontWeight: '400' as const,
-    fontSize: 13,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontWeight: '500' as const,
+    fontSize: 17,
+    letterSpacing: 0.2,
+    zIndex: 1,
+    backgroundColor: 'transparent',
+    pointerEvents: 'none' as const,
+  },
+  labelFloating: {
+    top: 12,
+    fontSize: 12,
+    color: Colors.warmGray,
   },
   required: {
     color: Colors.error,
@@ -180,27 +190,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'transparent',
-    borderRadius: 0,
-    borderWidth: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: `${Colors.sage}26`, // 15% opacity
-    paddingHorizontal: 0,
-    paddingVertical: 14,
-    minHeight: 44,
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: 16,
+    paddingTop: 32,
+    paddingBottom: 12,
+    minHeight: 64,
   },
   selectButtonError: {
-    borderBottomColor: Colors.error,
-    borderBottomWidth: 2,
+    borderColor: Colors.error,
+    borderWidth: 2,
+  },
+  selectContent: {
+    flex: 1,
+    justifyContent: 'center',
   },
   selectText: {
-    ...Typography.body,
     color: Colors.charcoal,
     fontSize: 17,
-    flex: 1,
-  },
-  placeholderText: {
-    color: Colors.warmGray,
+    fontWeight: '500' as const,
+    lineHeight: 20,
   },
   errorText: {
     ...Typography.caption2,

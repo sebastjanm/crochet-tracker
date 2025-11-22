@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   TextInput,
   TextInputProps,
   View,
   Text,
   StyleSheet,
+  Animated,
 } from 'react-native';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
@@ -24,32 +25,71 @@ export const Input: React.FC<InputProps> = ({
   required = false,
   style,
   accessibilityLabel,
+  value,
+  multiline,
   ...props
 }) => {
+  const [isFocused, setIsFocused] = useState(false);
+  const [animatedLabelPosition] = useState(new Animated.Value(value ? 1 : 0));
+
+  const hasValue = value && value.length > 0;
+  const shouldFloat = isFocused || hasValue;
+
+  React.useEffect(() => {
+    Animated.timing(animatedLabelPosition, {
+      toValue: shouldFloat ? 1 : 0,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  }, [shouldFloat]);
+
+  const labelStyle = {
+    position: 'absolute' as const,
+    left: 16,
+    top: animatedLabelPosition.interpolate({
+      inputRange: [0, 1],
+      outputRange: [21, 12],
+    }),
+    fontSize: animatedLabelPosition.interpolate({
+      inputRange: [0, 1],
+      outputRange: [17, 12],
+    }),
+    color: isFocused ? Colors.sage : Colors.warmGray,
+    zIndex: 1,
+  };
+
   return (
     <View style={styles.container}>
-      {label && (
-        <Text
-          style={styles.label}
+      <View style={styles.inputContainer}>
+        {label && (
+          <Animated.Text
+            style={[styles.label, labelStyle]}
+            maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}
+          >
+            {label}
+            {required && <Text style={styles.required}> *</Text>}
+          </Animated.Text>
+        )}
+        <TextInput
+          style={[
+            styles.input,
+            shouldFloat && styles.inputWithFloatingLabel,
+            shouldFloat && multiline && styles.inputMultilineWithFloatingLabel,
+            error && styles.inputError,
+            style,
+          ]}
+          placeholderTextColor="transparent"
+          accessible={true}
+          accessibilityLabel={accessibilityLabel || label}
+          accessibilityHint={error ? `Error: ${error}` : helper}
           maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}
-        >
-          {label}
-          {required && <Text style={styles.required}> *</Text>}
-        </Text>
-      )}
-      <TextInput
-        style={[
-          styles.input,
-          error && styles.inputError,
-          style,
-        ]}
-        placeholderTextColor={Colors.warmGray}
-        accessible={true}
-        accessibilityLabel={accessibilityLabel || label}
-        accessibilityHint={error ? `Error: ${error}` : helper}
-        maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}
-        {...props}
-      />
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          value={value}
+          multiline={multiline}
+          {...props}
+        />
+      </View>
       {helper && !error && (
         <Text
           style={styles.helper}
@@ -82,29 +122,40 @@ const styles = StyleSheet.create({
   container: {
     marginBottom: 20,
   },
+  inputContainer: {
+    position: 'relative',
+  },
   label: {
-    ...Typography.footnote,
-    color: Colors.warmGray,
-    marginBottom: 6,
-    fontWeight: '400',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontWeight: '500',
+    letterSpacing: 0.2,
+    backgroundColor: 'transparent',
+    pointerEvents: 'none' as const,
   },
   input: {
-    ...Typography.body,
-    backgroundColor: 'transparent',
-    borderWidth: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: `${Colors.sage}26`, // 15% opacity
-    borderRadius: 0,
-    paddingHorizontal: 0,
-    paddingVertical: 14,
-    minHeight: 44,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingTop: 32,
+    paddingBottom: 12,
+    minHeight: 64,
     color: Colors.charcoal,
+    fontWeight: '500',
+    fontSize: 17,
+    lineHeight: 20,
+  },
+  inputWithFloatingLabel: {
+    paddingTop: 32,
+    paddingBottom: 12,
+  },
+  inputMultilineWithFloatingLabel: {
+    paddingTop: 32,
+    textAlignVertical: 'top',
   },
   inputError: {
-    borderBottomColor: ACCESSIBLE_COLORS.errorAccessible,
-    borderBottomWidth: 2,
+    borderColor: ACCESSIBLE_COLORS.errorAccessible,
+    borderWidth: 2,
   },
   helper: {
     ...Typography.caption2,

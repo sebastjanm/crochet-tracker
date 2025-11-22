@@ -173,7 +173,6 @@ export default {
     patternPhoto: 'Fotografija vzorca',
     longPressForOptions: 'Dolgi pritisk za možnosti',
     // New sectioned form labels
-    basicInfo: 'Osnovne informacije',
     workProgress: 'Napredek dela',
     addWorkEntry: 'Dodaj vnos dela',
     workEntryLabel: 'Opombe o delu',

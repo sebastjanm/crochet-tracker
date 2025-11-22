@@ -21,6 +21,7 @@ import { MaterialCardSelector } from '@/components/MaterialCardSelector';
 import { DatePicker } from '@/components/DatePicker';
 import { ModalHeader } from '@/components/ModalHeader';
 import { SectionHeader } from '@/components/SectionHeader';
+import { SectionHeaderWithAdd } from '@/components/SectionHeaderWithAdd';
 import { useProjects } from '@/hooks/projects-context';
 import { useInventory } from '@/hooks/inventory-context';
 import { useLanguage } from '@/hooks/language-context';
@@ -380,25 +381,15 @@ export default function EditProjectScreen() {
             />
           </View>
 
-          <View style={styles.photosHeader}>
-            <Text style={styles.photosTitle}>{t('projects.photos')}</Text>
-            <TouchableOpacity
-              style={styles.addPhotosButton}
-              onPress={handleAddPhoto}
-              activeOpacity={0.7}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel={t('projects.addPhotos')}
-              accessibilityHint="Choose to take a photo or select from gallery"
-            >
-              <Plus size={20} color={Colors.sage} />
-              <Text style={styles.addPhotosButtonText}>{t('projects.addPhotos')}</Text>
-            </TouchableOpacity>
-          </View>
+          <SectionHeaderWithAdd
+            title={t('projects.photos')}
+            onAdd={handleAddPhoto}
+            addButtonLabel={t('projects.addPhotos')}
+          />
 
           <View style={styles.imageSection}>
               {!images.length && (
-              <Text style={styles.photosEmptyText}>
+              <Text style={styles.emptyText}>
                 {t('projects.addPhotosDescription')}
               </Text>
             )}
@@ -464,32 +455,21 @@ export default function EditProjectScreen() {
           </View>
 
           {/* PATTERN SECTION */}
-          <View style={styles.patternHeader}>
-            <Text style={styles.patternTitle}>{t('projects.pattern')}</Text>
-            <TouchableOpacity
-              style={styles.addPatternButton}
-              onPress={handleAddPattern}
-              activeOpacity={0.7}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel={t('projects.addPattern')}
-              accessibilityHint={t('projects.addPatternDescription')}
-            >
-              <Plus size={20} color={Colors.sage} />
-              <Text style={styles.addPatternButtonText}>{t('projects.addPattern')}</Text>
-            </TouchableOpacity>
-          </View>
+          <SectionHeaderWithAdd
+            title={t('projects.pattern')}
+            onAdd={handleAddPattern}
+            addButtonLabel={t('projects.addPattern')}
+          />
 
           <View style={styles.patternSection}>
               {!patternImages.length && !patternPdf && !patternUrl && (
-              <Text style={styles.patternEmptyText}>
+              <Text style={styles.emptyText}>
                 {t('projects.addPatternDescription')}
               </Text>
             )}
 
             {patternImages.length > 0 && (
               <View style={styles.patternPreviewSection}>
-                <Text style={styles.sectionLabel}>{t('projects.patternPhotos')}</Text>
                 <FlatList
                   data={patternImages}
                   horizontal
@@ -565,7 +545,12 @@ export default function EditProjectScreen() {
           <SectionHeader title={t('projects.materials')} badge="2" />
 
           <View style={styles.sectionContent}>
-            <MaterialCardSelector
+            <SectionHeaderWithAdd
+            title={t('projects.materialsYarn')}
+            onAdd={handleAddYarn}
+            addButtonLabel={t('projects.addYarnToInventory')}
+          />
+          <MaterialCardSelector
             items={inventory.filter((item) => item.category === 'yarn')}
             selectedIds={yarnUsedIds}
             onToggle={handleToggleYarn}
@@ -574,8 +559,14 @@ export default function EditProjectScreen() {
             title={t('projects.materialsYarn')}
             addButtonLabel={t('projects.addYarnToInventory')}
             emptyMessage={t('projects.noYarnAvailable')}
+            showTitle={false}
           />
 
+          <SectionHeaderWithAdd
+            title={t('projects.materialsHooks')}
+            onAdd={handleAddHook}
+            addButtonLabel={t('projects.addHookToInventory')}
+          />
           <MaterialCardSelector
             items={inventory.filter((item) => item.category === 'hook')}
             selectedIds={hookUsedIds}
@@ -585,6 +576,7 @@ export default function EditProjectScreen() {
             title={t('projects.materialsHooks')}
             addButtonLabel={t('projects.addHookToInventory')}
             emptyMessage={t('projects.noHooksAvailable')}
+            showTitle={false}
           />
 
             <Input
@@ -650,44 +642,15 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontWeight: '500',
   },
-  patternHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-    marginTop: 8,
-  },
-  patternTitle: {
-    ...Typography.title3,
-    color: Colors.charcoal,
-    fontWeight: '600' as const,
-    fontSize: 18,
-  },
-  addPatternButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: Colors.beige,
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    minHeight: 36,
-  },
-  addPatternButtonText: {
-    ...Typography.body,
-    color: Colors.sage,
-    fontWeight: '600' as const,
-    fontSize: 15,
-  },
-  patternSection: {
-    marginBottom: 24,
-  },
-  patternEmptyText: {
+  emptyText: {
     ...Typography.body,
     color: Colors.warmGray,
     fontSize: 15,
     lineHeight: 22,
     marginBottom: 16,
+  },
+  patternSection: {
+    marginBottom: 24,
   },
   patternPreviewSection: {
     marginTop: 16,
@@ -999,41 +962,5 @@ const styles = StyleSheet.create({
     color: Colors.sage,
     fontWeight: '600' as const,
     fontSize: 16,
-  },
-  photosHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-    marginTop: 8,
-  },
-  photosTitle: {
-    ...Typography.title3,
-    color: Colors.charcoal,
-    fontWeight: '600' as const,
-    fontSize: 18,
-  },
-  addPhotosButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: Colors.beige,
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    minHeight: 36,
-  },
-  addPhotosButtonText: {
-    ...Typography.body,
-    color: Colors.sage,
-    fontWeight: '600' as const,
-    fontSize: 15,
-  },
-  photosEmptyText: {
-    ...Typography.body,
-    color: Colors.warmGray,
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 16,
   },
 });

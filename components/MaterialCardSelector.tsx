@@ -15,6 +15,7 @@ interface MaterialCardSelectorProps {
   title: string;
   addButtonLabel: string;
   emptyMessage: string;
+  showTitle?: boolean;
 }
 
 export function MaterialCardSelector({
@@ -26,6 +27,7 @@ export function MaterialCardSelector({
   title,
   addButtonLabel,
   emptyMessage,
+  showTitle = true,
 }: MaterialCardSelectorProps) {
   const isSelected = (id: string) => selectedIds.includes(id);
 
@@ -106,9 +108,11 @@ export function MaterialCardSelector({
   if (items.length === 0) {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>{title}</Text>
-        </View>
+        {showTitle && (
+          <View style={styles.header}>
+            <Text style={styles.title}>{title}</Text>
+          </View>
+        )}
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>{emptyMessage}</Text>
           <TouchableOpacity
@@ -129,14 +133,16 @@ export function MaterialCardSelector({
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{title}</Text>
-        {selectedIds.length > 0 && (
-          <Text style={styles.selectedCount}>
-            {selectedIds.length} selected
-          </Text>
-        )}
-      </View>
+      {showTitle && (
+        <View style={styles.header}>
+          <Text style={styles.title}>{title}</Text>
+          {selectedIds.length > 0 && (
+            <Text style={styles.selectedCount}>
+              {selectedIds.length} selected
+            </Text>
+          )}
+        </View>
+      )}
       <FlatList
         data={items}
         renderItem={renderItem}

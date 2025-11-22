@@ -159,7 +159,7 @@ export function MaterialCardSelector({
 }
 
 const CARD_WIDTH = 100;
-const IMAGE_HEIGHT = 178; // 9:16 aspect ratio (100 * 16/9)
+const IMAGE_HEIGHT = 133; // 3:4 aspect ratio (100 * 4/3)
 
 const styles = StyleSheet.create({
   container: {

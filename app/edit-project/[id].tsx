@@ -851,7 +851,7 @@ const styles = StyleSheet.create({
   },
   imagePreview: {
     width: 100,
-    height: 178, // 9:16 aspect ratio (100 * 16/9 ≈ 178)
+    height: 133, // 3:4 aspect ratio (100 * 4/3 ≈ 133)
     borderRadius: 12,
     backgroundColor: Colors.warmGray,
   },

@@ -24,6 +24,7 @@ export default {
     today: 'Danes',
     yesterday: 'Včeraj',
     continue: 'Nadaljuj',
+    close: 'Zapri',
   },
   auth: {
     login: 'Prijava',
@@ -114,6 +115,10 @@ export default {
     hookUsed: 'Uporabljena kljukica',
     selectHook: 'Izberite kljukico',
     noHooksInInventory: 'V inventarju ni kljukic. Najprej dodajte kljukice.',
+    addYarn: 'Dodaj prejo',
+    addHook: 'Dodaj kljukico',
+    selectExistingYarn: 'Izberi iz inventarja',
+    selectExistingHook: 'Izberi iz inventarja',
     addNewYarn: 'Dodaj novo prejo',
     addNewHook: 'Dodaj novo kljukico',
     formWillClose: 'To bo zaprlo obrazec projekta. Neshranjene spremembe bodo izgubljene. Nadaljuj?',
@@ -164,6 +169,9 @@ export default {
     createNewProject: 'Ustvari nov kvačkarski projekt',
     changeStatus: 'Spremeni status',
     selectNewStatus: 'Izberite nov status za ta projekt',
+    photo: 'Fotografija',
+    patternPhoto: 'Fotografija vzorca',
+    longPressForOptions: 'Dolgi pritisk za možnosti',
     // New sectioned form labels
     basicInfo: 'Osnovne informacije',
     workProgress: 'Napredek dela',
@@ -795,5 +803,17 @@ export default {
     generateAnother: 'Generiraj drugo',
     error: 'Generiranje idej ni uspelo. Prosim poskusite znova.',
     imageError: 'Generiranje slike ni uspelo. Prosim poskusite znova.',
+  },
+  imageActions: {
+    title: 'Možnosti',
+    setAsDefault: 'Nastavi kot privzeto',
+    removeDefault: 'Odstrani kot privzeto',
+    delete: 'Izbriši',
+    viewImage: 'Odpri sliko',
+    viewFullSize: 'Odpri podrobnosti',
+    removeFromProject: 'Odstrani iz projekta',
+  },
+  materials: {
+    longPressForOptions: 'Dolgi pritisk za možnosti',
   },
 };

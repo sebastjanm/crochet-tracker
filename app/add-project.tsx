@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   FlatList,
+  Pressable,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -21,10 +22,12 @@ import { MaterialCardSelector } from '@/components/MaterialCardSelector';
 import { DatePicker } from '@/components/DatePicker';
 import { ModalHeader } from '@/components/ModalHeader';
 import { SectionHeader } from '@/components/SectionHeader';
+import { FullscreenImageModal } from '@/components/FullscreenImageModal';
 import { useProjects } from '@/hooks/projects-context';
 import { useInventory } from '@/hooks/inventory-context';
 import { useLanguage } from '@/hooks/language-context';
 import { useImagePicker } from '@/hooks/useImagePicker';
+import { useImageActions } from '@/hooks/useImageActions';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, cardShadow, buttonShadow } from '@/constants/pixelRatio';
@@ -36,6 +39,7 @@ export default function AddProjectScreen() {
   const { items: inventory } = useInventory();
   const { t } = useLanguage();
   const { showImagePickerOptionsMultiple, takePhotoWithCamera } = useImagePicker();
+  const { showImageActions } = useImageActions();
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
   const [inspirationUrl, setInspirationUrl] = useState('');
@@ -51,6 +55,7 @@ export default function AddProjectScreen() {
   const [hookUsedIds, setHookUsedIds] = useState<string[]>([]);
   const [colorNotes, setColorNotes] = useState('');
   const [loading, setLoading] = useState(false);
+  const [fullscreenImageUri, setFullscreenImageUri] = useState<string | null>(null);
 
   const handleAddPhoto = () => {
     Alert.alert(
@@ -210,12 +215,20 @@ export default function AddProjectScreen() {
     }
   };
 
+  const handleRemoveYarn = (id: string) => {
+    setYarnUsedIds(yarnUsedIds.filter((yarnId) => yarnId !== id));
+  };
+
   const handleToggleHook = (id: string) => {
     if (hookUsedIds.includes(id)) {
       setHookUsedIds(hookUsedIds.filter((hookId) => hookId !== id));
     } else {
       setHookUsedIds([...hookUsedIds, id]);
     }
+  };
+
+  const handleRemoveHook = (id: string) => {
+    setHookUsedIds(hookUsedIds.filter((hookId) => hookId !== id));
   };
 
   const handleSubmit = async () => {
@@ -374,7 +387,25 @@ export default function AddProjectScreen() {
                 showsHorizontalScrollIndicator={false}
                 keyExtractor={(item, index) => index.toString()}
                 renderItem={({ item, index }) => (
-                  <View style={styles.imageContainer}>
+                  <Pressable
+                    style={styles.imageContainer}
+                    onLongPress={() => {
+                      showImageActions({
+                        canSetDefault: true,
+                        isDefault: index === defaultImageIndex,
+                        canViewFullSize: true,
+                        viewFullSizeType: 'image',
+                        onSetDefault: () => setAsDefault(index),
+                        onRemoveDefault: () => setAsDefault(0),
+                        onDelete: () => removeImage(index),
+                        onViewFullSize: () => setFullscreenImageUri(item),
+                      });
+                    }}
+                    accessible={true}
+                    accessibilityRole="image"
+                    accessibilityLabel={index === defaultImageIndex ? t('projects.defaultImage') : t('projects.photo')}
+                    accessibilityHint={t('projects.longPressForOptions')}
+                  >
                     <Image
                       source={{ uri: item }}
                       style={styles.imagePreview}
@@ -390,29 +421,7 @@ export default function AddProjectScreen() {
                         <Star size={16} color={Colors.white} fill={Colors.white} />
                       </View>
                     )}
-                    <View style={styles.imageActions}>
-                      <TouchableOpacity
-                        style={[styles.imageActionButton, index === defaultImageIndex && styles.imageActionButtonActive]}
-                        onPress={() => setAsDefault(index)}
-                        accessible={true}
-                        accessibilityRole="button"
-                        accessibilityLabel={index === defaultImageIndex ? t('projects.defaultImage') : t('projects.markAsDefault')}
-                        accessibilityHint={index === defaultImageIndex ? t('projects.currentDefaultImage') : t('projects.setAsMainPhoto')}
-                      >
-                        <Star size={16} color={index === defaultImageIndex ? Colors.white : Colors.charcoal} />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.imageActionButton, styles.deleteButton]}
-                        onPress={() => removeImage(index)}
-                        accessible={true}
-                        accessibilityRole="button"
-                        accessibilityLabel={t('common.delete')}
-                        accessibilityHint={t('projects.removeThisPhoto')}
-                      >
-                        <Trash2 size={16} color={Colors.white} />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
+                  </Pressable>
                 )}
                 contentContainerStyle={styles.imageList}
               />
@@ -420,7 +429,7 @@ export default function AddProjectScreen() {
 
               {images.length > 0 && (
                 <Text style={styles.imageCount}>
-                  {images.length} {t('projects.photosSelected')} • {t('projects.tapStarDefault')}
+                  {images.length} {t('projects.photosSelected')}
                 </Text>
               )}
           </View>
@@ -458,7 +467,22 @@ export default function AddProjectScreen() {
                   showsHorizontalScrollIndicator={false}
                   keyExtractor={(item, index) => index.toString()}
                   renderItem={({ item, index }) => (
-                    <View style={styles.imageContainer}>
+                    <Pressable
+                      style={styles.imageContainer}
+                      onLongPress={() => {
+                        showImageActions({
+                          canSetDefault: false,
+                          canViewFullSize: true,
+                          viewFullSizeType: 'image',
+                          onDelete: () => removePatternImage(index),
+                          onViewFullSize: () => setFullscreenImageUri(item),
+                        });
+                      }}
+                      accessible={true}
+                      accessibilityRole="image"
+                      accessibilityLabel={t('projects.patternPhoto')}
+                      accessibilityHint={t('projects.longPressForOptions')}
+                    >
                       <Image
                         source={{ uri: item }}
                         style={styles.imagePreview}
@@ -466,19 +490,7 @@ export default function AddProjectScreen() {
                         transition={200}
                         cachePolicy="memory-disk"
                       />
-                      <View style={styles.imageActions}>
-                        <TouchableOpacity
-                          style={[styles.imageActionButton, styles.deleteButton]}
-                          onPress={() => removePatternImage(index)}
-                          activeOpacity={0.7}
-                          accessible={true}
-                          accessibilityRole="button"
-                          accessibilityLabel={t('common.delete')}
-                        >
-                          <Trash2 size={16} color={Colors.white} />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
+                    </Pressable>
                   )}
                   contentContainerStyle={styles.imageList}
                 />
@@ -527,6 +539,7 @@ export default function AddProjectScreen() {
             selectedIds={yarnUsedIds}
             onToggle={handleToggleYarn}
             onAddNew={handleAddYarn}
+            onRemoveFromProject={handleRemoveYarn}
             category="yarn"
             title={t('projects.materialsYarn')}
             addButtonLabel={t('projects.addYarnToInventory')}
@@ -538,6 +551,7 @@ export default function AddProjectScreen() {
             selectedIds={hookUsedIds}
             onToggle={handleToggleHook}
             onAddNew={handleAddHook}
+            onRemoveFromProject={handleRemoveHook}
             category="hook"
             title={t('projects.materialsHooks')}
             addButtonLabel={t('projects.addHookToInventory')}
@@ -564,6 +578,13 @@ export default function AddProjectScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Fullscreen Image Modal */}
+      <FullscreenImageModal
+        visible={fullscreenImageUri !== null}
+        imageUri={fullscreenImageUri}
+        onClose={() => setFullscreenImageUri(null)}
+      />
     </SafeAreaView>
   );
 }
@@ -927,29 +948,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.sage,
     borderRadius: 12,
     padding: 4,
-  },
-  imageActions: {
-    position: 'absolute',
-    bottom: 8,
-    left: 8,
-    right: 8,
-    flexDirection: 'row',
-    gap: 8,
-  },
-  imageActionButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 12,
-    padding: 12,
-    minWidth: 44,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  imageActionButtonActive: {
-    backgroundColor: Colors.sage,
-  },
-  deleteButton: {
-    backgroundColor: '#FF5252',
   },
   addImageButton: {
     width: 120,

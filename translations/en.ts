@@ -24,6 +24,7 @@ export default {
     today: 'Today',
     yesterday: 'Yesterday',
     continue: 'Continue',
+    close: 'Close',
   },
   auth: {
     login: 'Login',
@@ -115,6 +116,10 @@ export default {
     hookUsed: 'Hook Used',
     selectHook: 'Select hook',
     noHooksInInventory: 'No hooks in inventory. Add hooks first.',
+    addYarn: 'Add Yarn',
+    addHook: 'Add Hook',
+    selectExistingYarn: 'Select from Inventory',
+    selectExistingHook: 'Select from Inventory',
     addNewYarn: 'Add New Yarn',
     addNewHook: 'Add New Hook',
     formWillClose: 'This will close the project form. Unsaved changes will be lost. Continue?',
@@ -162,6 +167,9 @@ export default {
     createNewProject: 'Create a new crochet project',
     changeStatus: 'Change Status',
     selectNewStatus: 'Select a new status for this project',
+    photo: 'Photo',
+    patternPhoto: 'Pattern photo',
+    longPressForOptions: 'Long press to see options',
     // New sectioned form labels
     basicInfo: 'Basic Info',
     workProgress: 'Work Progress',
@@ -793,5 +801,17 @@ export default {
     generateAnother: 'Generate Another',
     error: 'Failed to generate ideas. Please try again.',
     imageError: 'Failed to generate image. Please try again.',
+  },
+  imageActions: {
+    title: 'Options',
+    setAsDefault: 'Set as Default',
+    removeDefault: 'Remove Default',
+    delete: 'Delete',
+    viewImage: 'View Detail',
+    viewFullSize: 'View Detail',
+    removeFromProject: 'Remove from Project',
+  },
+  materials: {
+    longPressForOptions: 'Long press to see options',
   },
 };

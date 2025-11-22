@@ -26,17 +26,29 @@ const styles = StyleSheet.create({
 
 export default function RootLayout() {
   useEffect(() => {
-    // Set root background color to prevent white flash
-    SystemUI.setBackgroundColorAsync(Colors.cream);
+    async function prepare() {
+      try {
+        // Set root background color to prevent white flash
+        await SystemUI.setBackgroundColorAsync(Colors.cream);
 
-    // Configure Android navigation bar for edge-to-edge
-    if (Platform.OS === 'android') {
-      // Note: setBackgroundColorAsync is not supported with edge-to-edge enabled
-      // Only button style can be configured in edge-to-edge mode
-      setButtonStyleAsync('dark');
+        // Configure Android navigation bar for edge-to-edge
+        if (Platform.OS === 'android') {
+          // Note: setBackgroundColorAsync is not supported with edge-to-edge enabled
+          // Only button style can be configured in edge-to-edge mode
+          await setButtonStyleAsync('dark');
+        }
+
+        // Small delay to ensure providers are mounted
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } catch (error) {
+        console.warn('Error during app initialization:', error);
+      } finally {
+        // Hide splash screen after everything is ready
+        await SplashScreen.hideAsync();
+      }
     }
 
-    SplashScreen.hideAsync();
+    prepare();
   }, []);
 
   return (
@@ -48,11 +60,11 @@ export default function RootLayout() {
             <AuthProvider>
               <ProjectsProvider>
                 <InventoryProvider>
-                  <Stack
-                    screenOptions={{
-                      headerShown: false,
-                    }}
-                  >
+                    <Stack
+                      screenOptions={{
+                        headerShown: false,
+                      }}
+                    >
                     {/* Main app routes */}
                     <Stack.Screen name="index" />
                     <Stack.Screen name="(auth)" />

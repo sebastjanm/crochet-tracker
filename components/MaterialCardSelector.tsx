@@ -1,7 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, Pressable } from 'react-native';
 import { Image } from 'expo-image';
-import { CheckCircle2, Plus } from 'lucide-react-native';
+import { Plus } from 'lucide-react-native';
+import { router } from 'expo-router';
+import { useImageActions } from '@/hooks/useImageActions';
+import { useLanguage } from '@/hooks/language-context';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { InventoryItem } from '@/types';
@@ -11,6 +14,7 @@ interface MaterialCardSelectorProps {
   selectedIds: string[];
   onToggle: (id: string) => void;
   onAddNew: () => void;
+  onRemoveFromProject?: (id: string) => void;
   category: 'yarn' | 'hook';
   title: string;
   addButtonLabel: string;
@@ -24,6 +28,7 @@ export function MaterialCardSelector({
   selectedIds,
   onToggle,
   onAddNew,
+  onRemoveFromProject,
   category,
   title,
   addButtonLabel,
@@ -32,6 +37,8 @@ export function MaterialCardSelector({
   showAddCard = true,
 }: MaterialCardSelectorProps) {
   const isSelected = (id: string) => selectedIds.includes(id);
+  const { showImageActions } = useImageActions();
+  const { t } = useLanguage();
 
   const renderItem = ({ item }: { item: InventoryItem }) => {
     const selected = isSelected(item.id);
@@ -46,14 +53,24 @@ export function MaterialCardSelector({
     }
 
     return (
-      <TouchableOpacity
-        style={[styles.card, selected && styles.cardSelected]}
+      <Pressable
+        style={styles.card}
         onPress={() => onToggle(item.id)}
-        activeOpacity={0.7}
+        onLongPress={() => {
+          showImageActions({
+            canSetDefault: false,
+            canViewFullSize: true,
+            onViewFullSize: () => {
+              router.push(`/inventory/${item.id}`);
+            },
+            onRemoveFromProject: onRemoveFromProject ? () => onRemoveFromProject(item.id) : undefined,
+          });
+        }}
         accessible={true}
         accessibilityRole="checkbox"
         accessibilityLabel={item.name}
         accessibilityState={{ checked: selected }}
+        accessibilityHint={t('materials.longPressForOptions')}
       >
         <View style={styles.imageContainer}>
           {image ? (
@@ -71,11 +88,6 @@ export function MaterialCardSelector({
               </Text>
             </View>
           )}
-          {selected && (
-            <View style={styles.checkmarkOverlay}>
-              <CheckCircle2 size={24} color={Colors.white} fill={Colors.sage} />
-            </View>
-          )}
         </View>
         <View style={styles.cardContent}>
           <Text style={styles.cardTitle} numberOfLines={2}>
@@ -87,7 +99,7 @@ export function MaterialCardSelector({
             </Text>
           )}
         </View>
-      </TouchableOpacity>
+      </Pressable>
     );
   };
 
@@ -163,7 +175,7 @@ const IMAGE_HEIGHT = 133; // 3:4 aspect ratio (100 * 4/3)
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 20,
+    marginBottom: 0,
   },
   header: {
     flexDirection: 'row',
@@ -206,23 +218,6 @@ const styles = StyleSheet.create({
       default: {},
     }),
   },
-  cardSelected: {
-    borderColor: Colors.deepSage,
-    borderWidth: 1.5,
-    backgroundColor: Colors.ivory,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#2D2D2D',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 4,
-      },
-      default: {},
-    }),
-  },
   imageContainer: {
     position: 'relative',
     width: '100%',
@@ -241,16 +236,6 @@ const styles = StyleSheet.create({
     ...Typography.title2,
     color: Colors.sage,
     fontWeight: '600',
-  },
-  checkmarkOverlay: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    left: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(139, 154, 123, 0.3)',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   cardContent: {
     padding: 8,

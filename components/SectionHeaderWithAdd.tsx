@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 12,
-    marginTop: 8,
+    marginTop: 0,
   },
   sectionTitle: {
     ...Typography.title3,

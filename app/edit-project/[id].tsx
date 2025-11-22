@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   FlatList,
+  Pressable,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,10 +23,12 @@ import { DatePicker } from '@/components/DatePicker';
 import { ModalHeader } from '@/components/ModalHeader';
 import { SectionHeader } from '@/components/SectionHeader';
 import { SectionHeaderWithAdd } from '@/components/SectionHeaderWithAdd';
+import { FullscreenImageModal } from '@/components/FullscreenImageModal';
 import { useProjects } from '@/hooks/projects-context';
 import { useInventory } from '@/hooks/inventory-context';
 import { useLanguage } from '@/hooks/language-context';
 import { useImagePicker } from '@/hooks/useImagePicker';
+import { useImageActions } from '@/hooks/useImageActions';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, buttonShadow } from '@/constants/pixelRatio';
@@ -38,6 +41,7 @@ export default function EditProjectScreen() {
   const { items: inventory } = useInventory();
   const { t } = useLanguage();
   const { showImagePickerOptionsMultiple, takePhotoWithCamera } = useImagePicker();
+  const { showImageActions } = useImageActions();
   const project = getProjectById(id as string);
 
   const [title, setTitle] = useState('');
@@ -55,6 +59,7 @@ export default function EditProjectScreen() {
   const [hookUsedIds, setHookUsedIds] = useState<string[]>([]);
   const [colorNotes, setColorNotes] = useState('');
   const [loading, setLoading] = useState(false);
+  const [fullscreenImageUri, setFullscreenImageUri] = useState<string | null>(null);
 
   useEffect(() => {
     if (project) {
@@ -195,15 +200,18 @@ export default function EditProjectScreen() {
 
   const handleAddYarn = () => {
     Alert.alert(
-      t('projects.addNewYarn'),
-      t('projects.formWillClose'),
+      t('projects.addYarn'),
+      undefined,
       [
         {
-          text: t('common.cancel'),
-          style: 'cancel',
+          text: t('projects.selectExistingYarn'),
+          onPress: () => {
+            // The MaterialCardSelector below already allows selecting
+            // This just dismisses the alert - user can select from the cards
+          },
         },
         {
-          text: t('common.continue'),
+          text: t('projects.addNewYarn'),
           onPress: () => {
             router.dismiss();
             router.push({
@@ -212,21 +220,28 @@ export default function EditProjectScreen() {
             });
           },
         },
+        {
+          text: t('common.cancel'),
+          style: 'cancel',
+        },
       ]
     );
   };
 
   const handleAddHook = () => {
     Alert.alert(
-      t('projects.addNewHook'),
-      t('projects.formWillClose'),
+      t('projects.addHook'),
+      undefined,
       [
         {
-          text: t('common.cancel'),
-          style: 'cancel',
+          text: t('projects.selectExistingHook'),
+          onPress: () => {
+            // The MaterialCardSelector below already allows selecting
+            // This just dismisses the alert - user can select from the cards
+          },
         },
         {
-          text: t('common.continue'),
+          text: t('projects.addNewHook'),
           onPress: () => {
             router.dismiss();
             router.push({
@@ -234,6 +249,10 @@ export default function EditProjectScreen() {
               params: { category: 'hook' },
             });
           },
+        },
+        {
+          text: t('common.cancel'),
+          style: 'cancel',
         },
       ]
     );
@@ -253,6 +272,14 @@ export default function EditProjectScreen() {
     } else {
       setHookUsedIds([...hookUsedIds, id]);
     }
+  };
+
+  const handleRemoveYarn = (id: string) => {
+    setYarnUsedIds(yarnUsedIds.filter((yarnId) => yarnId !== id));
+  };
+
+  const handleRemoveHook = (id: string) => {
+    setHookUsedIds(hookUsedIds.filter((hookId) => hookId !== id));
   };
 
   const handleSubmit = async () => {
@@ -382,13 +409,14 @@ export default function EditProjectScreen() {
           {/* Divider between Basic Info and rest */}
           <View style={styles.sectionDivider} />
 
-          <SectionHeaderWithAdd
-            title={t('projects.photos')}
-            onAdd={handleAddPhoto}
-            addButtonLabel={t('projects.addPhotos')}
-          />
+          <View>
+            <SectionHeaderWithAdd
+              title={t('projects.photos')}
+              onAdd={handleAddPhoto}
+              addButtonLabel={t('projects.addPhotos')}
+            />
 
-          <View style={styles.imageSection}>
+            <View style={styles.imageSection}>
             {images.length > 0 && (
               <FlatList
                 data={images}
@@ -396,7 +424,25 @@ export default function EditProjectScreen() {
                 showsHorizontalScrollIndicator={false}
                 keyExtractor={(item, index) => index.toString()}
                 renderItem={({ item, index }) => (
-                  <View style={styles.imageContainer}>
+                  <Pressable
+                    style={styles.imageContainer}
+                    onLongPress={() => {
+                      showImageActions({
+                        canSetDefault: true,
+                        isDefault: index === defaultImageIndex,
+                        canViewFullSize: true,
+                        viewFullSizeType: 'image',
+                        onSetDefault: () => setAsDefault(index),
+                        onRemoveDefault: () => setAsDefault(0),
+                        onDelete: () => removeImage(index),
+                        onViewFullSize: () => setFullscreenImageUri(item),
+                      });
+                    }}
+                    accessible={true}
+                    accessibilityRole="image"
+                    accessibilityLabel={index === defaultImageIndex ? t('projects.defaultImage') : t('projects.photo')}
+                    accessibilityHint={t('projects.longPressForOptions')}
+                  >
                     <Image
                       source={{ uri: item }}
                       style={styles.imagePreview}
@@ -412,51 +458,25 @@ export default function EditProjectScreen() {
                         <Star size={16} color={Colors.white} fill={Colors.white} />
                       </View>
                     )}
-                    <View style={styles.imageActions}>
-                      <TouchableOpacity
-                        style={[styles.imageActionButton, index === defaultImageIndex && styles.imageActionButtonActive]}
-                        onPress={() => setAsDefault(index)}
-                        activeOpacity={0.7}
-                        accessible={true}
-                        accessibilityRole="button"
-                        accessibilityLabel={index === defaultImageIndex ? t('projects.defaultImage') : t('projects.markAsDefault')}
-                        accessibilityHint={index === defaultImageIndex ? t('projects.currentDefaultImage') : t('projects.setAsMainPhoto')}
-                      >
-                        <Star size={16} color={index === defaultImageIndex ? Colors.white : Colors.charcoal} />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.imageActionButton, styles.deleteButton]}
-                        onPress={() => removeImage(index)}
-                        activeOpacity={0.7}
-                        accessible={true}
-                        accessibilityRole="button"
-                        accessibilityLabel="Delete photo"
-                        accessibilityHint={t('projects.removeThisPhoto')}
-                      >
-                        <Trash2 size={16} color={Colors.white} />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
+                  </Pressable>
                 )}
                 contentContainerStyle={styles.imageList}
               />
             )}
-
-              {images.length > 0 && (
-                <Text style={styles.imageCount}>
-                  {images.length} {t('projects.photosSelected')} • {t('projects.tapStarDefault')}
-                </Text>
-              )}
+            </View>
           </View>
 
-          {/* PATTERN SECTION */}
-          <SectionHeaderWithAdd
-            title={t('projects.pattern')}
-            onAdd={handleAddPattern}
-            addButtonLabel={t('projects.addPattern')}
-          />
+          <View style={styles.sectionDivider} />
 
-          <View style={styles.imageSection}>
+          <View>
+            {/* PATTERN SECTION */}
+            <SectionHeaderWithAdd
+              title={t('projects.pattern')}
+              onAdd={handleAddPattern}
+              addButtonLabel={t('projects.addPattern')}
+            />
+
+            <View style={styles.imageSection}>
             {patternImages.length > 0 && (
               <FlatList
                 data={patternImages}
@@ -464,7 +484,22 @@ export default function EditProjectScreen() {
                 showsHorizontalScrollIndicator={false}
                 keyExtractor={(item, index) => index.toString()}
                 renderItem={({ item, index }) => (
-                  <View style={styles.imageContainer}>
+                  <Pressable
+                    style={styles.imageContainer}
+                    onLongPress={() => {
+                      showImageActions({
+                        canSetDefault: false,
+                        canViewFullSize: true,
+                        viewFullSizeType: 'image',
+                        onDelete: () => removePatternImage(index),
+                        onViewFullSize: () => setFullscreenImageUri(item),
+                      });
+                    }}
+                    accessible={true}
+                    accessibilityRole="image"
+                    accessibilityLabel={t('projects.patternPhoto')}
+                    accessibilityHint={t('projects.longPressForOptions')}
+                  >
                     <Image
                       source={{ uri: item }}
                       style={styles.imagePreview}
@@ -472,20 +507,7 @@ export default function EditProjectScreen() {
                       transition={200}
                       cachePolicy="memory-disk"
                     />
-                    <View style={styles.imageActions}>
-                      <TouchableOpacity
-                        style={[styles.imageActionButton, styles.deleteButton]}
-                        onPress={() => removePatternImage(index)}
-                        activeOpacity={0.7}
-                        accessible={true}
-                        accessibilityRole="button"
-                        accessibilityLabel={t('common.delete')}
-                        accessibilityHint={t('projects.removeThisPhoto')}
-                      >
-                        <Trash2 size={16} color={Colors.white} />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
+                  </Pressable>
                 )}
                 contentContainerStyle={styles.imageList}
               />
@@ -526,44 +548,55 @@ export default function EditProjectScreen() {
                 </TouchableOpacity>
                 </View>
               )}
+            </View>
           </View>
 
-          <SectionHeaderWithAdd
-            title={t('projects.materialsYarn')}
-            onAdd={handleAddYarn}
-            addButtonLabel={t('projects.addYarnToInventory')}
-          />
-          <MaterialCardSelector
-            items={inventory.filter((item) => item.category === 'yarn')}
-            selectedIds={yarnUsedIds}
-            onToggle={handleToggleYarn}
-            onAddNew={handleAddYarn}
-            category="yarn"
-            title={t('projects.materialsYarn')}
-            addButtonLabel={t('projects.addYarnToInventory')}
-            emptyMessage={t('projects.noYarnAvailable')}
-            showTitle={false}
-            showAddCard={false}
-          />
+          <View style={styles.sectionDivider} />
 
-          <SectionHeaderWithAdd
-            title={t('projects.materialsHooks')}
-            onAdd={handleAddHook}
-            addButtonLabel={t('projects.addHookToInventory')}
-          />
-          <MaterialCardSelector
-            items={inventory.filter((item) => item.category === 'hook')}
-            selectedIds={hookUsedIds}
-            onToggle={handleToggleHook}
-            onAddNew={handleAddHook}
-            category="hook"
-            title={t('projects.materialsHooks')}
-            addButtonLabel={t('projects.addHookToInventory')}
-            emptyMessage={t('projects.noHooksAvailable')}
-            showTitle={false}
-            showAddCard={false}
-          />
+          <View>
+            <SectionHeaderWithAdd
+              title={t('projects.materialsYarn')}
+              onAdd={handleAddYarn}
+              addButtonLabel={t('projects.addYarnToInventory')}
+            />
+            <MaterialCardSelector
+              items={inventory.filter((item) => item.category === 'yarn')}
+              selectedIds={yarnUsedIds}
+              onToggle={handleToggleYarn}
+              onAddNew={handleAddYarn}
+              onRemoveFromProject={handleRemoveYarn}
+              category="yarn"
+              title={t('projects.materialsYarn')}
+              addButtonLabel={t('projects.addYarnToInventory')}
+              emptyMessage={t('projects.noYarnAvailable')}
+              showTitle={false}
+              showAddCard={false}
+            />
+          </View>
 
+          <View style={styles.sectionDivider} />
+
+          <View>
+            <SectionHeaderWithAdd
+              title={t('projects.materialsHooks')}
+              onAdd={handleAddHook}
+              addButtonLabel={t('projects.addHookToInventory')}
+            />
+            <MaterialCardSelector
+              items={inventory.filter((item) => item.category === 'hook')}
+              selectedIds={hookUsedIds}
+              onToggle={handleToggleHook}
+              onAddNew={handleAddHook}
+              onRemoveFromProject={handleRemoveHook}
+              category="hook"
+              title={t('projects.materialsHooks')}
+              addButtonLabel={t('projects.addHookToInventory')}
+              emptyMessage={t('projects.noHooksAvailable')}
+              showTitle={false}
+              showAddCard={false}
+            />
+          </View>
+<View style={styles.sectionDivider} />
           <Input
             label={t('projects.colorNotes')}
             placeholder={t('projects.colorNotesPlaceholder')}
@@ -583,6 +616,13 @@ export default function EditProjectScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Fullscreen Image Modal */}
+      <FullscreenImageModal
+        visible={fullscreenImageUri !== null}
+        imageUri={fullscreenImageUri}
+        onClose={() => setFullscreenImageUri(null)}
+      />
     </SafeAreaView>
   );
 }
@@ -601,9 +641,9 @@ const styles = StyleSheet.create({
   },
   sectionDivider: {
     height: 1,
-    backgroundColor: Colors.border,
-    marginVertical: 24,
-    opacity: 0.3,
+    backgroundColor: Colors.warmGray,
+    marginVertical: 4,
+    opacity: 0.5,
   },
   textArea: {
     height: 100,
@@ -611,7 +651,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   imageSection: {
-    marginBottom: 16,
+    marginBottom: 0,
   },
   sectionLabel: {
     ...Typography.body,
@@ -661,11 +701,6 @@ const styles = StyleSheet.create({
     color: Colors.sage,
     fontWeight: '600' as const,
     fontSize: 16,
-  },
-  imageCount: {
-    ...Typography.caption,
-    color: Colors.sage,
-    marginTop: 8,
   },
   footer: {
     marginTop: 24,
@@ -868,29 +903,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.sage,
     borderRadius: 12,
     padding: 4,
-  },
-  imageActions: {
-    position: 'absolute',
-    bottom: 8,
-    left: 8,
-    right: 8,
-    flexDirection: 'row',
-    gap: 8,
-  },
-  imageActionButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 12,
-    padding: 12,
-    minWidth: 44,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  imageActionButtonActive: {
-    backgroundColor: Colors.sage,
-  },
-  deleteButton: {
-    backgroundColor: '#FF5252',
   },
   addImageButton: {
     width: 120,

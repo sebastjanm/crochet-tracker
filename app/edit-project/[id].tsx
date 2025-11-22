@@ -28,7 +28,7 @@ import { useLanguage } from '@/hooks/language-context';
 import { useImagePicker } from '@/hooks/useImagePicker';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
-import { normalizeBorder, cardShadow, buttonShadow } from '@/constants/pixelRatio';
+import { normalizeBorder, buttonShadow } from '@/constants/pixelRatio';
 import { ProjectStatus, ProjectType } from '@/types';
 import { getProjectTypeOptions } from '@/constants/projectTypes';
 

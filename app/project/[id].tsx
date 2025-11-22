@@ -38,7 +38,7 @@ import type { ProjectStatus } from '@/types';
 
 export default function ProjectDetailScreen() {
   const { id } = useLocalSearchParams();
-  const { getProjectById, deleteProject, updateProject } = useProjects();
+  const { getProjectById, deleteProject } = useProjects();
   const { getItemById } = useInventory();
   const { t } = useLanguage();
   const project = getProjectById(id as string);
@@ -74,39 +74,6 @@ export default function ProjectDetailScreen() {
             console.log('Project deleted, navigating back');
             router.back();
           },
-        },
-      ]
-    );
-  };
-
-  const handleStatusChange = () => {
-    Alert.alert(
-      t('projects.changeStatus'),
-      t('projects.selectNewStatus'),
-      [
-        {
-          text: t('projects.planning'),
-          onPress: async () => await updateProject(project.id, { status: 'planning' as ProjectStatus }),
-        },
-        {
-          text: t('projects.inProgress'),
-          onPress: async () => await updateProject(project.id, { status: 'in-progress' as ProjectStatus }),
-        },
-        {
-          text: t('projects.onHold'),
-          onPress: async () => await updateProject(project.id, { status: 'on-hold' as ProjectStatus }),
-        },
-        {
-          text: t('projects.completed'),
-          onPress: async () => await updateProject(project.id, { status: 'completed' as ProjectStatus }),
-        },
-        {
-          text: t('projects.frogged'),
-          onPress: async () => await updateProject(project.id, { status: 'frogged' as ProjectStatus }),
-        },
-        {
-          text: t('common.cancel'),
-          style: 'cancel',
         },
       ]
     );
@@ -188,23 +155,20 @@ export default function ProjectDetailScreen() {
               <ProjectTypeBadge type={project.projectType} />
             )}
 
-            <TouchableOpacity
+            <View
               style={[
                 styles.statusBadge,
                 { backgroundColor: getStatusColor(project.status) },
               ]}
-              onPress={handleStatusChange}
-              activeOpacity={0.7}
               accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel={getStatusLabel(project.status)}
-              accessibilityHint={`Change project status. Currently ${getStatusLabel(project.status)}`}
+              accessibilityRole="text"
+              accessibilityLabel={`Project status: ${getStatusLabel(project.status)}`}
             >
               {getStatusIcon(project.status)}
               <Text style={styles.statusText}>
                 {getStatusLabel(project.status)}
               </Text>
-            </TouchableOpacity>
+            </View>
           </View>
 
           {project.startDate && (

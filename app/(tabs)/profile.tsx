@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Alert,
   Platform,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -21,11 +22,9 @@ import {
   Globe,
   FileText,
   DollarSign,
+  Database,
+  Trash2,
 } from 'lucide-react-native';
-
-const { width } = Dimensions.get('window');
-const isSmallDevice = width < 375;
-const isTablet = width >= 768;
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Avatar } from '@/components/Avatar';
@@ -36,12 +35,19 @@ import { useLanguage } from '@/hooks/language-context';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, cardShadow } from '@/constants/pixelRatio';
+import { ACCESSIBLE_COLORS } from '@/constants/accessibility';
+import { loadAllMockData, clearAllData, getCurrentDataCounts } from '@/scripts/loadMockData';
+
+const { width } = Dimensions.get('window');
+const isSmallDevice = width < 375;
+const isTablet = width >= 768;
 
 export default function ProfileScreen() {
   const { user, logout, updateUser } = useAuth();
   const { projects, completedCount, inProgressCount } = useProjects();
   const { items } = useInventory();
   const { language, changeLanguage, t } = useLanguage();
+  const [isLoadingMockData, setIsLoadingMockData] = useState(false);
 
   const userName = user?.name?.split(' ')[0] || t('profile.defaultName');
 
@@ -89,6 +95,77 @@ export default function ProfileScreen() {
         { text: t('common.cancel'), style: 'cancel' },
       ]
     );
+  };
+
+  // Development-only functions for loading mock data
+  const handleLoadMockData = async () => {
+    Alert.alert(
+      'Load Mock Data',
+      'This will load realistic sample data for development. Current data will be replaced. Restart the app to see changes. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Load',
+          onPress: async () => {
+            try {
+              setIsLoadingMockData(true);
+              await loadAllMockData({ clearExisting: true });
+
+              Alert.alert(
+                'Success!',
+                'Mock data loaded successfully!\n\n• 1 User\n• 10 Projects\n• 22 Inventory Items\n\nPlease restart the app to see all changes.',
+                [{ text: 'OK' }]
+              );
+            } catch (error) {
+              Alert.alert('Error', 'Failed to load mock data. Check console for details.');
+              console.error('Mock data loading error:', error);
+            } finally {
+              setIsLoadingMockData(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleClearAllData = async () => {
+    Alert.alert(
+      'Clear All Data',
+      'This will delete ALL data including projects and inventory. Restart the app after clearing. This cannot be undone!',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsLoadingMockData(true);
+              await clearAllData();
+
+              Alert.alert('Success', 'All data cleared. Please restart the app.');
+            } catch (error) {
+              Alert.alert('Error', 'Failed to clear data.');
+              console.error('Clear data error:', error);
+            } finally {
+              setIsLoadingMockData(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleViewDataCounts = async () => {
+    try {
+      const counts = await getCurrentDataCounts();
+      Alert.alert(
+        'Current Data',
+        `User: ${counts.hasUser ? 'Loaded' : 'Not loaded'}\nProjects: ${counts.projectCount}\nInventory: ${counts.inventoryCount}`,
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      Alert.alert('Error', 'Failed to get data counts.');
+    }
   };
 
   const menuItems = [
@@ -223,6 +300,68 @@ export default function ProfileScreen() {
             ))}
           </Card>
         </View>
+
+        {/* Development Mode Debug Section */}
+        {__DEV__ && (
+          <View style={styles.debugContainer}>
+            <Text style={styles.debugTitle}>🛠️ Developer Tools</Text>
+            <Card>
+              <TouchableOpacity
+                style={styles.debugItem}
+                onPress={handleLoadMockData}
+                disabled={isLoadingMockData}
+                activeOpacity={0.7}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Load mock data"
+              >
+                {isLoadingMockData ? (
+                  <ActivityIndicator size="small" color={Colors.sage} />
+                ) : (
+                  <Database size={20} color={Colors.sage} />
+                )}
+                <Text style={styles.debugLabel}>Load Mock Data</Text>
+                <Text style={styles.debugDescription}>10 projects, 22 items</Text>
+              </TouchableOpacity>
+
+              <View style={styles.menuDivider} />
+
+              <TouchableOpacity
+                style={styles.debugItem}
+                onPress={handleViewDataCounts}
+                activeOpacity={0.7}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="View data counts"
+              >
+                <Package size={20} color={Colors.teal} />
+                <Text style={styles.debugLabel}>View Data Counts</Text>
+                <Text style={styles.debugDescription}>Check current storage</Text>
+              </TouchableOpacity>
+
+              <View style={styles.menuDivider} />
+
+              <TouchableOpacity
+                style={styles.debugItem}
+                onPress={handleClearAllData}
+                disabled={isLoadingMockData}
+                activeOpacity={0.7}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Clear all data"
+              >
+                <Trash2 size={20} color={ACCESSIBLE_COLORS.errorAccessible} />
+                <Text style={[styles.debugLabel, { color: ACCESSIBLE_COLORS.errorAccessible }]}>
+                  Clear All Data
+                </Text>
+                <Text style={styles.debugDescription}>Delete everything</Text>
+              </TouchableOpacity>
+            </Card>
+            <Text style={styles.debugNote}>
+              These tools are only visible in development mode
+            </Text>
+          </View>
+        )}
 
         <View style={styles.footer}>
           <Button
@@ -408,5 +547,39 @@ const styles = StyleSheet.create({
   footer: {
     paddingHorizontal: 16,
     paddingBottom: 24,
+  },
+  // Debug section styles (development only)
+  debugContainer: {
+    paddingHorizontal: 16,
+    marginBottom: 24,
+  },
+  debugTitle: {
+    ...Typography.title3,
+    color: Colors.charcoal,
+    marginBottom: 12,
+  },
+  debugItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    gap: 12,
+  },
+  debugLabel: {
+    ...Typography.body,
+    color: Colors.charcoal,
+    flex: 1,
+    fontWeight: '600' as const,
+  },
+  debugDescription: {
+    ...Typography.caption,
+    color: Colors.warmGray,
+    marginRight: 8,
+  },
+  debugNote: {
+    ...Typography.caption,
+    color: Colors.warmGray,
+    textAlign: 'center',
+    marginTop: 12,
+    fontStyle: 'italic',
   },
 });

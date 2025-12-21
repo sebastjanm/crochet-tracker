@@ -61,7 +61,19 @@
       "Bash(perl -i -pe:*)",
       "Bash(node:*)",
       "mcp__expo-mcp__search_documentation",
-      "Bash(bunx simple-git-hooks)"
+      "Bash(bunx simple-git-hooks)",
+      "WebFetch(domain:m3.material.io)",
+      "WebFetch(domain:www.smashingmagazine.com)",
+      "Bash(bunx expo-doctor:*)",
+      "Bash(git checkout:*)",
+      "Bash(brew upgrade:*)",
+      "Bash(bunx tsx:*)",
+      "Bash(comm:*)",
+      "Bash(for key in tags tapered texture thumbRest title tryDifferentFilter type)",
+      "Bash(do echo -n \"$key: \")",
+      "Bash(bash -c 'grep -roh \"\"t\\(''''inventory\\\\.[^'''']*''''\\)\"\" app/ components/ hooks/ 2>/dev/null | sed \"\"s/t\\(''''inventory\\\\.//\"\" | sed \"\"s/''''\\)$//\"\" | sort -u > /tmp/used.txt; cat /tmp/used.txt | while read key; do grep -q \"\"    $key:\"\" translations/en.ts || echo \"\"MISSING: inventory.$key\"\"; done')",
+      "Bash(bash -c 'for key in itemAdded itemUpdated itemDeleted startInventory stock unit scanningBarcode productFound productNotFound reviewInfo lookupFailed; do echo -n \"\"$key: \"\"; grep -r \"\"inventory\\\\.$key\"\" app/ components/ hooks/ 2>/dev/null | wc -l; done')",
+      "Bash(wc:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, Pressable } from 'react-native';
 import { Image } from 'expo-image';
-import { Plus } from 'lucide-react-native';
+import { Plus, CheckCircle } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useImageActions } from '@/hooks/useImageActions';
 import { useLanguage } from '@/hooks/language-context';
@@ -54,7 +54,10 @@ export function MaterialCardSelector({
 
     return (
       <Pressable
-        style={styles.card}
+        style={[
+          styles.card,
+          selected && styles.cardSelected,
+        ]}
         onPress={() => onToggle(item.id)}
         onLongPress={() => {
           showImageActions({
@@ -86,6 +89,11 @@ export function MaterialCardSelector({
               <Text style={styles.placeholderText}>
                 {item.name.substring(0, 2).toUpperCase()}
               </Text>
+            </View>
+          )}
+          {selected && (
+            <View style={styles.selectedBadge}>
+              <CheckCircle size={16} color={Colors.white} fill={Colors.deepTeal} />
             </View>
           )}
         </View>
@@ -218,6 +226,23 @@ const styles = StyleSheet.create({
       default: {},
     }),
   },
+  cardSelected: {
+    borderWidth: 2,
+    borderColor: Colors.deepTeal,
+    backgroundColor: Colors.white,
+    ...Platform.select({
+      ios: {
+        shadowColor: Colors.deepTeal,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+      default: {},
+    }),
+  },
   imageContainer: {
     position: 'relative',
     width: '100%',
@@ -226,6 +251,26 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
+  },
+  selectedBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: Colors.deepTeal,
+    borderRadius: 12,
+    padding: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.3,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 3,
+      },
+      default: {},
+    }),
   },
   imagePlaceholder: {
     backgroundColor: Colors.beige,

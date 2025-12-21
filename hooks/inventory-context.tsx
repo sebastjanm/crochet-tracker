@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useState, useEffect, useMemo } from 'react';
 import { InventoryItem } from '@/types';
 import { useImagePicker } from './useImagePicker';
+import { syncInventoryToProjects, removeInventoryFromProjects } from '@/lib/sync';
 
 export const [InventoryProvider, useInventory] = createContextHook(() => {
   const [items, setItems] = useState<InventoryItem[]>([]);
@@ -109,7 +110,25 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
   };
 
   const updateItem = async (id: string, updates: Partial<InventoryItem>) => {
-    const updated = items.map(item => 
+    const existingItem = items.find(item => item.id === id);
+
+    // Sync projects if usedInProjects changed
+    if (existingItem && updates.usedInProjects !== undefined) {
+      try {
+        await syncInventoryToProjects(
+          id,
+          existingItem.category,
+          updates.usedInProjects ?? [],
+          existingItem.usedInProjects ?? []
+        );
+        console.log('✅ Projects synced with inventory item changes');
+      } catch (error) {
+        console.error('❌ Failed to sync projects:', error);
+        // Continue with inventory update even if sync fails
+      }
+    }
+
+    const updated = items.map(item =>
       item.id === id ? { ...item, ...updates, lastUpdated: new Date() } : item
     );
     setItems(updated);
@@ -157,6 +176,19 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
   };
 
   const deleteItem = async (id: string) => {
+    const itemToDelete = items.find(item => item.id === id);
+
+    // Clean up project references if this item is linked to projects
+    if (itemToDelete) {
+      try {
+        await removeInventoryFromProjects(id, itemToDelete.category);
+        console.log('✅ Projects cleaned up after inventory deletion');
+      } catch (error) {
+        console.error('❌ Failed to clean up project references:', error);
+        // Continue with deletion even if cleanup fails
+      }
+    }
+
     const updated = items.filter(item => item.id !== id);
     setItems(updated);
     await saveInventory(updated);
@@ -260,6 +292,12 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     };
   }, [items]);
 
+  // Refresh items from AsyncStorage (for cross-context sync)
+  const refreshItems = async () => {
+    await loadInventory();
+    console.log('🔄 Inventory refreshed from AsyncStorage');
+  };
+
   return {
     // State
     items,
@@ -269,7 +307,7 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     selectedCategory,
     sortBy,
     statistics,
-    
+
     // Actions
     addItem,
     addItemWithBarcode,
@@ -279,22 +317,25 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     markAsUsed,
     addImages,
     removeImage,
-    
+
     // Queries
     getItemById,
     getItemsByCategory,
     getItemByBarcode,
     searchItems,
-    
+
     // Filters
     setSearchQuery,
     setSelectedCategory,
     setSortBy,
-    
+
     // Image picker
     showImagePickerOptions,
     isPickingImage,
-    
+
+    // Cross-context sync
+    refreshItems,
+
     // Legacy (for backward compatibility)
     yarnCount: statistics.yarnCount,
     hookCount: statistics.hookCount,

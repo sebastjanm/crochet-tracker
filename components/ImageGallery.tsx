@@ -26,13 +26,17 @@ interface ImageGalleryProps {
   onImagesChange?: (images: string[]) => void;
   maxImages?: number;
   editable?: boolean;
+  showCounter?: boolean;
+  onIndexChange?: (index: number) => void;
 }
 
 export const ImageGallery = memo(function ImageGallery({
   images,
   onImagesChange,
   maxImages = 10,
-  editable = true
+  editable = true,
+  showCounter = true,
+  onIndexChange
 }: ImageGalleryProps) {
   const { t } = useLanguage();
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
@@ -100,6 +104,7 @@ export const ImageGallery = memo(function ImageGallery({
           onMomentumScrollEnd={(event) => {
             const newIndex = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
             setCurrentCarouselIndex(newIndex);
+            onIndexChange?.(newIndex);
           }}
           scrollEventThrottle={16}
         >
@@ -152,7 +157,7 @@ export const ImageGallery = memo(function ImageGallery({
         )}
 
         {/* Image counter badge - bottom center */}
-        {images.length > 1 && (
+        {showCounter && images.length > 1 && (
           <View style={styles.carouselCounter}>
             <Text style={styles.carouselCounterText}>
               {currentCarouselIndex + 1} / {images.length}

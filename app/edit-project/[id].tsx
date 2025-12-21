@@ -289,7 +289,7 @@ export default function EditProjectScreen() {
 
     setLoading(true);
     try {
-      await updateProject(project.id, {
+      const updateData = {
         title,
         notes,
         inspirationUrl,
@@ -304,8 +304,11 @@ export default function EditProjectScreen() {
         yarnUsedIds,
         hookUsedIds,
         colorNotes: colorNotes.trim() || undefined,
-      });
-      router.dismiss();
+      };
+      console.log('📤 Submitting update with yarnUsedIds:', yarnUsedIds);
+      console.log('📤 Submitting update with hookUsedIds:', hookUsedIds);
+      await updateProject(project.id, updateData);
+      router.back();
     } catch (error) {
       Alert.alert(t('common.error'), t('projects.failedToUpdate'));
     } finally {

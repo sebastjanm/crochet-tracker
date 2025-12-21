@@ -8,17 +8,21 @@ import { Typography } from '@/constants/typography';
 interface UniversalHeaderProps {
   title: string;
   showBack?: boolean;
+  backLabel?: string;
   showHelp?: boolean;
   onBackPress?: () => void;
   onHelpPress?: () => void;
+  rightAction?: React.ReactNode;
 }
 
-export function UniversalHeader({ 
-  title, 
+export function UniversalHeader({
+  title,
   showBack = false,
+  backLabel,
   showHelp = true,
   onBackPress,
-  onHelpPress 
+  onHelpPress,
+  rightAction,
 }: UniversalHeaderProps) {
   const handleBack = () => {
     if (onBackPress) {
@@ -40,26 +44,32 @@ export function UniversalHeader({
     <View style={styles.container}>
       <View style={styles.leftSection}>
         {showBack && (
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={handleBack}
-            style={styles.backButton}
+            style={backLabel ? styles.backButtonWithLabel : styles.backButton}
             activeOpacity={0.7}
           >
-            <ChevronLeft size={28} color={Colors.deepSage} strokeWidth={2.5} />
+            <ChevronLeft size={24} color={Colors.deepSage} strokeWidth={2.5} />
+            {backLabel && (
+              <Text style={styles.backLabel}>{backLabel}</Text>
+            )}
           </TouchableOpacity>
         )}
         <Text style={styles.title}>{title}</Text>
       </View>
       
-      {showHelp && (
-        <TouchableOpacity 
-          onPress={handleHelp}
-          style={styles.helpButton}
-          activeOpacity={0.7}
-        >
-          <HelpCircle size={28} color={Colors.deepSage} strokeWidth={2.5} />
-        </TouchableOpacity>
-      )}
+      <View style={styles.rightSection}>
+        {rightAction}
+        {showHelp && (
+          <TouchableOpacity
+            onPress={handleHelp}
+            style={styles.helpButton}
+            activeOpacity={0.7}
+          >
+            <HelpCircle size={28} color={Colors.deepSage} strokeWidth={2.5} />
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 }
@@ -83,12 +93,33 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: Colors.cream,
   },
+  backButtonWithLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginRight: 12,
+    borderRadius: 20,
+    backgroundColor: Colors.cream,
+  },
+  backLabel: {
+    ...Typography.body,
+    color: Colors.deepSage,
+    fontWeight: '600' as const,
+    fontSize: 16,
+  },
   title: {
     ...Typography.title2,
     color: Colors.charcoal,
     fontWeight: '600' as const,
     fontSize: 20,
     flex: 1,
+  },
+  rightSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   helpButton: {
     marginRight: 12,

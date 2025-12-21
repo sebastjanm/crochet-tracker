@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { router } from 'expo-router';
-import { Plus, Package, Volleyball, Grid3x3, Wrench, HelpCircle } from 'lucide-react-native';
+import { Plus, Package, Volleyball, Grid3x3, Wrench, HelpCircle, FolderGit2 } from 'lucide-react-native';
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
 import { useInventory } from '@/hooks/inventory-context';
@@ -99,6 +99,14 @@ export default function InventoryScreen() {
               <Text style={styles.itemQuantity}>
                 {t('inventory.qty')}: {item.quantity}
               </Text>
+              {item.usedInProjects && item.usedInProjects.length > 0 && (
+                <View style={styles.projectBadge}>
+                  <FolderGit2 size={12} color={Colors.deepSage} />
+                  <Text style={styles.projectBadgeText}>
+                    {item.usedInProjects.length}
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
         </View>
@@ -465,6 +473,7 @@ const styles = StyleSheet.create({
   itemMeta: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: normalizeBorder(1),
@@ -479,6 +488,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,
+  },
+  projectBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(74, 93, 79, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  projectBadgeText: {
+    ...Typography.caption,
+    color: Colors.deepSage,
+    fontWeight: '600' as const,
+    fontSize: 12,
   },
   colorDot: {
     flexDirection: 'row',

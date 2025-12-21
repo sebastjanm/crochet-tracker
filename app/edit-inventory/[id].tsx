@@ -16,6 +16,8 @@ import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { ModalHeader } from '@/components/ModalHeader';
 import { ImageGallery } from '@/components/ImageGallery';
+import { ProjectSelectorModal } from '@/components/ProjectSelectorModal';
+import { ProjectLinksSummary } from '@/components/ProjectLinksSummary';
 import { useInventory } from '@/hooks/inventory-context';
 import { useProjects } from '@/hooks/projects-context';
 import { useAuth } from '@/hooks/auth-context';
@@ -86,6 +88,7 @@ export default function EditInventoryScreen() {
   // Root level fields (apply to all categories)
   const [unit, setUnit] = useState<'piece' | 'skein' | 'ball' | 'meter' | 'gram' | 'set'>('skein');
   const [usedInProjects, setUsedInProjects] = useState<string[]>([]);
+  const [showProjectSelector, setShowProjectSelector] = useState(false);
 
   // Helper function to format Date to EU format (DD.MM.YYYY)
   const formatEUDate = (date: Date): string => {
@@ -434,44 +437,18 @@ export default function EditInventoryScreen() {
 
           <View style={styles.fieldGroup}>
             <Text style={styles.sectionLabel}>{t('inventory.usedInProjects')}</Text>
-            <Text style={styles.sectionHint}>{t('inventory.usedInProjectsHint')}</Text>
-            {projects.length > 0 ? (
-              <View style={styles.projectButtons}>
-                {projects.map((project) => (
-                  <TouchableOpacity
-                    key={project.id}
-                    style={[
-                      styles.projectButton,
-                      usedInProjects.includes(project.id) && styles.projectButtonActive,
-                    ]}
-                    onPress={() => {
-                      if (usedInProjects.includes(project.id)) {
-                        setUsedInProjects(usedInProjects.filter(id => id !== project.id));
-                      } else {
-                        setUsedInProjects([...usedInProjects, project.id]);
-                      }
-                    }}
-                    activeOpacity={0.7}
-                    accessible={true}
-                    accessibilityRole="checkbox"
-                    accessibilityLabel={project.title}
-                    accessibilityState={{
-                      selected: usedInProjects.includes(project.id),
-                      checked: usedInProjects.includes(project.id),
-                    }}
-                  >
-                    <Text style={[
-                      styles.projectButtonText,
-                      usedInProjects.includes(project.id) && styles.projectButtonTextActive,
-                    ]}>
-                      {project.title}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            ) : (
-              <Text style={styles.noProjectsText}>{t('inventory.noProjectsYet')}</Text>
-            )}
+
+            <ProjectLinksSummary
+              selectedProjectIds={usedInProjects}
+              onPress={() => setShowProjectSelector(true)}
+            />
+
+            <ProjectSelectorModal
+              visible={showProjectSelector}
+              onClose={() => setShowProjectSelector(false)}
+              selectedProjectIds={usedInProjects}
+              onSelectionChange={setUsedInProjects}
+            />
           </View>
 
           {/* Category-specific details section */}
@@ -958,40 +935,50 @@ const styles = StyleSheet.create({
     color: Colors.warmGray,
     fontSize: 12,
   },
-  projectButtons: {
+  selectedProjectsChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
+    marginBottom: 12,
   },
-  projectButton: {
+  projectChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.sage,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    maxWidth: 180,
+  },
+  projectChipText: {
+    ...Typography.body,
+    color: Colors.white,
+    fontSize: 14,
+    fontWeight: '600' as const,
+    flex: 1,
+  },
+  projectChipRemove: {
+    color: Colors.white,
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  selectProjectsButton: {
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 12,
     borderWidth: normalizeBorder(1.5),
-    borderColor: Colors.border,
+    borderColor: Colors.sage,
+    borderStyle: 'dashed',
     backgroundColor: Colors.white,
     minHeight: 48,
     justifyContent: 'center',
-    ...Platform.select({
-      ...cardShadow,
-      default: {},
-    }),
+    alignItems: 'center',
   },
-  projectButtonActive: {
-    backgroundColor: Colors.sage,
-    borderColor: Colors.deepSage,
-    borderWidth: normalizeBorder(2),
-    ...Platform.select({
-      ...buttonShadow,
-      default: {},
-    }),
-  },
-  projectButtonText: {
+  selectProjectsButtonText: {
     ...Typography.body,
-    color: Colors.charcoal,
+    color: Colors.sage,
     fontSize: 14,
-    fontWeight: '500' as const,
-  },
-  projectButtonTextActive: {
-    color: Colors.white,
     fontWeight: '600' as const,
   },
   handleTypeButtons: {

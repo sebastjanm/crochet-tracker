@@ -22,6 +22,7 @@ import { MaterialCardSelector } from '@/components/MaterialCardSelector';
 import { DatePicker } from '@/components/DatePicker';
 import { ModalHeader } from '@/components/ModalHeader';
 import { SectionHeader } from '@/components/SectionHeader';
+import { SectionHeaderWithAdd } from '@/components/SectionHeaderWithAdd';
 import { FullscreenImageModal } from '@/components/FullscreenImageModal';
 import { useProjects } from '@/hooks/projects-context';
 import { useInventory } from '@/hooks/inventory-context';
@@ -275,24 +276,23 @@ export default function AddProjectScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          <View style={styles.sectionContent}>
-            <Input
-              label={t('projects.projectTitle')}
-              placeholder={t('projects.enterProjectName')}
-              value={title}
-              onChangeText={setTitle}
-              required
-            />
+          <Input
+            label={t('projects.projectTitle')}
+            placeholder={t('projects.enterProjectName')}
+            value={title}
+            onChangeText={setTitle}
+            required
+          />
 
-            <Select<ProjectType>
-              label={t('projects.projectType')}
-              value={projectType}
-              options={getProjectTypeOptions()}
-              onChange={setProjectType}
-              placeholder={t('projects.selectProjectType')}
-            />
+          <Select<ProjectType>
+            label={t('projects.projectType')}
+            value={projectType}
+            options={getProjectTypeOptions()}
+            onChange={setProjectType}
+            placeholder={t('projects.selectProjectType')}
+          />
 
-            <View style={styles.statusSection}>
+          <View style={styles.statusSection}>
             <Text style={styles.sectionLabel}>{t('projects.status')}</Text>
             <ScrollView
               horizontal
@@ -343,41 +343,26 @@ export default function AddProjectScreen() {
             maxDate={new Date()}
           />
 
-            <Input
-              label={t('projects.notes')}
-              placeholder={t('projects.additionalNotes')}
-              value={notes}
-              onChangeText={setNotes}
-              multiline
-              numberOfLines={3}
-              style={styles.textArea}
-            />
-          </View>
+          <Input
+            label={t('projects.notes')}
+            placeholder={t('projects.additionalNotes')}
+            value={notes}
+            onChangeText={setNotes}
+            multiline
+            numberOfLines={3}
+            style={styles.textArea}
+          />
 
-          <View style={styles.photosHeader}>
-            <Text style={styles.photosTitle}>{t('projects.photos')}</Text>
-            <TouchableOpacity
-              style={styles.addPhotosButton}
-              onPress={handleAddPhoto}
-              activeOpacity={0.7}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel={t('projects.addPhotos')}
-              accessibilityHint={t('projects.addPhotosDescription')}
-            >
-              <Plus size={20} color={Colors.sage} />
-              <Text style={styles.addPhotosButtonText}>{t('projects.addPhotos')}</Text>
-            </TouchableOpacity>
-          </View>
+          <View style={styles.sectionDivider} />
 
-          <View style={styles.imageSection}>
-              {!images.length && (
-                <Text style={styles.photosEmptyText}>
-                  {t('projects.addPhotosDescription')}
-                </Text>
-              )}
+          <SectionHeaderWithAdd
+            title={t('projects.photos')}
+            onAdd={handleAddPhoto}
+            addButtonLabel={t('projects.addPhotos')}
+          />
 
-              {images.length > 0 && (
+          {images.length > 0 && (
+            <View style={styles.imageSection}>
               <FlatList
                 data={images}
                 horizontal
@@ -422,40 +407,19 @@ export default function AddProjectScreen() {
                 )}
                 contentContainerStyle={styles.imageList}
               />
-            )}
+            </View>
+          )}
 
-              {images.length > 0 && (
-                <Text style={styles.imageCount}>
-                  {images.length} {t('projects.photosSelected')}
-                </Text>
-              )}
-          </View>
+          <View style={styles.sectionDivider} />
 
-          {/* PATTERN SECTION */}
-          <View style={styles.patternHeader}>
-            <Text style={styles.patternTitle}>{t('projects.pattern')}</Text>
-            <TouchableOpacity
-              style={styles.addPatternButton}
-              onPress={handleAddPattern}
-              activeOpacity={0.7}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel={t('projects.addPattern')}
-              accessibilityHint={t('projects.addPatternDescription')}
-            >
-              <Plus size={20} color={Colors.sage} />
-              <Text style={styles.addPatternButtonText}>{t('projects.addPattern')}</Text>
-            </TouchableOpacity>
-          </View>
+          <SectionHeaderWithAdd
+            title={t('projects.pattern')}
+            onAdd={handleAddPattern}
+            addButtonLabel={t('projects.addPattern')}
+          />
 
-          <View style={styles.patternSection}>
-              {!patternImages.length && !patternPdf && !patternUrl && (
-              <Text style={styles.patternEmptyText}>
-                {t('projects.addPatternDescription')}
-              </Text>
-            )}
-
-            {patternImages.length > 0 && (
+          {patternImages.length > 0 && (
+            <View style={styles.patternSection}>
               <View style={styles.patternPreviewSection}>
                 <Text style={styles.sectionLabel}>{t('projects.patternPhotos')}</Text>
                 <FlatList
@@ -492,46 +456,53 @@ export default function AddProjectScreen() {
                   contentContainerStyle={styles.imageList}
                 />
               </View>
-            )}
+            </View>
+          )}
 
-            {patternPdf && (
-              <View style={styles.pdfPreview}>
-                <FileText size={20} color={Colors.sage} />
-                <Text style={styles.pdfText} numberOfLines={1}>{patternPdf}</Text>
-                <TouchableOpacity
-                  onPress={() => setPatternPdf('')}
-                  style={styles.pdfDelete}
-                  accessible={true}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('common.delete')}
-                >
-                  <Trash2 size={16} color="#FF5252" />
-                </TouchableOpacity>
-              </View>
-            )}
+          {patternPdf && (
+            <View style={styles.pdfPreview}>
+              <FileText size={20} color={Colors.sage} />
+              <Text style={styles.pdfText} numberOfLines={1}>{patternPdf}</Text>
+              <TouchableOpacity
+                onPress={() => setPatternPdf('')}
+                style={styles.pdfDelete}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={t('common.delete')}
+              >
+                <Trash2 size={16} color="#FF5252" />
+              </TouchableOpacity>
+            </View>
+          )}
 
-            {patternUrl && (
-              <View style={styles.pdfPreview}>
-                <Link size={20} color={Colors.sage} />
-                <Text style={styles.pdfText} numberOfLines={1}>{patternUrl}</Text>
-                <TouchableOpacity
-                  onPress={() => setPatternUrl('')}
-                  style={styles.pdfDelete}
-                  accessible={true}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('common.delete')}
-                >
-                  <Trash2 size={16} color="#FF5252" />
-                </TouchableOpacity>
-                </View>
-              )}
-          </View>
+          {patternUrl && (
+            <View style={styles.pdfPreview}>
+              <Link size={20} color={Colors.sage} />
+              <Text style={styles.pdfText} numberOfLines={1}>{patternUrl}</Text>
+              <TouchableOpacity
+                onPress={() => setPatternUrl('')}
+                style={styles.pdfDelete}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={t('common.delete')}
+              >
+                <Trash2 size={16} color="#FF5252" />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <View style={styles.sectionDivider} />
 
           {/* SECTION 2: MATERIALS */}
           <SectionHeader title={t('projects.materials')} badge="2" />
 
-          <View style={styles.sectionContent}>
-            <MaterialCardSelector
+          <SectionHeaderWithAdd
+            title={t('projects.materialsYarn')}
+            onAdd={handleAddYarn}
+            addButtonLabel={t('projects.addYarnToInventory')}
+          />
+
+          <MaterialCardSelector
             items={inventory.filter((item) => item.category === 'yarn')}
             selectedIds={yarnUsedIds}
             onToggle={handleToggleYarn}
@@ -541,6 +512,14 @@ export default function AddProjectScreen() {
             title={t('projects.materialsYarn')}
             addButtonLabel={t('projects.addYarnToInventory')}
             emptyMessage={t('projects.noYarnAvailable')}
+            showTitle={false}
+            showAddCard={false}
+          />
+
+          <SectionHeaderWithAdd
+            title={t('projects.materialsHooks')}
+            onAdd={handleAddHook}
+            addButtonLabel={t('projects.addHookToInventory')}
           />
 
           <MaterialCardSelector
@@ -553,17 +532,18 @@ export default function AddProjectScreen() {
             title={t('projects.materialsHooks')}
             addButtonLabel={t('projects.addHookToInventory')}
             emptyMessage={t('projects.noHooksAvailable')}
+            showTitle={false}
+            showAddCard={false}
           />
 
-            <Input
-              label={t('projects.colorNotes')}
-              placeholder={t('projects.colorNotesPlaceholder')}
-              value={colorNotes}
-              onChangeText={setColorNotes}
-              multiline
-              numberOfLines={2}
-            />
-          </View>
+          <Input
+            label={t('projects.colorNotes')}
+            placeholder={t('projects.colorNotesPlaceholder')}
+            value={colorNotes}
+            onChangeText={setColorNotes}
+            multiline
+            numberOfLines={2}
+          />
 
           <View style={styles.footer}>
             <Button
@@ -598,57 +578,13 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
   },
-  sectionContent: {
-    backgroundColor: Colors.linen,
-    borderRadius: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    marginBottom: 20,
-    borderWidth: normalizeBorder(0.5),
-    borderColor: 'rgba(139, 154, 123, 0.12)',
-    ...Platform.select({
-      ...cardShadow,
-      default: {},
-    }),
-  },
   textArea: {
     height: 100,
   },
-  photosHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-    marginTop: 8,
-  },
-  photosTitle: {
-    ...Typography.title3,
-    color: Colors.charcoal,
-    fontWeight: '600' as const,
-    fontSize: 18,
-  },
-  addPhotosButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: Colors.beige,
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    minHeight: 36,
-  },
-  addPhotosButtonText: {
-    ...Typography.body,
-    color: Colors.sage,
-    fontWeight: '600' as const,
-    fontSize: 15,
-  },
-  photosEmptyText: {
-    ...Typography.body,
-    color: Colors.warmGray,
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 16,
+  sectionDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginVertical: 24,
   },
   imageSection: {
     marginBottom: 16,
@@ -661,43 +597,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
     paddingHorizontal: 16,
   },
-  patternHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-    marginTop: 8,
-  },
-  patternTitle: {
-    ...Typography.title3,
-    color: Colors.charcoal,
-    fontWeight: '600' as const,
-    fontSize: 18,
-  },
-  addPatternButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: Colors.beige,
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    minHeight: 36,
-  },
-  addPatternButtonText: {
-    ...Typography.body,
-    color: Colors.sage,
-    fontWeight: '600' as const,
-    fontSize: 15,
-  },
   patternSection: {
-    marginBottom: 24,
-  },
-  patternEmptyText: {
-    ...Typography.body,
-    color: Colors.warmGray,
-    fontSize: 15,
-    lineHeight: 22,
     marginBottom: 16,
   },
   patternPreviewSection: {
@@ -710,7 +610,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     borderRadius: 12,
     padding: 16,
-    marginTop: 12,
+    marginTop: 16,
     borderWidth: normalizeBorder(1),
     borderColor: Colors.border,
   },
@@ -752,11 +652,6 @@ const styles = StyleSheet.create({
     color: Colors.sage,
     fontWeight: '600' as const,
     fontSize: 16,
-  },
-  imageCount: {
-    ...Typography.caption,
-    color: Colors.sage,
-    marginTop: 8,
   },
   footer: {
     marginTop: 24,
@@ -933,8 +828,8 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   imagePreview: {
-    width: 130,
-    height: 130,
+    width: 100,
+    height: 133,
     borderRadius: 12,
     backgroundColor: Colors.warmGray,
   },

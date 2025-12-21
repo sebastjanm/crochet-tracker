@@ -13,7 +13,7 @@ export function useYarnInventory() {
   const yarnByBrand = useMemo(() => {
     const grouped: Record<string, InventoryItem[]> = {};
     yarnItems.forEach(item => {
-      const brand = item.yarnDetails?.brand || 'Unknown';
+      const brand = item.yarnDetails?.brand?.name || 'Unknown';
       if (!grouped[brand]) grouped[brand] = [];
       grouped[brand].push(item);
     });
@@ -23,7 +23,7 @@ export function useYarnInventory() {
   const yarnByWeight = useMemo(() => {
     const grouped: Record<string, InventoryItem[]> = {};
     yarnItems.forEach(item => {
-      const weight = item.yarnDetails?.weightCategory || 'Unknown';
+      const weight = item.yarnDetails?.weight?.name || 'Unknown';
       if (!grouped[weight]) grouped[weight] = [];
       grouped[weight].push(item);
     });
@@ -32,14 +32,14 @@ export function useYarnInventory() {
 
   const totalYarnLength = useMemo(() =>
     yarnItems.reduce((sum, item) =>
-      sum + (item.yarnDetails?.lengthM || 0) * item.quantity, 0
+      sum + (item.yarnDetails?.meters || 0) * item.quantity, 0
     ),
     [yarnItems]
   );
 
   const totalYarnWeight = useMemo(() =>
     yarnItems.reduce((sum, item) =>
-      sum + (item.yarnDetails?.ballWeightG || 0) * item.quantity, 0
+      sum + (item.yarnDetails?.grams || 0) * item.quantity, 0
     ),
     [yarnItems]
   );
@@ -66,7 +66,7 @@ export function useHookInventory() {
   const hooksBySize = useMemo(() => {
     const grouped: Record<string, InventoryItem[]> = {};
     hookItems.forEach(item => {
-      const size = item.hookDetails?.size || 'Unknown';
+      const size = item.hookDetails?.sizeMm?.toString() || 'Unknown';
       if (!grouped[size]) grouped[size] = [];
       grouped[size].push(item);
     });
@@ -105,12 +105,12 @@ export function useInventorySearch() {
     return [];
   }, []);
   
-  const suggestedTags = useMemo(() => {
-    const tags = new Set<string>();
+  const suggestedCategories = useMemo(() => {
+    const categories = new Set<string>();
     filteredItems.forEach(item => {
-      item.tags?.forEach(tag => tags.add(tag));
+      categories.add(item.category);
     });
-    return Array.from(tags);
+    return Array.from(categories);
   }, [filteredItems]);
   
   return {
@@ -119,7 +119,7 @@ export function useInventorySearch() {
     results: filteredItems,
     resultCount: filteredItems.length,
     recentSearches,
-    suggestedTags
+    suggestedCategories
   };
 }
 

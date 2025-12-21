@@ -43,9 +43,9 @@ const isSmallDevice = width < 375;
 const isTablet = width >= 768;
 
 export default function ProfileScreen() {
-  const { user, logout, updateUser } = useAuth();
-  const { projects, completedCount, inProgressCount } = useProjects();
-  const { items } = useInventory();
+  const { user, logout, updateUser, refreshUser } = useAuth();
+  const { projects, completedCount, inProgressCount, refreshProjects } = useProjects();
+  const { items, refreshItems } = useInventory();
   const { language, changeLanguage, t } = useLanguage();
   const [isLoadingMockData, setIsLoadingMockData] = useState(false);
 
@@ -101,7 +101,7 @@ export default function ProfileScreen() {
   const handleLoadMockData = async () => {
     Alert.alert(
       'Load Mock Data',
-      'This will load realistic sample data for development. Current data will be replaced. Restart the app to see changes. Continue?',
+      'This will load realistic sample data for development. Current data will be replaced. Continue?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -111,9 +111,16 @@ export default function ProfileScreen() {
               setIsLoadingMockData(true);
               await loadAllMockData({ clearExisting: true });
 
+              // Refresh all contexts to pick up new data
+              await Promise.all([
+                refreshUser(),
+                refreshProjects(),
+                refreshItems(),
+              ]);
+
               Alert.alert(
                 'Success!',
-                'Mock data loaded successfully!\n\n• 1 User\n• 10 Projects\n• 22 Inventory Items\n\nPlease restart the app to see all changes.',
+                'Mock data loaded and refreshed!\n\n• 1 User (Breda Crochet)\n• 6 Projects\n• 12 Inventory Items (7 yarns, 5 hooks)',
                 [{ text: 'OK' }]
               );
             } catch (error) {
@@ -131,7 +138,7 @@ export default function ProfileScreen() {
   const handleClearAllData = async () => {
     Alert.alert(
       'Clear All Data',
-      'This will delete ALL data including projects and inventory. Restart the app after clearing. This cannot be undone!',
+      'This will delete ALL data including projects and inventory. This cannot be undone!',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -142,7 +149,14 @@ export default function ProfileScreen() {
               setIsLoadingMockData(true);
               await clearAllData();
 
-              Alert.alert('Success', 'All data cleared. Please restart the app.');
+              // Refresh all contexts to show empty state
+              await Promise.all([
+                refreshUser(),
+                refreshProjects(),
+                refreshItems(),
+              ]);
+
+              Alert.alert('Success', 'All data cleared.');
             } catch (error) {
               Alert.alert('Error', 'Failed to clear data.');
               console.error('Clear data error:', error);
@@ -321,7 +335,7 @@ export default function ProfileScreen() {
                   <Database size={20} color={Colors.sage} />
                 )}
                 <Text style={styles.debugLabel}>Load Mock Data</Text>
-                <Text style={styles.debugDescription}>10 projects, 22 items</Text>
+                <Text style={styles.debugDescription}>6 projects, 12 items</Text>
               </TouchableOpacity>
 
               <View style={styles.menuDivider} />

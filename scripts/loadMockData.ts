@@ -101,7 +101,7 @@ export async function loadAllMockData(options: { clearExisting?: boolean } = {})
     console.log('📊 Statistics:');
     console.log(`   • User: ${mockUser.name} (${mockUser.email})`);
     console.log(`   • Projects: ${stats.totalProjects} total`);
-    console.log(`     - Planning: ${stats.projectsByStatus.planning}`);
+    console.log(`     - To-Do: ${stats.projectsByStatus['to-do']}`);
     console.log(`     - In Progress: ${stats.projectsByStatus['in-progress']}`);
     console.log(`     - On Hold: ${stats.projectsByStatus['on-hold']}`);
     console.log(`     - Completed: ${stats.projectsByStatus.completed}`);
@@ -109,7 +109,6 @@ export async function loadAllMockData(options: { clearExisting?: boolean } = {})
     console.log(`   • Inventory: ${stats.totalInventory} items`);
     console.log(`     - Yarn: ${stats.inventoryByCategory.yarn}`);
     console.log(`     - Hooks: ${stats.inventoryByCategory.hook}`);
-    console.log(`     - Other: ${stats.inventoryByCategory.other}`);
     console.log('');
   } catch (error) {
     console.error('❌ Failed to load mock data:', error);
@@ -137,11 +136,13 @@ export async function clearInventory(): Promise<void> {
 
 /**
  * Clear all app data from AsyncStorage
+ * Uses AsyncStorage.clear() to remove ALL keys, not just known ones
  */
 export async function clearAllData(): Promise<void> {
   try {
-    await Promise.all([clearUser(), clearProjects(), clearInventory()]);
-    console.log('✅ All data cleared successfully');
+    // Clear ALL AsyncStorage keys (not just the known ones)
+    await AsyncStorage.clear();
+    console.log('✅ All AsyncStorage data cleared completely');
   } catch (error) {
     console.error('❌ Failed to clear data:', error);
     throw error;

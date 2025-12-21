@@ -28,7 +28,7 @@ import { useAuth } from '@/hooks/auth-context';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, cardShadow, buttonShadow } from '@/constants/pixelRatio';
-import { InventoryItem, YarnDetails, HookDetails } from '@/types';
+import { InventoryItem, YarnDetails, HookDetails, YarnWeightName, ProjectImage } from '@/types';
 import { useLanguage } from '@/hooks/language-context';
 
 export default function AddInventoryScreen() {
@@ -42,7 +42,7 @@ export default function AddInventoryScreen() {
   );
   const [description, setDescription] = useState('');
   const [quantity, setQuantity] = useState('1');
-  const [images, setImages] = useState<string[]>([]);
+  const [images, setImages] = useState<ProjectImage[]>([]);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
@@ -198,18 +198,45 @@ export default function AddInventoryScreen() {
       const lengthNum = length ? parseFloat(length) : undefined;
       const priceNum = purchasePrice ? parseFloat(purchasePrice) : undefined;
 
+      // Parse fiber string into array (e.g., "80% Acrylic, 20% Wool")
+      const parseFibers = (fiberStr: string) => {
+        if (!fiberStr.trim()) return [];
+        return fiberStr.split(',').map(part => {
+          const match = part.trim().match(/^(\d+)%?\s*(.+)$/);
+          if (match) {
+            return { fiberType: match[2].trim(), percentage: parseInt(match[1]) };
+          }
+          return { fiberType: part.trim(), percentage: 100 };
+        });
+      };
+
+      // Parse hook size range (e.g., "2-4" or "3.5")
+      const parseHookSize = (sizeStr: string) => {
+        if (!sizeStr.trim()) return { min: undefined, max: undefined };
+        const parts = sizeStr.split('-').map(s => parseFloat(s.trim()));
+        if (parts.length === 2) {
+          return { min: parts[0], max: parts[1] };
+        }
+        return { min: parts[0], max: parts[0] };
+      };
+
+      const hookSizes = parseHookSize(recommendedHookSize);
+      const needleSizes = parseHookSize(yarnNeedleSizeMm);
+
       const yarnDetails: YarnDetails | undefined = category === 'yarn' ? {
-        brand: brand.trim() || undefined,
+        brand: { name: brand.trim() || '' },
         line: yarnLine.trim() || undefined,
         colorName: color.trim() || undefined,
         colorCode: colorCode.trim() || undefined,
         colorFamily: colorFamily.trim() || undefined,
-        fiber: fiber.trim() || '',
-        weightCategory: weightCategory.trim() || '',
-        ballWeightG: ballWeightNum || 0,
-        lengthM: lengthNum || 0,
-        hookSizeMm: recommendedHookSize.trim() || undefined,
-        needleSizeMm: yarnNeedleSizeMm.trim() || undefined,
+        fibers: parseFibers(fiber),
+        weight: { name: (weightCategory.trim() || 'DK') as YarnWeightName },
+        grams: ballWeightNum || 0,
+        meters: lengthNum || 0,
+        hookSizeMin: hookSizes.min,
+        hookSizeMax: hookSizes.max,
+        needleSizeMin: needleSizes.min,
+        needleSizeMax: needleSizes.max,
         storageLocation: storage.trim() || undefined,
         store: store.trim() || undefined,
         purchaseDate: parseEUDate(purchaseDate),

@@ -5,50 +5,39 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Image,
   RefreshControl,
   Platform,
   ScrollView,
   Dimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-const { width } = Dimensions.get('window');
-const isSmallDevice = width < 375;
-const isTablet = width >= 768;
 import { router } from 'expo-router';
-import { Plus, Clock, CheckCircle, Lightbulb, Calendar, Volleyball, HelpCircle, PauseCircle, RotateCcw } from 'lucide-react-native';
+import { Plus, Clock, CheckCircle, Lightbulb, Volleyball, HelpCircle, PauseCircle, RotateCcw } from 'lucide-react-native';
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
 import { Avatar } from '@/components/Avatar';
 import { useProjects } from '@/hooks/projects-context';
 import { useLanguage } from '@/hooks/language-context';
 import { useAuth } from '@/hooks/auth-context';
-
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
-import { Project, ProjectStatus } from '@/types';
+import { Project, ProjectStatus, getImageSource } from '@/types';
 import { normalizeBorder, normalizeBorderOpacity, cardShadow, buttonShadow } from '@/constants/pixelRatio';
 
+const { width } = Dimensions.get('window');
+const isSmallDevice = width < 375;
+const isTablet = width >= 768;
+
 export default function ProjectsScreen() {
-  const { projects, planningCount, inProgressCount, onHoldCount, completedCount, froggedCount } = useProjects();
+  const { projects, toDoCount, inProgressCount, onHoldCount, completedCount, froggedCount } = useProjects();
   const { t } = useLanguage();
   const { user } = useAuth();
 
   const [filter, setFilter] = useState<ProjectStatus | 'all'>('all');
   const [refreshing, setRefreshing] = useState(false);
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(word => word.charAt(0))
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-  
   const userName = user?.name || 'User';
-  const initials = getInitials(userName);
 
   const filteredProjects = projects.filter(project => {
     if (filter === 'all') return true;
@@ -62,7 +51,7 @@ export default function ProjectsScreen() {
 
   const getStatusIcon = (status: ProjectStatus) => {
     switch (status) {
-      case 'planning':
+      case 'to-do':
         return <Lightbulb size={14} color={Colors.white} />;
       case 'in-progress':
         return <Clock size={14} color={Colors.white} />;
@@ -77,7 +66,7 @@ export default function ProjectsScreen() {
 
   const getStatusColor = (status: ProjectStatus) => {
     switch (status) {
-      case 'planning':
+      case 'to-do':
         return '#FFB84D'; // Warm orange
       case 'in-progress':
         return '#2C7873'; // Deep teal
@@ -105,9 +94,12 @@ export default function ProjectsScreen() {
         accessibilityHint={`View details for ${item.title}`}
       >
         <View style={styles.projectCard}>
-          <Image 
-            source={{ uri: displayImage }} 
-            style={styles.projectImage} 
+          <Image
+            source={getImageSource(displayImage)}
+            style={styles.projectImage}
+            contentFit="cover"
+            transition={200}
+            cachePolicy="memory-disk"
           />
         <View style={[styles.statusIndicator, { backgroundColor: getStatusColor(item.status) }]}>
           {getStatusIcon(item.status)}
@@ -124,7 +116,7 @@ export default function ProjectsScreen() {
 
   const statusFilters = [
     { key: 'all', label: t('projects.all'), count: projects.length, icon: <Volleyball size={18} color={filter === 'all' ? Colors.white : Colors.deepSage} />, color: Colors.deepSage },
-    { key: 'planning', label: t('projects.planning'), count: planningCount, icon: <Lightbulb size={18} color={filter === 'planning' ? Colors.white : '#FFB84D'} />, color: '#FFB84D' },
+    { key: 'to-do', label: t('projects.toDo'), count: toDoCount, icon: <Lightbulb size={18} color={filter === 'to-do' ? Colors.white : '#FFB84D'} />, color: '#FFB84D' },
     { key: 'in-progress', label: t('projects.inProgress'), count: inProgressCount, icon: <Clock size={18} color={filter === 'in-progress' ? Colors.white : '#2C7873'} />, color: '#2C7873' },
     { key: 'on-hold', label: t('projects.onHold'), count: onHoldCount, icon: <PauseCircle size={18} color={filter === 'on-hold' ? Colors.white : '#9C27B0'} />, color: '#9C27B0' },
     { key: 'completed', label: t('projects.completed'), count: completedCount, icon: <CheckCircle size={18} color={filter === 'completed' ? Colors.white : '#4CAF50'} />, color: '#4CAF50' },

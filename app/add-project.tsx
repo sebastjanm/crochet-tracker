@@ -14,14 +14,13 @@ import {
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Lightbulb, Clock, CheckCircle, Calendar, Star, Trash2, Plus, PauseCircle, RotateCcw, FileText, Camera, Link } from 'lucide-react-native';
+import { Lightbulb, Clock, CheckCircle, Star, Trash2, PauseCircle, RotateCcw, FileText, Link } from 'lucide-react-native';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { Select } from '@/components/Select';
 import { MaterialCardSelector } from '@/components/MaterialCardSelector';
 import { DatePicker } from '@/components/DatePicker';
 import { ModalHeader } from '@/components/ModalHeader';
-import { SectionHeader } from '@/components/SectionHeader';
 import { SectionHeaderWithAdd } from '@/components/SectionHeaderWithAdd';
 import { FullscreenImageModal } from '@/components/FullscreenImageModal';
 import { useProjects } from '@/hooks/projects-context';
@@ -42,6 +41,7 @@ export default function AddProjectScreen() {
   const { showImagePickerOptionsMultiple, takePhotoWithCamera } = useImagePicker();
   const { showImageActions } = useImageActions();
   const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [notes, setNotes] = useState('');
   const [inspirationUrl, setInspirationUrl] = useState('');
   const [images, setImages] = useState<string[]>([]);
@@ -49,7 +49,7 @@ export default function AddProjectScreen() {
   const [patternImages, setPatternImages] = useState<string[]>([]);
   const [patternPdf, setPatternPdf] = useState<string>('');
   const [patternUrl, setPatternUrl] = useState<string>('');
-  const [status, setStatus] = useState<ProjectStatus>('planning');
+  const [status, setStatus] = useState<ProjectStatus>('to-do');
   const [projectType, setProjectType] = useState<ProjectType | undefined>(undefined);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [yarnUsedIds, setYarnUsedIds] = useState<string[]>([]);
@@ -242,6 +242,7 @@ export default function AddProjectScreen() {
     try {
       await addProject({
         title,
+        description: description.trim() || undefined,
         notes,
         inspirationUrl,
         images,
@@ -276,6 +277,7 @@ export default function AddProjectScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
+          {/* SECTION 1: Basic Info - Title & Description */}
           <Input
             label={t('projects.projectTitle')}
             placeholder={t('projects.enterProjectName')}
@@ -284,77 +286,18 @@ export default function AddProjectScreen() {
             required
           />
 
-          <Select<ProjectType>
-            label={t('projects.projectType')}
-            value={projectType}
-            options={getProjectTypeOptions()}
-            onChange={setProjectType}
-            placeholder={t('projects.selectProjectType')}
-          />
-
-          <View style={styles.statusSection}>
-            <Text style={styles.sectionLabel}>{t('projects.status')}</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.statusScrollContent}
-            >
-              {[
-                { value: 'planning' as ProjectStatus, label: t('projects.planning'), icon: <Lightbulb size={16} color={status === 'planning' ? Colors.white : '#FFB84D'} />, color: '#FFB84D' },
-                { value: 'in-progress' as ProjectStatus, label: t('projects.inProgress'), icon: <Clock size={16} color={status === 'in-progress' ? Colors.white : '#2C7873'} />, color: '#2C7873' },
-                { value: 'on-hold' as ProjectStatus, label: t('projects.onHold'), icon: <PauseCircle size={16} color={status === 'on-hold' ? Colors.white : '#9C27B0'} />, color: '#9C27B0' },
-                { value: 'completed' as ProjectStatus, label: t('projects.completed'), icon: <CheckCircle size={16} color={status === 'completed' ? Colors.white : '#4CAF50'} />, color: '#4CAF50' },
-                { value: 'frogged' as ProjectStatus, label: t('projects.frogged'), icon: <RotateCcw size={16} color={status === 'frogged' ? Colors.white : '#FF6B6B'} />, color: '#FF6B6B' },
-              ].map((item) => (
-                <TouchableOpacity
-                  key={item.value}
-                  style={[
-                    styles.statusOption,
-                    status === item.value && [styles.statusOptionActive, { backgroundColor: item.color, borderColor: item.color }]
-                  ]}
-                  onPress={() => setStatus(item.value)}
-                  activeOpacity={0.7}
-                  accessible={true}
-                  accessibilityRole="radio"
-                  accessibilityLabel={item.label}
-                  accessibilityHint={`Set project status to ${item.label}`}
-                  accessibilityState={{
-                    selected: status === item.value,
-                    checked: status === item.value,
-                  }}
-                >
-                  {item.icon}
-                  <Text style={[
-                    styles.statusOptionText,
-                    status === item.value && styles.statusOptionTextActive
-                  ]}>
-                    {item.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-
-          <DatePicker
-            label={t('projects.startDate')}
-            value={startDate}
-            onChange={setStartDate}
-            placeholder={t('projects.selectStartDate')}
-            maxDate={new Date()}
-          />
-
           <Input
-            label={t('projects.notes')}
-            placeholder={t('projects.additionalNotes')}
-            value={notes}
-            onChangeText={setNotes}
+            label={t('projects.description')}
+            placeholder={t('projects.projectDescriptionPlaceholder')}
+            value={description}
+            onChangeText={setDescription}
             multiline
-            numberOfLines={3}
-            style={styles.textArea}
+            numberOfLines={2}
           />
 
           <View style={styles.sectionDivider} />
 
+          {/* SECTION 2: Photos - Visual representation */}
           <SectionHeaderWithAdd
             title={t('projects.photos')}
             onAdd={handleAddPhoto}
@@ -412,6 +355,114 @@ export default function AddProjectScreen() {
 
           <View style={styles.sectionDivider} />
 
+          {/* SECTION 3: Status & Type */}
+          <View style={styles.statusSection}>
+            <Text style={styles.sectionLabel}>{t('projects.status')}</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.statusScrollContent}
+            >
+              {[
+                { value: 'to-do' as ProjectStatus, label: t('projects.toDo'), icon: <Lightbulb size={16} color={status === 'to-do' ? Colors.white : '#FFB84D'} />, color: '#FFB84D' },
+                { value: 'in-progress' as ProjectStatus, label: t('projects.inProgress'), icon: <Clock size={16} color={status === 'in-progress' ? Colors.white : '#2C7873'} />, color: '#2C7873' },
+                { value: 'on-hold' as ProjectStatus, label: t('projects.onHold'), icon: <PauseCircle size={16} color={status === 'on-hold' ? Colors.white : '#9C27B0'} />, color: '#9C27B0' },
+                { value: 'completed' as ProjectStatus, label: t('projects.completed'), icon: <CheckCircle size={16} color={status === 'completed' ? Colors.white : '#4CAF50'} />, color: '#4CAF50' },
+                { value: 'frogged' as ProjectStatus, label: t('projects.frogged'), icon: <RotateCcw size={16} color={status === 'frogged' ? Colors.white : '#FF6B6B'} />, color: '#FF6B6B' },
+              ].map((item) => (
+                <TouchableOpacity
+                  key={item.value}
+                  style={[
+                    styles.statusOption,
+                    status === item.value && [styles.statusOptionActive, { backgroundColor: item.color, borderColor: item.color }]
+                  ]}
+                  onPress={() => setStatus(item.value)}
+                  activeOpacity={0.7}
+                  accessible={true}
+                  accessibilityRole="radio"
+                  accessibilityLabel={item.label}
+                  accessibilityHint={`Set project status to ${item.label}`}
+                  accessibilityState={{
+                    selected: status === item.value,
+                    checked: status === item.value,
+                  }}
+                >
+                  {item.icon}
+                  <Text style={[
+                    styles.statusOptionText,
+                    status === item.value && styles.statusOptionTextActive
+                  ]}>
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          <Select<ProjectType>
+            label={t('projects.projectType')}
+            value={projectType}
+            options={getProjectTypeOptions()}
+            onChange={setProjectType}
+            placeholder={t('projects.selectProjectType')}
+          />
+
+          <DatePicker
+            label={t('projects.startDate')}
+            value={startDate}
+            onChange={setStartDate}
+            placeholder={t('projects.selectStartDate')}
+            maxDate={new Date()}
+          />
+
+          <View style={styles.sectionDivider} />
+
+          {/* SECTION 4: Materials */}
+          <SectionHeaderWithAdd
+            title={t('projects.materialsYarn')}
+            onAdd={handleAddYarn}
+            addButtonLabel={t('projects.addYarnToInventory')}
+          />
+
+          <MaterialCardSelector
+            items={inventory.filter((item) => item.category === 'yarn')}
+            selectedIds={yarnUsedIds}
+            onToggle={handleToggleYarn}
+            onAddNew={handleAddYarn}
+            onRemoveFromProject={handleRemoveYarn}
+            category="yarn"
+            title={t('projects.materialsYarn')}
+            addButtonLabel={t('projects.addYarnToInventory')}
+            emptyMessage={t('projects.noYarnAvailable')}
+            showTitle={false}
+            showAddCard={false}
+          />
+
+          <View style={styles.sectionDivider} />
+
+          <SectionHeaderWithAdd
+            title={t('projects.materialsHooks')}
+            onAdd={handleAddHook}
+            addButtonLabel={t('projects.addHookToInventory')}
+          />
+
+          <MaterialCardSelector
+            items={inventory.filter((item) => item.category === 'hook')}
+            selectedIds={hookUsedIds}
+            onToggle={handleToggleHook}
+            onAddNew={handleAddHook}
+            onRemoveFromProject={handleRemoveHook}
+            category="hook"
+            title={t('projects.materialsHooks')}
+            addButtonLabel={t('projects.addHookToInventory')}
+            emptyMessage={t('projects.noHooksAvailable')}
+            showTitle={false}
+            showAddCard={false}
+          />
+
+          <View style={styles.sectionDivider} />
+
+          {/* SECTION 5: Pattern */}
           <SectionHeaderWithAdd
             title={t('projects.pattern')}
             onAdd={handleAddPattern}
@@ -493,49 +544,7 @@ export default function AddProjectScreen() {
 
           <View style={styles.sectionDivider} />
 
-          {/* SECTION 2: MATERIALS */}
-          <SectionHeader title={t('projects.materials')} badge="2" />
-
-          <SectionHeaderWithAdd
-            title={t('projects.materialsYarn')}
-            onAdd={handleAddYarn}
-            addButtonLabel={t('projects.addYarnToInventory')}
-          />
-
-          <MaterialCardSelector
-            items={inventory.filter((item) => item.category === 'yarn')}
-            selectedIds={yarnUsedIds}
-            onToggle={handleToggleYarn}
-            onAddNew={handleAddYarn}
-            onRemoveFromProject={handleRemoveYarn}
-            category="yarn"
-            title={t('projects.materialsYarn')}
-            addButtonLabel={t('projects.addYarnToInventory')}
-            emptyMessage={t('projects.noYarnAvailable')}
-            showTitle={false}
-            showAddCard={false}
-          />
-
-          <SectionHeaderWithAdd
-            title={t('projects.materialsHooks')}
-            onAdd={handleAddHook}
-            addButtonLabel={t('projects.addHookToInventory')}
-          />
-
-          <MaterialCardSelector
-            items={inventory.filter((item) => item.category === 'hook')}
-            selectedIds={hookUsedIds}
-            onToggle={handleToggleHook}
-            onAddNew={handleAddHook}
-            onRemoveFromProject={handleRemoveHook}
-            category="hook"
-            title={t('projects.materialsHooks')}
-            addButtonLabel={t('projects.addHookToInventory')}
-            emptyMessage={t('projects.noHooksAvailable')}
-            showTitle={false}
-            showAddCard={false}
-          />
-
+          {/* SECTION 6: Additional Details */}
           <Input
             label={t('projects.colorNotes')}
             placeholder={t('projects.colorNotesPlaceholder')}
@@ -543,6 +552,16 @@ export default function AddProjectScreen() {
             onChangeText={setColorNotes}
             multiline
             numberOfLines={2}
+          />
+
+          <Input
+            label={t('projects.notes')}
+            placeholder={t('projects.additionalNotes')}
+            value={notes}
+            onChangeText={setNotes}
+            multiline
+            numberOfLines={3}
+            style={styles.textArea}
           />
 
           <View style={styles.footer}>
@@ -576,7 +595,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
+    padding: 16,
   },
   textArea: {
     height: 100,

@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, Link } from 'expo-router';
-import { Volleyball, ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft } from 'lucide-react-native';
+import { YarnBallLogo } from '@/components/YarnBallLogo';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { useAuth } from '@/hooks/auth-context';
@@ -64,7 +65,7 @@ export default function ForgotPasswordScreen() {
         >
           <View style={styles.header}>
             <View style={styles.logoContainer}>
-              <Volleyball size={48} color={Colors.terracotta} />
+              <YarnBallLogo size={48} color={Colors.terracotta} />
             </View>
             <Text style={styles.title}>artful.space</Text>
             <Text style={styles.subtitle}>

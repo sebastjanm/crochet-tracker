@@ -9,6 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import {
   Trash2,
@@ -121,31 +122,35 @@ export default function InventoryDetailScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <UniversalHeader
-        title={displayName}
+        title=""
         showBack={true}
         backLabel={t('common.back')}
         showHelp={false}
-        rightAction={
-          <TouchableOpacity
-            onPress={() => router.push(`/edit-inventory/${item.id}`)}
-            style={styles.editButton}
-            activeOpacity={0.7}
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel={t('common.edit')}
-          >
-            <Pencil size={22} color={Colors.deepSage} />
-          </TouchableOpacity>
-        }
       />
 
       <ScrollView showsVerticalScrollIndicator={false}>
-        {item.images && item.images.length > 0 && (
-          <View style={styles.imageGalleryContainer}>
+        {/* Image with title overlay (Apple HIG style) */}
+        {item.images && item.images.length > 0 ? (
+          <View style={styles.imageSection}>
             <ImageGallery
               images={item.images}
               editable={false}
             />
+            {/* Title overlay with gradient */}
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.7)']}
+              style={styles.titleOverlay}
+              pointerEvents="none"
+            >
+              <Text style={styles.overlayTitle} numberOfLines={2}>
+                {displayName}
+              </Text>
+            </LinearGradient>
+          </View>
+        ) : (
+          /* Large title when no images (Apple HIG pattern) */
+          <View style={styles.noImageTitleContainer}>
+            <Text style={styles.largeTitle}>{displayName}</Text>
           </View>
         )}
 
@@ -200,10 +205,10 @@ export default function InventoryDetailScreen() {
             <View style={styles.detailsCard}>
               <Text style={styles.sectionTitle}>{t('inventory.yarnDetails')}</Text>
 
-              {item.yarnDetails.brand && (
+              {item.yarnDetails.brand?.name && (
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>{t('inventory.brand')}</Text>
-                  <Text style={styles.detailValue}>{item.yarnDetails.brand}</Text>
+                  <Text style={styles.detailValue}>{item.yarnDetails.brand.name}</Text>
                 </View>
               )}
 
@@ -214,10 +219,12 @@ export default function InventoryDetailScreen() {
                 </View>
               )}
 
-              {item.yarnDetails.fiber && (
+              {item.yarnDetails.fibers && item.yarnDetails.fibers.length > 0 && (
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>{t('inventory.fiber')}</Text>
-                  <Text style={styles.detailValue}>{item.yarnDetails.fiber}</Text>
+                  <Text style={styles.detailValue}>
+                    {item.yarnDetails.fibers.map(f => `${f.percentage}% ${t(`fibers.${f.fiberType}`)}`).join(', ')}
+                  </Text>
                 </View>
               )}
 
@@ -238,39 +245,62 @@ export default function InventoryDetailScreen() {
               {item.yarnDetails.colorFamily && (
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>{t('inventory.colorFamily')}</Text>
-                  <Text style={styles.detailValue}>{item.yarnDetails.colorFamily}</Text>
+                  <Text style={styles.detailValue}>{t(`colorFamilies.${item.yarnDetails.colorFamily}`)}</Text>
                 </View>
               )}
 
-              {item.yarnDetails.weightCategory && (
+              {item.yarnDetails.weight?.name && (
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>{t('inventory.weightCategory')}</Text>
-                  <Text style={styles.detailValue}>{item.yarnDetails.weightCategory}</Text>
-                </View>
-              )}
-
-              {(item.yarnDetails.ballWeightG || item.yarnDetails.lengthM) && (
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.ballSpecs')}</Text>
                   <Text style={styles.detailValue}>
-                    {item.yarnDetails.ballWeightG && `${item.yarnDetails.ballWeightG}g`}
-                    {(item.yarnDetails.ballWeightG && item.yarnDetails.lengthM) ? ' • ' : ''}
-                    {item.yarnDetails.lengthM && `${item.yarnDetails.lengthM}m`}
+                    {t(`yarnWeights.${item.yarnDetails.weight.name}`)}
+                    {item.yarnDetails.weight.ply ? ` (${item.yarnDetails.weight.ply}-ply)` : ''}
                   </Text>
                 </View>
               )}
 
-              {item.yarnDetails.hookSizeMm && (
+              {(item.yarnDetails.grams || item.yarnDetails.meters) && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{t('inventory.recommendedHook')}</Text>
-                  <Text style={styles.detailValue}>{item.yarnDetails.hookSizeMm}</Text>
+                  <Text style={styles.detailLabel}>{t('inventory.ballSpecs')}</Text>
+                  <Text style={styles.detailValue}>
+                    {item.yarnDetails.grams && `${item.yarnDetails.grams}g`}
+                    {(item.yarnDetails.grams && item.yarnDetails.meters) ? ' • ' : ''}
+                    {item.yarnDetails.meters && `${item.yarnDetails.meters}m`}
+                  </Text>
                 </View>
               )}
 
-              {item.yarnDetails.needleSizeMm && (
+              {(item.yarnDetails.gaugeStitches || item.yarnDetails.gaugeRows) && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t('inventory.gauge')}</Text>
+                  <Text style={styles.detailValue}>
+                    {item.yarnDetails.gaugeStitches && `${item.yarnDetails.gaugeStitches} st`}
+                    {(item.yarnDetails.gaugeStitches && item.yarnDetails.gaugeRows) ? ' × ' : ''}
+                    {item.yarnDetails.gaugeRows && `${item.yarnDetails.gaugeRows} rows`}
+                    {' / 10cm'}
+                  </Text>
+                </View>
+              )}
+
+              {(item.yarnDetails.hookSizeMin || item.yarnDetails.hookSizeMax) && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t('inventory.recommendedHook')}</Text>
+                  <Text style={styles.detailValue}>
+                    {item.yarnDetails.hookSizeMin === item.yarnDetails.hookSizeMax
+                      ? `${item.yarnDetails.hookSizeMin}mm`
+                      : `${item.yarnDetails.hookSizeMin || '?'}-${item.yarnDetails.hookSizeMax || '?'}mm`}
+                  </Text>
+                </View>
+              )}
+
+              {(item.yarnDetails.needleSizeMin || item.yarnDetails.needleSizeMax) && (
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>{t('inventory.recommendedNeedles')}</Text>
-                  <Text style={styles.detailValue}>{item.yarnDetails.needleSizeMm}mm</Text>
+                  <Text style={styles.detailValue}>
+                    {item.yarnDetails.needleSizeMin === item.yarnDetails.needleSizeMax
+                      ? `${item.yarnDetails.needleSizeMin}mm`
+                      : `${item.yarnDetails.needleSizeMin || '?'}-${item.yarnDetails.needleSizeMax || '?'}mm`}
+                  </Text>
                 </View>
               )}
             </View>
@@ -366,18 +396,13 @@ export default function InventoryDetailScreen() {
             </View>
           )}
 
-          {/* Storage Location */}
-          {((item.category === 'yarn' && item.yarnDetails?.storageLocation) ||
-            (item.category === 'hook' && item.hookDetails?.storageLocation) ||
-            (item.category === 'other' && item.otherDetails?.storageLocation)) && (
+          {/* Storage Section */}
+          {item.location && (
             <View style={styles.storageCard}>
+              <Text style={styles.sectionTitle}>{t('inventory.storageSection')}</Text>
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>{t('inventory.storageLocation')}</Text>
-                <Text style={styles.detailValue}>
-                  {item.category === 'yarn' && item.yarnDetails?.storageLocation}
-                  {item.category === 'hook' && item.hookDetails?.storageLocation}
-                  {item.category === 'other' && item.otherDetails?.storageLocation}
-                </Text>
+                <Text style={styles.detailLabel}>{t('inventory.location')}</Text>
+                <Text style={styles.detailValue}>{item.location}</Text>
               </View>
             </View>
           )}
@@ -474,18 +499,36 @@ export default function InventoryDetailScreen() {
             </Text>
           </View>
 
-          <TouchableOpacity
-            onPress={handleDelete}
-            style={styles.deleteButton}
-            activeOpacity={0.7}
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel={t('common.delete')}
-            accessibilityHint={`Delete ${displayName} permanently`}
-          >
-            <Trash2 size={20} color={Colors.error} />
-            <Text style={styles.deleteButtonText}>{t('common.delete')}</Text>
-          </TouchableOpacity>
+          {/* Action Buttons Row */}
+          <View style={styles.actionButtonsRow}>
+            {/* Edit Button */}
+            <TouchableOpacity
+              onPress={() => router.push(`/edit-inventory/${item.id}`)}
+              style={styles.editActionButton}
+              activeOpacity={0.7}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={t('common.edit')}
+              accessibilityHint={`Edit ${displayName}`}
+            >
+              <Pencil size={20} color={Colors.deepSage} />
+              <Text style={styles.editActionButtonText}>{t('common.edit')}</Text>
+            </TouchableOpacity>
+
+            {/* Delete Button */}
+            <TouchableOpacity
+              onPress={handleDelete}
+              style={styles.deleteButton}
+              activeOpacity={0.7}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={t('common.delete')}
+              accessibilityHint={`Delete ${displayName} permanently`}
+            >
+              <Trash2 size={20} color={Colors.error} />
+              <Text style={styles.deleteButtonText}>{t('common.delete')}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -495,11 +538,6 @@ export default function InventoryDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.cream,
-  },
-  editButton: {
-    padding: 8,
-    borderRadius: 20,
     backgroundColor: Colors.cream,
   },
   errorContainer: {
@@ -516,8 +554,35 @@ const styles = StyleSheet.create({
   errorButton: {
     minWidth: 120,
   },
-  imageGalleryContainer: {
+  imageSection: {
+    position: 'relative',
     marginBottom: 16,
+  },
+  titleOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+    paddingTop: 40,
+    paddingBottom: 16,
+  },
+  overlayTitle: {
+    ...Typography.title1,
+    color: Colors.white,
+    fontWeight: '700' as const,
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  noImageTitleContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 16,
+  },
+  largeTitle: {
+    ...Typography.largeTitle,
+    color: Colors.charcoal,
   },
   content: {
     padding: 24,
@@ -660,15 +725,39 @@ const styles = StyleSheet.create({
     color: Colors.warmGray,
     marginBottom: 4,
   },
-  deleteButton: {
+  actionButtonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 40,
+    marginBottom: 32,
+  },
+  editActionButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginTop: 40,
-    marginBottom: 32,
     paddingVertical: 14,
-    paddingHorizontal: 24,
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    borderWidth: normalizeBorder(1),
+    borderColor: Colors.deepSage,
+    minHeight: 52,
+  },
+  editActionButtonText: {
+    ...Typography.body,
+    color: Colors.deepSage,
+    fontWeight: '500' as const,
+    fontSize: 16,
+    letterSpacing: -0.1,
+  },
+  deleteButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
     backgroundColor: Colors.white,
     borderRadius: 12,
     borderWidth: normalizeBorder(1),

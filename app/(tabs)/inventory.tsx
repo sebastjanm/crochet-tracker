@@ -5,11 +5,11 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Image,
   ScrollView,
   Platform,
   Dimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { router } from 'expo-router';
@@ -20,7 +20,7 @@ import { useInventory } from '@/hooks/inventory-context';
 import { useLanguage } from '@/hooks/language-context';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
-import { InventoryItem } from '@/types';
+import { InventoryItem, getImageSource } from '@/types';
 import { normalizeBorder, normalizeBorderOpacity, cardShadow, buttonShadow } from '@/constants/pixelRatio';
 
 const { width } = Dimensions.get('window');
@@ -59,7 +59,7 @@ export default function InventoryScreen() {
       >
         <View style={styles.itemCard}>
           {item.images && item.images.length > 0 ? (
-            <Image source={{ uri: item.images[0] }} style={styles.itemImage} />
+            <Image source={getImageSource(item.images[0])} style={styles.itemImage} />
           ) : (
             <View style={[styles.itemImage, styles.placeholderImage]}>
               {item.category === 'yarn' ? (
@@ -74,14 +74,14 @@ export default function InventoryScreen() {
               <Text style={styles.itemTitle} numberOfLines={2}>
                 {displayName}
               </Text>
-              {item.yarnDetails?.brand && (
+              {item.yarnDetails?.brand?.name && (
                 <Text style={styles.itemBrand} numberOfLines={1}>
-                  {item.yarnDetails.brand}
+                  {item.yarnDetails.brand.name}
                 </Text>
               )}
-              {item.yarnDetails?.fiber && (
+              {item.yarnDetails?.fibers && item.yarnDetails.fibers.length > 0 && (
                 <Text style={styles.itemComposition} numberOfLines={2}>
-                  {item.yarnDetails.fiber}
+                  {item.yarnDetails.fibers.map(f => `${f.percentage}% ${f.fiberType}`).join(', ')}
                 </Text>
               )}
               {item.yarnDetails?.colorName && (
@@ -89,9 +89,9 @@ export default function InventoryScreen() {
                   {item.yarnDetails.colorName}
                 </Text>
               )}
-              {(item.yarnDetails?.ballWeightG != null && item.yarnDetails?.lengthM != null) && (
+              {(item.yarnDetails?.grams != null && item.yarnDetails?.meters != null) && (
                 <Text style={styles.itemSpecs}>
-                  {item.yarnDetails.ballWeightG}g • {item.yarnDetails.lengthM}m
+                  {item.yarnDetails.grams}g • {item.yarnDetails.meters}m
                 </Text>
               )}
             </View>

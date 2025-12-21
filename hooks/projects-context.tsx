@@ -32,6 +32,9 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
           await AsyncStorage.removeItem('projects');
           setProjects([]);
         }
+      } else {
+        // No data in storage - clear the state
+        setProjects([]);
       }
     } catch (error) {
       console.error('Failed to load projects:', error);
@@ -188,7 +191,7 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
     getProjectById,
     getProjectsByStatus,
     refreshProjects,
-    planningCount: projects.filter(p => p.status === 'planning').length,
+    toDoCount: projects.filter(p => p.status === 'to-do').length,
     inProgressCount: projects.filter(p => p.status === 'in-progress').length,
     onHoldCount: projects.filter(p => p.status === 'on-hold').length,
     completedCount: projects.filter(p => p.status === 'completed').length,

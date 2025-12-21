@@ -11,8 +11,9 @@ import {
   ActivityIndicator,
   Pressable,
 } from 'react-native';
-import { Image } from 'expo-image';
+import { Image, ImageSource } from 'expo-image';
 import { X, ImageIcon, Trash2, Plus } from 'lucide-react-native';
+import type { ProjectImage } from '@/types';
 import { useImagePicker } from '@/hooks/useImagePicker';
 import { useImageActions } from '@/hooks/useImageActions';
 import Colors from '@/constants/colors';
@@ -21,9 +22,17 @@ import { useLanguage } from '@/hooks/language-context';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
+// Helper to get image source for expo-image
+function getImageSource(image: ProjectImage): ImageSource {
+  if (typeof image === 'string') {
+    return { uri: image };
+  }
+  return image;
+}
+
 interface ImageGalleryProps {
-  images: string[];
-  onImagesChange?: (images: string[]) => void;
+  images: ProjectImage[];
+  onImagesChange?: (images: ProjectImage[]) => void;
   maxImages?: number;
   editable?: boolean;
   showCounter?: boolean;
@@ -123,7 +132,7 @@ export const ImageGallery = memo(function ImageGallery({
               }}
             >
               <Image
-                source={{ uri: image }}
+                source={getImageSource(image)}
                 style={styles.carouselImage}
                 contentFit="cover"
                 transition={200}
@@ -214,7 +223,7 @@ export const ImageGallery = memo(function ImageGallery({
             {images.map((image, index) => (
               <View key={`${image}-${index}-fullscreen`} style={styles.fullScreenImageContainer}>
                 <Image
-                  source={{ uri: image }}
+                  source={getImageSource(image)}
                   style={styles.fullScreenImage}
                   contentFit="contain"
                   transition={200}

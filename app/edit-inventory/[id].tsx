@@ -25,7 +25,7 @@ import { useLanguage } from '@/hooks/language-context';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, cardShadow, buttonShadow, getPixelRatio } from '@/constants/pixelRatio';
-import { InventoryItem, YarnDetails, HookDetails } from '@/types';
+import { InventoryItem, YarnDetails, HookDetails, YarnWeightName, ProjectImage } from '@/types';
 
 // DEBUG: Log pixel ratio on load
 console.log('🔍 DEBUG [edit-inventory]: Device pixel ratio =', getPixelRatio());
@@ -42,7 +42,7 @@ export default function EditInventoryScreen() {
   const [category, setCategory] = useState<InventoryItem['category']>('other');
   const [description, setDescription] = useState('');
   const [quantity, setQuantity] = useState('1');
-  const [images, setImages] = useState<string[]>([]);
+  const [images, setImages] = useState<ProjectImage[]>([]);
   const [notes, setNotes] = useState('');
 
   // Yarn specific fields
@@ -101,7 +101,7 @@ export default function EditInventoryScreen() {
   useEffect(() => {
     if (item) {
       setCategory(item.category);
-      setDescription(item.description);
+      setDescription(item.description || '');
       setQuantity(item.quantity.toString());
       setImages(item.images || []);
       setNotes(item.notes || '');
@@ -120,17 +120,33 @@ export default function EditInventoryScreen() {
       }
 
       if (item.yarnDetails) {
-        setBrand(item.yarnDetails.brand || '');
+        setBrand(item.yarnDetails.brand?.name || '');
         setYarnLine(item.yarnDetails.line || '');
         setColor(item.yarnDetails.colorName || '');
         setColorCode(item.yarnDetails.colorCode || '');
         setColorFamily(item.yarnDetails.colorFamily || '');
-        setFiber(item.yarnDetails.fiber || '');
-        setWeightCategory(item.yarnDetails.weightCategory || '');
-        setBallWeight(item.yarnDetails.ballWeightG?.toString() || '');
-        setLength(item.yarnDetails.lengthM?.toString() || '');
-        setRecommendedHookSize(item.yarnDetails.hookSizeMm || '');
-        setYarnNeedleSizeMm(item.yarnDetails.needleSizeMm || '');
+        // Convert fibers array to string
+        const fiberStr = item.yarnDetails.fibers?.map(f => `${f.percentage}% ${f.fiberType}`).join(', ') || '';
+        setFiber(fiberStr);
+        setWeightCategory(item.yarnDetails.weight?.name || '');
+        setBallWeight(item.yarnDetails.grams?.toString() || '');
+        setLength(item.yarnDetails.meters?.toString() || '');
+        // Convert hook size min/max to range string
+        const hookMin = item.yarnDetails.hookSizeMin;
+        const hookMax = item.yarnDetails.hookSizeMax;
+        if (hookMin !== undefined && hookMax !== undefined) {
+          setRecommendedHookSize(hookMin === hookMax ? `${hookMin}` : `${hookMin}-${hookMax}`);
+        } else {
+          setRecommendedHookSize('');
+        }
+        // Convert needle size min/max to range string
+        const needleMin = item.yarnDetails.needleSizeMin;
+        const needleMax = item.yarnDetails.needleSizeMax;
+        if (needleMin !== undefined && needleMax !== undefined) {
+          setYarnNeedleSizeMm(needleMin === needleMax ? `${needleMin}` : `${needleMin}-${needleMax}`);
+        } else {
+          setYarnNeedleSizeMm('');
+        }
         setStorage(item.yarnDetails.storageLocation || '');
         setStore(item.yarnDetails.store || '');
         if (item.yarnDetails.purchaseDate) {
@@ -237,18 +253,45 @@ export default function EditInventoryScreen() {
     const lengthNum = length ? parseFloat(length) : undefined;
     const priceNum = purchasePrice ? parseFloat(purchasePrice) : undefined;
 
+    // Parse fiber string into array (e.g., "80% Acrylic, 20% Wool")
+    const parseFibers = (fiberStr: string) => {
+      if (!fiberStr.trim()) return [];
+      return fiberStr.split(',').map(part => {
+        const match = part.trim().match(/^(\d+)%?\s*(.+)$/);
+        if (match) {
+          return { fiberType: match[2].trim(), percentage: parseInt(match[1]) };
+        }
+        return { fiberType: part.trim(), percentage: 100 };
+      });
+    };
+
+    // Parse hook size range (e.g., "2-4" or "3.5")
+    const parseHookSize = (sizeStr: string) => {
+      if (!sizeStr.trim()) return { min: undefined, max: undefined };
+      const parts = sizeStr.split('-').map(s => parseFloat(s.trim()));
+      if (parts.length === 2) {
+        return { min: parts[0], max: parts[1] };
+      }
+      return { min: parts[0], max: parts[0] };
+    };
+
+    const hookSizes = parseHookSize(recommendedHookSize);
+    const needleSizes = parseHookSize(yarnNeedleSizeMm);
+
     const yarnDetails: YarnDetails | undefined = category === 'yarn' ? {
-      brand: brand.trim() || undefined,
+      brand: { name: brand.trim() || '' },
       line: yarnLine.trim() || undefined,
       colorName: color.trim() || undefined,
       colorCode: colorCode.trim() || undefined,
       colorFamily: colorFamily.trim() || undefined,
-      fiber: fiber.trim() || '',
-      weightCategory: weightCategory.trim() || '',
-      ballWeightG: ballWeightNum || 0,
-      lengthM: lengthNum || 0,
-      hookSizeMm: recommendedHookSize.trim() || undefined,
-      needleSizeMm: yarnNeedleSizeMm.trim() || undefined,
+      fibers: parseFibers(fiber),
+      weight: { name: (weightCategory.trim() || 'DK') as YarnWeightName },
+      grams: ballWeightNum || 0,
+      meters: lengthNum || 0,
+      hookSizeMin: hookSizes.min,
+      hookSizeMax: hookSizes.max,
+      needleSizeMin: needleSizes.min,
+      needleSizeMax: needleSizes.max,
       storageLocation: storage.trim() || undefined,
       store: store.trim() || undefined,
       purchaseDate: parseEUDate(purchaseDate),

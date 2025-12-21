@@ -23,6 +23,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           await AsyncStorage.removeItem('user');
           setUser(null);
         }
+      } else {
+        // No data in storage - clear the state
+        setUser(null);
       }
     } catch (error) {
       console.error('Failed to load user:', error);
@@ -78,6 +81,12 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     setUser(updatedUser);
   };
 
+  // Refresh user from AsyncStorage (for dev tools / mock data reload)
+  const refreshUser = async () => {
+    await loadUser();
+    console.log('🔄 User refreshed from AsyncStorage');
+  };
+
   return {
     user,
     isLoading,
@@ -87,5 +96,6 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     resetPassword,
     logout,
     updateUser,
+    refreshUser,
   };
 });

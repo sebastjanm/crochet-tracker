@@ -27,7 +27,6 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
             ...item,
             dateAdded: new Date(item.dateAdded),
             lastUpdated: new Date(item.lastUpdated),
-            lastUsed: item.lastUsed ? new Date(item.lastUsed) : undefined,
             // Convert nested dates in category details
             yarnDetails: item.yarnDetails ? {
               ...item.yarnDetails,
@@ -44,6 +43,9 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
           await AsyncStorage.removeItem('inventory');
           setItems([]);
         }
+      } else {
+        // No data in storage - clear the state
+        setItems([]);
       }
     } catch (error) {
       console.error('Failed to load inventory:', error);
@@ -76,12 +78,11 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
   };
 
   const addItemWithBarcode = async (
-    barcode: string, 
-    upcData: InventoryItem['upcData'],
+    barcode: string,
     additionalData: Partial<InventoryItem>
   ) => {
     const existingItem = items.find(item => item.barcode === barcode);
-    
+
     if (existingItem) {
       // If item with same barcode exists, just update quantity
       await updateItem(existingItem.id, {
@@ -90,22 +91,21 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
       });
       return existingItem;
     }
-    
+
     // Create new item with barcode data
     const category = additionalData.category || 'other';
-    const itemName = upcData?.title || 'Unknown Item';
+    const itemName = additionalData.name || 'Unknown Item';
 
     const newItem = await addItem({
       name: itemName,
-      description: upcData?.description || additionalData.description || '',
-      images: upcData?.images || additionalData.images || [],
+      description: additionalData.description,
+      images: additionalData.images || [],
       quantity: additionalData.quantity || 1,
       category,
       barcode,
-      upcData,
       ...additionalData
     } as Omit<InventoryItem, 'id' | 'dateAdded' | 'lastUpdated'>);
-    
+
     return newItem;
   };
 
@@ -150,8 +150,7 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
       if (projectId && !usedInProjects.includes(projectId)) {
         usedInProjects.push(projectId);
       }
-      await updateItem(id, { 
-        lastUsed: new Date(),
+      await updateItem(id, {
         usedInProjects
       });
     }
@@ -210,9 +209,8 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     const lowerQuery = query.toLowerCase();
     return items.filter(item =>
       item.name?.toLowerCase().includes(lowerQuery) ||
-      item.description.toLowerCase().includes(lowerQuery) ||
-      item.tags?.some(tag => tag.toLowerCase().includes(lowerQuery)) ||
-      item.yarnDetails?.brand?.toLowerCase().includes(lowerQuery) ||
+      item.description?.toLowerCase().includes(lowerQuery) ||
+      item.yarnDetails?.brand?.name?.toLowerCase().includes(lowerQuery) ||
       item.yarnDetails?.colorName?.toLowerCase().includes(lowerQuery) ||
       item.hookDetails?.brand?.toLowerCase().includes(lowerQuery) ||
       item.barcode?.includes(query)
@@ -233,9 +231,8 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
       const lowerQuery = searchQuery.toLowerCase();
       filtered = filtered.filter(item =>
         item.name?.toLowerCase().includes(lowerQuery) ||
-        item.description.toLowerCase().includes(lowerQuery) ||
-        item.tags?.some(tag => tag.toLowerCase().includes(lowerQuery)) ||
-        item.yarnDetails?.brand?.toLowerCase().includes(lowerQuery) ||
+        item.description?.toLowerCase().includes(lowerQuery) ||
+        item.yarnDetails?.brand?.name?.toLowerCase().includes(lowerQuery) ||
         item.yarnDetails?.colorName?.toLowerCase().includes(lowerQuery) ||
         item.hookDetails?.brand?.toLowerCase().includes(lowerQuery) ||
         item.barcode?.includes(searchQuery)
@@ -286,7 +283,7 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
       hookCount: hookItems.length,
       otherCount: otherItems.length,
       uniqueBrands: new Set([
-        ...yarnItems.map(i => i.yarnDetails?.brand).filter(Boolean),
+        ...yarnItems.map(i => i.yarnDetails?.brand?.name).filter(Boolean),
         ...hookItems.map(i => i.hookDetails?.brand).filter(Boolean)
       ]).size
     };

@@ -1,4 +1,17 @@
-export type ProjectStatus = 'planning' | 'in-progress' | 'on-hold' | 'completed' | 'frogged';
+import type { ImageSource } from 'expo-image';
+
+export type ProjectStatus = 'to-do' | 'in-progress' | 'on-hold' | 'completed' | 'frogged';
+
+// Image can be a URL string or a local require() asset
+export type ProjectImage = string | ImageSource;
+
+// Helper to convert ProjectImage to ImageSource for expo-image
+export function getImageSource(image: ProjectImage): ImageSource {
+  if (typeof image === 'string') {
+    return { uri: image };
+  }
+  return image;
+}
 
 export type ProjectType =
   | 'blanket'
@@ -27,8 +40,9 @@ export interface InspirationSource {
 export interface Project {
   id: string;
   title: string;
+  description?: string; // Brief project summary (what is this project about?)
   status: ProjectStatus;
-  images: string[];
+  images: ProjectImage[];
   defaultImageIndex?: number; // Index of the default image in the images array
   patternPdf?: string;
   patternUrl?: string; // Pattern URL (e.g., Ravelry, blog post)
@@ -36,7 +50,7 @@ export interface Project {
   inspirationUrl?: string;
   createdAt: Date;
   updatedAt: Date;
-  notes?: string;
+  notes?: string; // Additional notes/reminders
   yarnUsed?: string[];
 
   // Phase 1: Basic metadata additions
@@ -54,82 +68,81 @@ export interface Project {
   inspirationSources?: InspirationSource[]; // Array of inspiration sources
 }
 
-// Yarn weight standard (Craft Yarn Council)
-export type YarnWeightNumber = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
-// 0: Lace, 1: Fingering, 2: Sport, 3: DK, 4: Worsted, 5: Bulky, 6: Super Bulky, 7: Jumbo
+// ===== YARN DATA MODEL (EU / Metric) =====
 
-export interface GaugeInfo {
-  stitches: number; // e.g., 23
-  rows: number; // e.g., 33
-  sizeCm: string; // e.g., "10 x 10"
-  tool?: string; // e.g., "3.5mm hook"
-  pattern?: string; // e.g., "single crochet", "stockinette"
-  source?: 'manufacturer' | 'userSwatch' | 'pattern';
-  notes?: string;
+export interface YarnCompany {
+  id?: number;
+  name: string;
+  permalink?: string;
+}
+
+export type YarnWeightName =
+  | 'Lace'
+  | 'Light Fingering'
+  | 'Fingering'
+  | 'Sport'
+  | 'DK'
+  | 'Worsted'
+  | 'Aran'
+  | 'Bulky'
+  | 'Super Bulky'
+  | 'Jumbo';
+
+export interface YarnWeight {
+  id?: number;
+  name: YarnWeightName;
+  ply?: number; // UK/EU ply: 2, 3, 4, 8, 10, 12
+}
+
+export interface YarnFiber {
+  fiberType: string; // e.g., "Acrylic", "Wool", "Cotton"
+  percentage: number; // e.g., 80
 }
 
 export interface YarnDetails {
   // ===== PRODUCT IDENTITY =====
-  brand?: string; // e.g., "Alize"
-  line?: string; // Product line, e.g., "Angora Gold"
-  sku?: string; // Product code, e.g., "25290-8054"
+  brand: YarnCompany;
+  line?: string; // Product line, e.g., "Angora Gold Batik"
+  sku?: string; // Product code, e.g., "25290-8057"
+  permalink?: string; // URL slug for lookups
 
   // ===== COLOR =====
-  colorName?: string; // e.g., "brown-beige", "Opečno-smetana"
-  colorCode?: string; // e.g., "8054"
+  colorName?: string; // e.g., "opečno-smetana"
+  colorCode?: string; // e.g., "8057"
   colorFamily?: string; // e.g., "brown", "warm" (for filtering)
 
   // ===== COMPOSITION =====
-  fiber: string; // REQUIRED - e.g., "80% Acrylic, 20% Wool"
-  composition?: {
-    [fiberName: string]: number; // e.g., { "acrylic": 80, "wool": 20 }
-  };
+  fibers: YarnFiber[]; // Array of fiber types with percentages
 
-  // ===== WEIGHT CATEGORY =====
-  weightCategory: string; // REQUIRED - e.g., "Fingering - Sock", "DK"
-  weightNumber?: YarnWeightNumber; // Standard 0-7 system
+  // ===== WEIGHT =====
+  weight: YarnWeight;
 
-  // ===== MEASUREMENTS (per ball/skein) =====
-  ballWeightG: number; // REQUIRED - Weight in grams, e.g., 100
-  ballWeightOz?: number; // Weight in ounces, e.g., 3.53
-  lengthM: number; // REQUIRED - Length in meters, e.g., 550
-  lengthYd?: number; // Length in yards, e.g., 601
+  // ===== MEASUREMENTS (metric, per ball/skein) =====
+  grams: number; // Weight in grams, e.g., 100
+  meters: number; // Length in meters, e.g., 550
 
-  // ===== TOOL RECOMMENDATIONS =====
-  hookSizeMm?: string; // e.g., "2-4" or "3.5"
-  hookSizeUs?: string; // e.g., "B-1 / G-6" or "E/4"
-  needleSizeMm?: string; // e.g., "3-6"
-  needleSizeUs?: string; // e.g., "2.5-10" or "US 4"
+  // ===== GAUGE (per 10cm) =====
+  gaugeStitches?: number; // e.g., 28
+  gaugeRows?: number; // e.g., 36
 
-  // ===== GAUGE =====
-  gauge?: GaugeInfo; // Manufacturer's recommended gauge
-  myGauge?: GaugeInfo; // User's actual swatch gauge
+  // ===== TOOL RECOMMENDATIONS (mm) =====
+  needleSizeMin?: number; // e.g., 3
+  needleSizeMax?: number; // e.g., 6
+  hookSizeMin?: number; // e.g., 2
+  hookSizeMax?: number; // e.g., 4
 
-  // ===== CARE & QUALITY =====
-  careSymbols?: string[]; // e.g., ["handWash", "noBleach", "noIron", "noTumbleDry"]
-  careText?: string; // Free-form care instructions
-  certifications?: string[]; // e.g., ["Oeko-Tex Standard 100"]
-  certificateDetails?: string; // e.g., "14.HTR.37463 HOHENSTEIN HTTI"
-
-  // ===== CHARACTERISTICS =====
-  halo?: boolean; // Fuzzy/angora effect
-  selfStriping?: boolean; // Color gradients
-  variegated?: boolean; // Multicolor
+  // ===== PROPERTIES =====
   texture?: string; // e.g., "soft", "rustic", "smooth"
-  sheen?: string; // e.g., "matte", "glossy", "metallic"
-  recommendedFor?: string[]; // e.g., ["shawls", "lightweight sweaters", "lace patterns"]
+  machineWashable?: boolean;
 
   // ===== PURCHASE INFO =====
   store?: string; // e.g., "Svet Metraže"
   purchaseDate?: Date;
   purchasePrice?: number; // Price per unit
-  currency?: string; // e.g., "EUR", "USD"
-  originalUrl?: string; // Link to product page
+  currency?: string; // e.g., "EUR"
 
   // ===== STORAGE =====
   storageLocation?: string; // e.g., "Box 2 - warm colors"
-  storageBox?: string; // e.g., "Box 2"
-  storageArea?: string; // e.g., "Craft room"
 }
 
 export interface HookDetails {
@@ -234,40 +247,31 @@ export interface OtherDetails {
 export interface InventoryItem {
   id: string;
   category: 'yarn' | 'hook' | 'other';
-  name: string; // Quick access name for display (denormalized from detail objects)
-  description: string;
-  images: string[]; // Array for multiple images
+  name: string;
+  description?: string;
+  images?: ProjectImage[];
   quantity: number;
   unit?: 'piece' | 'skein' | 'ball' | 'meter' | 'gram' | 'set';
 
-  // Category-specific details (name is now at root level)
+  // Category-specific details
   yarnDetails?: YarnDetails;
   hookDetails?: HookDetails;
   otherDetails?: OtherDetails;
 
   // Location & Organization
-  location?: string; // Quick access location (denormalized from detail objects)
-  tags?: string[]; // For filtering and searching
+  location?: string;
+  tags?: string[];
 
   // Project Association
-  usedInProjects?: string[]; // Project IDs
-  reserved?: boolean; // If reserved for a specific project
-  reservedForProject?: string;
+  usedInProjects?: string[];
 
   // Common fields
   notes?: string;
   dateAdded: Date;
   lastUpdated: Date;
-  lastUsed?: Date;
 
-  // Barcode/QR Code
+  // Barcode
   barcode?: string;
-  upcData?: {
-    title?: string;
-    brand?: string;
-    description?: string;
-    images?: string[];
-  };
 }
 
 export interface User {

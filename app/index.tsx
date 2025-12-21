@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/auth-context';
 import { View, Text, StyleSheet, Animated, Platform } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { YarnBallLogo } from '@/components/YarnBallLogo';
 import Colors from '@/constants/colors';
 import { buttonShadow } from '@/constants/pixelRatio';
 
@@ -55,7 +56,7 @@ export default function RootIndex() {
           ]}
         >
           <View style={styles.logoContainer}>
-            <Text style={styles.logoText}>🧶</Text>
+            <YarnBallLogo size={64} color={Colors.white} />
           </View>
           <Text style={styles.appName}>Yarn Tracker</Text>
           <Text style={styles.tagline}>Track your knitting projects</Text>

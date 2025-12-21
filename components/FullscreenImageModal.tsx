@@ -3,13 +3,14 @@ import { Modal, View, StyleSheet, TouchableOpacity, Animated, Dimensions } from 
 import { Image } from 'expo-image';
 import { X } from 'lucide-react-native';
 import { useLanguage } from '@/hooks/language-context';
+import { ProjectImage, getImageSource } from '@/types';
 import Colors from '@/constants/colors';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface FullscreenImageModalProps {
   visible: boolean;
-  imageUri: string | null;
+  imageUri: ProjectImage | null;
   onClose: () => void;
 }
 
@@ -79,7 +80,7 @@ export function FullscreenImageModal({ visible, imageUri, onClose }: FullscreenI
               ]}
             >
               <Image
-                source={{ uri: imageUri }}
+                source={getImageSource(imageUri)}
                 style={styles.image}
                 contentFit="contain"
                 transition={200}

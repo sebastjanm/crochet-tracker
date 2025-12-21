@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import {
   Trash2,
@@ -24,6 +25,9 @@ import {
   BookOpen,
   ChevronRight,
   ExternalLink,
+  Pencil,
+  Lock,
+  StickyNote,
 } from 'lucide-react-native';
 import { Button } from '@/components/Button';
 import { UniversalHeader } from '@/components/UniversalHeader';
@@ -33,17 +37,23 @@ import { SectionHeader } from '@/components/SectionHeader';
 import { useProjects } from '@/hooks/projects-context';
 import { useInventory } from '@/hooks/inventory-context';
 import { useLanguage } from '@/hooks/language-context';
+import { useAuth } from '@/hooks/auth-context';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
-import { normalizeBorder } from '@/constants/pixelRatio';
+import { normalizeBorder, normalizeBorderOpacity } from '@/constants/pixelRatio';
 import type { ProjectStatus, Project } from '@/types';
+import { getImageSource } from '@/types';
 
 export default function ProjectDetailScreen() {
   const { id } = useLocalSearchParams();
   const { getProjectById, deleteProject } = useProjects();
   const { getItemById, getItemsByCategory } = useInventory();
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [project, setProject] = useState(getProjectById(id as string));
+
+  // Check if user is Pro
+  const isPro = user?.isPro === true;
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   // Refresh project data when screen comes into focus
@@ -108,7 +118,7 @@ export default function ProjectDetailScreen() {
 
   const getStatusColor = (status: ProjectStatus): string => {
     switch (status) {
-      case 'planning':
+      case 'to-do':
         return '#FFB84D';
       case 'in-progress':
         return '#2C7873';
@@ -125,7 +135,7 @@ export default function ProjectDetailScreen() {
 
   const getStatusIcon = (status: ProjectStatus) => {
     switch (status) {
-      case 'planning':
+      case 'to-do':
         return <Lightbulb size={16} color={Colors.white} />;
       case 'in-progress':
         return <Clock size={16} color={Colors.white} />;
@@ -142,8 +152,8 @@ export default function ProjectDetailScreen() {
 
   const getStatusLabel = (status: ProjectStatus): string => {
     switch (status) {
-      case 'planning':
-        return t('projects.planning');
+      case 'to-do':
+        return t('projects.toDo');
       case 'in-progress':
         return t('projects.inProgress');
       case 'on-hold':
@@ -167,22 +177,35 @@ export default function ProjectDetailScreen() {
       />
 
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.imageGalleryContainer}>
-          <ImageGallery
-            images={project.images}
-            editable={false}
-            showCounter={false}
-            onIndexChange={setCurrentImageIndex}
-          />
-          <View style={styles.titleOverlay}>
-            <Text style={styles.projectTitle}>{project.title}</Text>
-            {project.images.length > 1 && (
-              <Text style={styles.imageCounter}>
-                {currentImageIndex + 1}/{project.images.length}
-              </Text>
-            )}
+        {/* Image with title overlay (Apple HIG style) */}
+        {project.images && project.images.length > 0 ? (
+          <View style={styles.imageGalleryContainer}>
+            <ImageGallery
+              images={project.images}
+              editable={false}
+              showCounter={false}
+              onIndexChange={setCurrentImageIndex}
+            />
+            {/* Title overlay with gradient */}
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.7)']}
+              style={styles.titleOverlay}
+              pointerEvents="none"
+            >
+              <Text style={styles.projectTitle} numberOfLines={2}>{project.title}</Text>
+              {project.images.length > 1 && (
+                <Text style={styles.imageCounter}>
+                  {currentImageIndex + 1}/{project.images.length}
+                </Text>
+              )}
+            </LinearGradient>
           </View>
-        </View>
+        ) : (
+          /* Large title when no images (Apple HIG pattern) */
+          <View style={styles.noImageTitleContainer}>
+            <Text style={styles.largeTitle}>{project.title}</Text>
+          </View>
+        )}
 
         <View style={styles.content}>
           <View style={styles.badgesContainer}>
@@ -337,7 +360,7 @@ export default function ProjectDetailScreen() {
                         >
                           {yarn.images && yarn.images.length > 0 ? (
                             <Image
-                              source={{ uri: yarn.images[0] }}
+                              source={getImageSource(yarn.images[0])}
                               style={styles.materialImage}
                               contentFit="cover"
                               transition={200}
@@ -350,10 +373,10 @@ export default function ProjectDetailScreen() {
                           <View style={styles.usedInProjectBadge}>
                             <CheckCircle size={16} color={Colors.white} />
                           </View>
-                          {yarn.yarnDetails?.brand && (
+                          {yarn.yarnDetails?.brand?.name && (
                             <View style={styles.brandBadge}>
                               <Text style={styles.brandBadgeText} numberOfLines={1}>
-                                {yarn.yarnDetails.brand}
+                                {yarn.yarnDetails.brand.name}
                               </Text>
                             </View>
                           )}
@@ -362,7 +385,7 @@ export default function ProjectDetailScreen() {
                               {yarn.name}
                             </Text>
                             <Text style={styles.materialDetail} numberOfLines={1}>
-                              {yarn.yarnDetails?.colorName || yarn.yarnDetails?.fiber || yarn.yarnDetails?.weightCategory || ''}
+                              {yarn.yarnDetails?.colorName || yarn.yarnDetails?.weight?.name || ''}
                             </Text>
                           </View>
                         </TouchableOpacity>
@@ -385,48 +408,50 @@ export default function ProjectDetailScreen() {
           <SectionHeader title={t('projects.materialsHooks')} />
 
           {project.hookUsedIds && project.hookUsedIds.length > 0 ? (
-                <View style={styles.materialsSection}>
-                  <View style={styles.hooksRow}>
-                    {project.hookUsedIds.map((hookId) => {
-                      const hook = getItemById(hookId);
-                      if (!hook) {
-                        console.warn(`Hook ${hookId} not found in inventory!`);
-                        return null;
-                      }
-                      return (
-                        <TouchableOpacity
-                          key={hookId}
-                          style={styles.hookCard}
-                          onPress={() => router.push(`/inventory/${hookId}`)}
-                          activeOpacity={0.8}
-                        >
-                          {hook.images && hook.images.length > 0 ? (
-                            <Image
-                              source={{ uri: hook.images[0] }}
-                              style={styles.hookImage}
-                              contentFit="contain"
-                              transition={200}
-                            />
-                          ) : (
-                            <View style={[styles.hookImage, styles.materialImagePlaceholder]}>
-                              <FileText size={24} color={Colors.warmGray} />
-                            </View>
-                          )}
-                          <View style={styles.usedInProjectBadgeSmall}>
-                            <CheckCircle size={12} color={Colors.white} />
+                <View style={styles.hooksList}>
+                  {project.hookUsedIds.map((hookId, index) => {
+                    const hook = getItemById(hookId);
+                    if (!hook) {
+                      console.warn(`Hook ${hookId} not found in inventory!`);
+                      return null;
+                    }
+                    const isLast = index === project.hookUsedIds!.length - 1;
+                    return (
+                      <TouchableOpacity
+                        key={hookId}
+                        style={[styles.hookListRow, !isLast && styles.hookListRowBorder]}
+                        onPress={() => router.push(`/inventory/${hookId}`)}
+                        activeOpacity={0.7}
+                        accessible={true}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${hook.hookDetails?.size || hook.name}${hook.hookDetails?.brand ? `, ${hook.hookDetails.brand}` : ''}`}
+                      >
+                        {hook.images && hook.images.length > 0 ? (
+                          <Image
+                            source={getImageSource(hook.images[0])}
+                            style={styles.hookListThumb}
+                            contentFit="cover"
+                            transition={200}
+                          />
+                        ) : (
+                          <View style={[styles.hookListThumb, styles.hookListThumbPlaceholder]}>
+                            <FileText size={18} color={Colors.warmGray} />
                           </View>
-                          <Text style={styles.hookName} numberOfLines={1}>
+                        )}
+                        <View style={styles.hookListInfo}>
+                          <Text style={styles.hookListSize} numberOfLines={1}>
                             {hook.hookDetails?.size || hook.name}
                           </Text>
-                          {hook.hookDetails?.brand && (
-                            <Text style={styles.hookBrand} numberOfLines={1}>
-                              {hook.hookDetails.brand}
+                          {(hook.hookDetails?.brand || hook.hookDetails?.material) && (
+                            <Text style={styles.hookListBrand} numberOfLines={1}>
+                              {[hook.hookDetails?.brand, hook.hookDetails?.material].filter(Boolean).join(' · ')}
                             </Text>
                           )}
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
+                        </View>
+                        <ChevronRight size={18} color={Colors.warmGray} />
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               ) : (
                 <Text style={styles.previewEmptyText}>{t('projects.noHooksAdded')}</Text>
@@ -434,20 +459,26 @@ export default function ProjectDetailScreen() {
 
           <View style={styles.sectionDivider} />
 
-          {/* Project Journal Preview */}
+          {/* Project Journal Preview - PRO FEATURE */}
           <TouchableOpacity
             onPress={() => router.push(`/project-journal/${project.id}`)}
             activeOpacity={0.7}
             accessible={true}
             accessibilityRole="button"
-            accessibilityLabel={t('projects.projectJournal')}
+            accessibilityLabel={`${t('projects.projectJournal')} - ${!isPro ? t('projects.proFeature') : ''}`}
             accessibilityHint={t('projects.viewFullJournal')}
           >
             <View style={styles.sectionHeaderRow}>
               <View style={styles.sectionHeaderLeft}>
                 <BookOpen size={20} color={Colors.deepSage} />
                 <Text style={styles.sectionTitle}>{t('projects.projectJournal')}</Text>
-                {project.workProgress && project.workProgress.length > 0 && (
+                {!isPro && (
+                  <View style={styles.proBadge}>
+                    <Lock size={10} color={Colors.white} />
+                    <Text style={styles.proBadgeText}>PRO</Text>
+                  </View>
+                )}
+                {isPro && project.workProgress && project.workProgress.length > 0 && (
                   <View style={styles.countBadge}>
                     <Text style={styles.countText}>{project.workProgress.length}</Text>
                   </View>
@@ -455,36 +486,44 @@ export default function ProjectDetailScreen() {
               </View>
               <ChevronRight size={20} color={Colors.warmGray} />
             </View>
-            {project.workProgress && project.workProgress.length > 0 ? (
-              <View style={styles.previewContent}>
-                <Text style={styles.entryDate}>
-                  {new Date(project.workProgress[project.workProgress.length - 1].date).toLocaleDateString()}
-                </Text>
-                <Text style={styles.previewText} numberOfLines={2}>
-                  {project.workProgress[project.workProgress.length - 1].notes}
-                </Text>
-              </View>
-            ) : (
-              <Text style={styles.previewEmptyText}>{t('projects.noJournalEntries')}</Text>
+            {isPro && (
+              project.workProgress && project.workProgress.length > 0 ? (
+                <View style={styles.previewContent}>
+                  <Text style={styles.entryDate}>
+                    {new Date(project.workProgress[project.workProgress.length - 1].date).toLocaleDateString()}
+                  </Text>
+                  <Text style={styles.previewText} numberOfLines={2}>
+                    {project.workProgress[project.workProgress.length - 1].notes}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.previewEmptyText}>{t('projects.noJournalEntries')}</Text>
+              )
             )}
           </TouchableOpacity>
 
           <View style={styles.sectionDivider} />
 
-          {/* Inspiration Preview */}
+          {/* Inspiration Preview - PRO FEATURE */}
           <TouchableOpacity
             onPress={() => router.push(`/project-inspiration/${project.id}`)}
             activeOpacity={0.7}
             accessible={true}
             accessibilityRole="button"
-            accessibilityLabel={t('projects.inspiration')}
+            accessibilityLabel={`${t('projects.inspiration')} - ${!isPro ? t('projects.proFeature') : ''}`}
             accessibilityHint={t('projects.viewFullInspiration')}
           >
             <View style={styles.sectionHeaderRow}>
               <View style={styles.sectionHeaderLeft}>
                 <Lightbulb size={20} color={Colors.deepSage} />
                 <Text style={styles.sectionTitle}>{t('projects.inspiration')}</Text>
-                {project.inspirationSources && project.inspirationSources.length > 0 && (
+                {!isPro && (
+                  <View style={styles.proBadge}>
+                    <Lock size={10} color={Colors.white} />
+                    <Text style={styles.proBadgeText}>PRO</Text>
+                  </View>
+                )}
+                {isPro && project.inspirationSources && project.inspirationSources.length > 0 && (
                   <View style={styles.countBadge}>
                     <Text style={styles.countText}>{project.inspirationSources.length}</Text>
                   </View>
@@ -492,42 +531,58 @@ export default function ProjectDetailScreen() {
               </View>
               <ChevronRight size={20} color={Colors.warmGray} />
             </View>
-            {project.inspirationSources && project.inspirationSources.length > 0 ? (
-              <View style={styles.previewContent}>
-                {project.inspirationSources[0].images && project.inspirationSources[0].images.length > 0 && (
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    style={styles.inspirationImagesScroll}
-                  >
-                    {project.inspirationSources[0].images.slice(0, 3).map((img, index) => (
-                      <Image
-                        key={index}
-                        source={{ uri: img }}
-                        style={styles.inspirationPreviewImage}
-                        contentFit="cover"
-                        transition={200}
-                      />
-                    ))}
-                  </ScrollView>
-                )}
-                <Text style={styles.previewText} numberOfLines={2}>
-                  {project.inspirationSources[0].description || project.inspirationSources[0].patternSource || project.inspirationSources[0].url || t('projects.inspirationSourceAdded')}
-                </Text>
-              </View>
-            ) : (
-              <Text style={styles.previewEmptyText}>{t('projects.noInspirationSources')}</Text>
+            {isPro && (
+              project.inspirationSources && project.inspirationSources.length > 0 ? (
+                <View style={styles.previewContent}>
+                  {project.inspirationSources[0].images && project.inspirationSources[0].images.length > 0 && (
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      style={styles.inspirationImagesScroll}
+                    >
+                      {project.inspirationSources[0].images.slice(0, 3).map((img, index) => (
+                        <Image
+                          key={index}
+                          source={{ uri: img }}
+                          style={styles.inspirationPreviewImage}
+                          contentFit="cover"
+                          transition={200}
+                        />
+                      ))}
+                    </ScrollView>
+                  )}
+                  <Text style={styles.previewText} numberOfLines={2}>
+                    {project.inspirationSources[0].description || project.inspirationSources[0].patternSource || project.inspirationSources[0].url || t('projects.inspirationSourceAdded')}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.previewEmptyText}>{t('projects.noInspirationSources')}</Text>
+              )
             )}
           </TouchableOpacity>
 
-          {project.notes && (
-            <>
-              <View style={styles.sectionDivider} />
+          {/* Notes Section - PRO FEATURE */}
+          <View style={styles.sectionDivider} />
 
-              <SectionHeader title={t('projects.notes')} />
+          <View style={styles.sectionHeaderRow}>
+            <View style={styles.sectionHeaderLeft}>
+              <StickyNote size={20} color={Colors.deepSage} />
+              <Text style={styles.sectionTitle}>{t('projects.notes')}</Text>
+              {!isPro && (
+                <View style={styles.proBadge}>
+                  <Lock size={10} color={Colors.white} />
+                  <Text style={styles.proBadgeText}>PRO</Text>
+                </View>
+              )}
+            </View>
+          </View>
 
+          {isPro && (
+            project.notes ? (
               <Text style={styles.notes}>{project.notes}</Text>
-            </>
+            ) : (
+              <Text style={styles.previewEmptyText}>{t('projects.noNotesAdded')}</Text>
+            )
           )}
 
           <View style={styles.metadata}>
@@ -539,30 +594,33 @@ export default function ProjectDetailScreen() {
             </Text>
           </View>
 
-          <TouchableOpacity
-            onPress={() => router.push(`/edit-project/${project.id}`)}
-            style={styles.editButton}
-            activeOpacity={0.7}
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel={t('common.edit')}
-            accessibilityHint={`Edit ${project.title} project`}
-          >
-            <Text style={styles.editButtonText}>{t('common.edit')}</Text>
-          </TouchableOpacity>
+          <View style={styles.actionButtonsRow}>
+            <TouchableOpacity
+              onPress={() => router.push(`/edit-project/${project.id}`)}
+              style={styles.editButton}
+              activeOpacity={0.7}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={t('common.edit')}
+              accessibilityHint={`Edit ${project.title} project`}
+            >
+              <Pencil size={20} color={Colors.deepSage} />
+              <Text style={styles.editButtonText}>{t('common.edit')}</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={handleDelete}
-            style={styles.deleteButton}
-            activeOpacity={0.7}
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel={t('common.delete')}
-            accessibilityHint={`Delete ${project.title} project permanently`}
-          >
-            <Trash2 size={20} color={Colors.error} />
-            <Text style={styles.deleteButtonText}>{t('common.delete')}</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleDelete}
+              style={styles.deleteButton}
+              activeOpacity={0.7}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={t('common.delete')}
+              accessibilityHint={`Delete ${project.title} project permanently`}
+            >
+              <Trash2 size={20} color={Colors.error} />
+              <Text style={styles.deleteButtonText}>{t('common.delete')}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -598,12 +656,21 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
     paddingHorizontal: 24,
-    paddingVertical: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    paddingTop: 40,
+    paddingBottom: 16,
     zIndex: 10,
+  },
+  noImageTitleContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 16,
+  },
+  largeTitle: {
+    ...Typography.largeTitle,
+    color: Colors.charcoal,
   },
   content: {
     padding: 24,
@@ -611,12 +678,10 @@ const styles = StyleSheet.create({
   projectTitle: {
     ...Typography.title1,
     color: Colors.white,
-    fontWeight: '400' as const,
-    fontSize: 24,
-    letterSpacing: -0.3,
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    fontWeight: '700' as const,
+    textShadowColor: 'rgba(0,0,0,0.3)',
     textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
+    textShadowRadius: 3,
     flex: 1,
     marginRight: 16,
   },
@@ -667,8 +732,8 @@ const styles = StyleSheet.create({
   badgesContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 12,
+    gap: 10,
+    marginBottom: 20,
   },
   statusBadge: {
     flexDirection: 'row',
@@ -721,24 +786,26 @@ const styles = StyleSheet.create({
   sectionTitle: {
     ...Typography.title3,
     color: Colors.charcoal,
-    fontWeight: '500' as const,
+    fontWeight: '600' as const,
     fontSize: 18,
     letterSpacing: -0.2,
-    marginBottom: 12,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    minHeight: 44,
+    paddingVertical: 8,
   },
   sectionHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flex: 1,
   },
   previewContent: {
-    marginTop: 8,
+    marginTop: 4,
+    marginBottom: 8,
   },
   materialsSection: {
     marginBottom: 20,
@@ -877,6 +944,47 @@ const styles = StyleSheet.create({
   hookBrandUnused: {
     opacity: 0.7,
   },
+  // Hook list row styles
+  hooksList: {
+    gap: 8,
+  },
+  hookListRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    minHeight: 52,
+    gap: 12,
+  },
+  hookListRowBorder: {
+    borderBottomWidth: normalizeBorder(1),
+    borderBottomColor: Colors.border,
+  },
+  hookListThumb: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: Colors.linen,
+  },
+  hookListThumbPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hookListInfo: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  hookListSize: {
+    ...Typography.body,
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: Colors.charcoal,
+  },
+  hookListBrand: {
+    ...Typography.caption,
+    fontSize: 13,
+    color: Colors.warmGray,
+    marginTop: 2,
+  },
   colorNotesContainer: {
     marginTop: 8,
   },
@@ -971,6 +1079,37 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600' as const,
   },
+  proBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.sage,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  proBadgeText: {
+    ...Typography.caption,
+    color: Colors.white,
+    fontSize: 10,
+    fontWeight: '700' as const,
+    letterSpacing: 0.5,
+  },
+  lockedPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.beige,
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 8,
+  },
+  lockedPreviewText: {
+    ...Typography.body,
+    color: Colors.warmGray,
+    fontSize: 14,
+    fontStyle: 'italic',
+  },
   entryDate: {
     ...Typography.caption,
     color: Colors.warmGray,
@@ -987,6 +1126,7 @@ const styles = StyleSheet.create({
     color: Colors.warmGray,
     fontStyle: 'italic',
     lineHeight: 22,
+    marginBottom: 8,
   },
   inspirationImagesScroll: {
     marginBottom: 12,
@@ -999,47 +1139,53 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.beige,
   },
   metadata: {
-    marginTop: 32,
-    paddingTop: 20,
-    borderTopWidth: normalizeBorder(0.5),
-    borderTopColor: 'rgba(139, 154, 123, 0.15)',
+    marginTop: 24,
+    paddingTop: 16,
+    borderTopWidth: normalizeBorder(1),
+    borderTopColor: Colors.border,
   },
   metaText: {
     ...Typography.caption,
     color: Colors.warmGray,
     marginBottom: 4,
   },
-  editButton: {
+  actionButtonsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 32,
-    marginBottom: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    backgroundColor: Colors.sage,
-    borderRadius: 12,
-    minHeight: 52,
+    gap: 12,
+    marginTop: 40,
+    marginBottom: 32,
   },
-  editButtonText: {
-    ...Typography.body,
-    color: Colors.white,
-    fontWeight: '600' as const,
-    fontSize: 16,
-    letterSpacing: -0.1,
-  },
-  deleteButton: {
+  editButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginBottom: 32,
     paddingVertical: 14,
-    paddingHorizontal: 24,
     backgroundColor: Colors.white,
     borderRadius: 12,
     borderWidth: normalizeBorder(1),
-    borderColor: 'rgba(200, 117, 99, 0.3)',
+    borderColor: Colors.deepSage,
+    minHeight: 52,
+  },
+  editButtonText: {
+    ...Typography.body,
+    color: Colors.deepSage,
+    fontWeight: '500' as const,
+    fontSize: 16,
+    letterSpacing: -0.1,
+  },
+  deleteButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    borderWidth: normalizeBorder(1),
+    borderColor: `rgba(200, 117, 99, ${normalizeBorderOpacity(0.3)})`,
     minHeight: 52,
   },
   deleteButtonText: {

@@ -36,7 +36,7 @@ export function ProjectLinksSummary({
 
   // Check if any project is in-progress
   const hasActiveProject = selectedProjects.some(
-    p => p?.status === 'in-progress' || p?.status === 'planning'
+    p => p?.status === 'in-progress' || p?.status === 'to-do'
   );
 
   // Generate display text based on count

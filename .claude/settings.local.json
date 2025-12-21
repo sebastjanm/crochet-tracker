@@ -73,7 +73,9 @@
       "Bash(do echo -n \"$key: \")",
       "Bash(bash -c 'grep -roh \"\"t\\(''''inventory\\\\.[^'''']*''''\\)\"\" app/ components/ hooks/ 2>/dev/null | sed \"\"s/t\\(''''inventory\\\\.//\"\" | sed \"\"s/''''\\)$//\"\" | sort -u > /tmp/used.txt; cat /tmp/used.txt | while read key; do grep -q \"\"    $key:\"\" translations/en.ts || echo \"\"MISSING: inventory.$key\"\"; done')",
       "Bash(bash -c 'for key in itemAdded itemUpdated itemDeleted startInventory stock unit scanningBarcode productFound productNotFound reviewInfo lookupFailed; do echo -n \"\"$key: \"\"; grep -r \"\"inventory\\\\.$key\"\" app/ components/ hooks/ 2>/dev/null | wc -l; done')",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "WebFetch(domain:svetmetraze.si)",
+      "Bash(tr:*)"
     ],
     "deny": [],
     "ask": []

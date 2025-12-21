@@ -7,7 +7,7 @@ import { useImageActions } from '@/hooks/useImageActions';
 import { useLanguage } from '@/hooks/language-context';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
-import { InventoryItem } from '@/types';
+import { InventoryItem, getImageSource } from '@/types';
 
 interface MaterialCardSelectorProps {
   items: InventoryItem[];
@@ -47,7 +47,7 @@ export function MaterialCardSelector({
     // Get subtitle based on category
     let subtitle = '';
     if (category === 'yarn' && item.yarnDetails) {
-      subtitle = item.yarnDetails.brand || item.yarnDetails.weightCategory || '';
+      subtitle = item.yarnDetails.brand?.name || item.yarnDetails.weight?.name || '';
     } else if (category === 'hook' && item.hookDetails) {
       subtitle = item.hookDetails.sizeMm ? `${item.hookDetails.sizeMm}mm` : '';
     }
@@ -78,7 +78,7 @@ export function MaterialCardSelector({
         <View style={styles.imageContainer}>
           {image ? (
             <Image
-              source={{ uri: image }}
+              source={getImageSource(image)}
               style={styles.image}
               contentFit="cover"
               transition={200}

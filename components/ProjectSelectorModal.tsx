@@ -16,6 +16,7 @@ import { Typography } from '@/constants/typography';
 import { useProjects } from '@/hooks/projects-context';
 import { useLanguage } from '@/hooks/language-context';
 import type { Project } from '@/types';
+import { getImageSource } from '@/types';
 
 interface ProjectSelectorModalProps {
   visible: boolean;
@@ -26,12 +27,11 @@ interface ProjectSelectorModalProps {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  planning: Colors.warmGray,
+  'to-do': '#FFB84D',
   'in-progress': Colors.sage,
-  'on-hold': '#FFB84D',
+  'on-hold': '#9C27B0',
   completed: Colors.deepSage,
   frogged: '#E57373',
-  idea: '#9C27B0',
 };
 
 function ProjectListItem({
@@ -46,7 +46,9 @@ function ProjectListItem({
   t: (key: string) => string;
 }) {
   const statusColor = STATUS_COLORS[project.status] || Colors.warmGray;
-  const statusLabel = t(`projects.${project.status.replace('-', '')}`) || project.status;
+  // Convert kebab-case to camelCase: in-progress → inProgress, on-hold → onHold
+  const statusKey = project.status.replace(/-(.)/g, (_, c) => c.toUpperCase());
+  const statusLabel = t(`projects.${statusKey}`) || project.status;
 
   return (
     <Pressable
@@ -64,7 +66,7 @@ function ProjectListItem({
       <View style={styles.optionContent}>
         {project.images && project.images.length > 0 ? (
           <Image
-            source={{ uri: project.images[0] }}
+            source={getImageSource(project.images[0])}
             style={styles.optionImage}
             contentFit="cover"
             transition={200}
@@ -141,13 +143,6 @@ export function ProjectSelectorModal({
     onClose();
   };
 
-  const removeFromSelection = (projectId: string) => {
-    setLocalSelection((prev) => prev.filter((id) => id !== projectId));
-  };
-
-  const selectedProjects = useMemo(() => {
-    return projects.filter((p) => localSelection.includes(p.id));
-  }, [projects, localSelection]);
 
   const renderItem = useCallback(
     ({ item }: { item: Project }) => (
@@ -223,28 +218,6 @@ export function ProjectSelectorModal({
             </TouchableOpacity>
           )}
         </View>
-
-        {/* Selected Chips */}
-        {selectedProjects.length > 0 && (
-          <View style={styles.selectedChipsContainer}>
-            {selectedProjects.map((project) => (
-              <View key={project.id} style={styles.selectedChip}>
-                <Text style={styles.selectedChipText} numberOfLines={1}>
-                  {project.title}
-                </Text>
-                <TouchableOpacity
-                  onPress={() => removeFromSelection(project.id)}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  accessible={true}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${t('common.delete')} ${project.title}`}
-                >
-                  <X size={16} color={Colors.white} />
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
-        )}
 
         {/* Project List */}
         {projects.length === 0 ? (
@@ -341,30 +314,6 @@ const styles = StyleSheet.create({
     color: Colors.charcoal,
     fontSize: 16,
     padding: 0,
-  },
-  selectedChipsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    gap: 8,
-  },
-  selectedChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: Colors.sage,
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    maxWidth: 180,
-  },
-  selectedChipText: {
-    ...Typography.body,
-    color: Colors.white,
-    fontSize: 14,
-    fontWeight: '600' as const,
-    flex: 1,
   },
   list: {
     flex: 1,

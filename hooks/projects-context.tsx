@@ -1,7 +1,7 @@
 import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useState, useEffect } from 'react';
-import { Project, ProjectStatus } from '@/types';
+import { Project, ProjectStatus, ProjectYarn } from '@/types';
 import { syncProjectMaterials, removeProjectFromInventory } from '@/lib/sync';
 
 export const [ProjectsProvider, useProjects] = createContextHook(() => {
@@ -18,14 +18,27 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
       if (data) {
         try {
           const parsed = JSON.parse(data);
-          setProjects(parsed.map((p: any) => ({
-            ...p,
-            createdAt: new Date(p.createdAt),
-            updatedAt: new Date(p.updatedAt),
-            // Migration: handle new optional date fields
-            startDate: p.startDate ? new Date(p.startDate) : undefined,
-            completedDate: p.completedDate ? new Date(p.completedDate) : undefined,
-          })));
+          setProjects(parsed.map((p: any) => {
+            // Migration: convert yarnUsedIds to yarnMaterials with quantity
+            let yarnMaterials: ProjectYarn[] | undefined = p.yarnMaterials;
+            if (!yarnMaterials && p.yarnUsedIds && p.yarnUsedIds.length > 0) {
+              yarnMaterials = p.yarnUsedIds.map((id: string) => ({
+                itemId: id,
+                quantity: 1, // Default to 1 for legacy data
+              }));
+            }
+
+            return {
+              ...p,
+              createdAt: new Date(p.createdAt),
+              updatedAt: new Date(p.updatedAt),
+              // Migration: handle new optional date fields
+              startDate: p.startDate ? new Date(p.startDate) : undefined,
+              completedDate: p.completedDate ? new Date(p.completedDate) : undefined,
+              // Migration: yarn materials with quantity
+              yarnMaterials,
+            };
+          }));
         } catch (parseError) {
           console.error('Failed to parse projects data, resetting:', parseError);
           // Clear corrupted data and start fresh
@@ -82,23 +95,30 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
       return;
     }
 
+    // Extract yarn IDs from yarnMaterials for sync
+    const getYarnIds = (materials?: ProjectYarn[]) => materials?.map(m => m.itemId) ?? [];
+    const newYarnIds = updates.yarnMaterials
+      ? getYarnIds(updates.yarnMaterials)
+      : updates.yarnUsedIds ?? existingProject.yarnUsedIds ?? [];
+    const oldYarnIds = getYarnIds(existingProject.yarnMaterials) || existingProject.yarnUsedIds || [];
+
     console.log('📥 updateProject received updates:', {
       id,
-      yarnUsedIds: updates.yarnUsedIds,
+      yarnMaterials: updates.yarnMaterials,
       hookUsedIds: updates.hookUsedIds,
     });
 
     // Sync inventory items if material IDs are being updated
-    const hasYarnChanges = updates.yarnUsedIds !== undefined;
+    const hasYarnChanges = updates.yarnMaterials !== undefined || updates.yarnUsedIds !== undefined;
     const hasHookChanges = updates.hookUsedIds !== undefined;
 
     if (hasYarnChanges || hasHookChanges) {
       try {
         await syncProjectMaterials(
           id,
-          updates.yarnUsedIds ?? existingProject.yarnUsedIds ?? [],
+          newYarnIds,
           updates.hookUsedIds ?? existingProject.hookUsedIds ?? [],
-          existingProject.yarnUsedIds ?? [],
+          oldYarnIds,
           existingProject.hookUsedIds ?? []
         );
         console.log('✅ Inventory items synced with project materials');
@@ -113,11 +133,11 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
         const updatedProject = { ...p, ...updates, updatedAt: new Date() };
 
         console.log('🔄 Updating project from:', {
-          oldYarn: p.yarnUsedIds,
+          oldYarnMaterials: p.yarnMaterials,
           oldHook: p.hookUsedIds,
         });
         console.log('🔄 Updating project to:', {
-          newYarn: updatedProject.yarnUsedIds,
+          newYarnMaterials: updatedProject.yarnMaterials,
           newHook: updatedProject.hookUsedIds,
         });
 

@@ -33,7 +33,7 @@ import { useImageActions } from '@/hooks/useImageActions';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, buttonShadow } from '@/constants/pixelRatio';
-import { ProjectStatus, ProjectType, ProjectImage, getImageSource } from '@/types';
+import { ProjectStatus, ProjectType, ProjectImage, ProjectYarn, getImageSource } from '@/types';
 import { getProjectTypeOptions } from '@/constants/projectTypes';
 
 export default function EditProjectScreen() {
@@ -59,7 +59,7 @@ export default function EditProjectScreen() {
   const [status, setStatus] = useState<ProjectStatus>('to-do');
   const [projectType, setProjectType] = useState<ProjectType | undefined>(undefined);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
-  const [yarnUsedIds, setYarnUsedIds] = useState<string[]>([]);
+  const [yarnMaterials, setYarnMaterials] = useState<ProjectYarn[]>([]);
   const [hookUsedIds, setHookUsedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [fullscreenImageUri, setFullscreenImageUri] = useState<ProjectImage | null>(null);
@@ -80,7 +80,15 @@ export default function EditProjectScreen() {
       setStatus(project.status);
       setProjectType(project.projectType);
       setStartDate(project.startDate);
-      setYarnUsedIds(project.yarnUsedIds || []);
+      // Load yarn materials (use new format, or migrate from legacy yarnUsedIds)
+      if (project.yarnMaterials && project.yarnMaterials.length > 0) {
+        setYarnMaterials(project.yarnMaterials);
+      } else if (project.yarnUsedIds && project.yarnUsedIds.length > 0) {
+        // Migrate legacy format
+        setYarnMaterials(project.yarnUsedIds.map(id => ({ itemId: id, quantity: 1 })));
+      } else {
+        setYarnMaterials([]);
+      }
       setHookUsedIds(project.hookUsedIds || []);
     }
   }, [project]);
@@ -258,7 +266,13 @@ export default function EditProjectScreen() {
   };
 
   const handleRemoveYarn = (id: string) => {
-    setYarnUsedIds(yarnUsedIds.filter((yarnId) => yarnId !== id));
+    setYarnMaterials(yarnMaterials.filter((yarn) => yarn.itemId !== id));
+  };
+
+  const handleYarnQuantityChange = (id: string, quantity: number) => {
+    setYarnMaterials(yarnMaterials.map((yarn) =>
+      yarn.itemId === id ? { ...yarn, quantity } : yarn
+    ));
   };
 
   const handleRemoveHook = (id: string) => {
@@ -286,10 +300,10 @@ export default function EditProjectScreen() {
         status,
         projectType,
         startDate,
-        yarnUsedIds,
+        yarnMaterials,
         hookUsedIds,
       };
-      console.log('📤 Submitting update with yarnUsedIds:', yarnUsedIds);
+      console.log('📤 Submitting update with yarnMaterials:', yarnMaterials);
       console.log('📤 Submitting update with hookUsedIds:', hookUsedIds);
       await updateProject(project.id, updateData);
       router.back();
@@ -461,10 +475,12 @@ export default function EditProjectScreen() {
               addButtonLabel={t('projects.addYarnToInventory')}
             />
             <SelectedMaterialsPreview
-              items={inventory.filter((item) => yarnUsedIds.includes(item.id))}
+              items={inventory.filter((item) => yarnMaterials.some(y => y.itemId === item.id))}
               onRemove={handleRemoveYarn}
               emptyText={t('projects.noYarnAdded')}
               category="yarn"
+              quantities={Object.fromEntries(yarnMaterials.map(y => [y.itemId, y.quantity]))}
+              onQuantityChange={handleYarnQuantityChange}
             />
           </View>
 
@@ -615,8 +631,15 @@ export default function EditProjectScreen() {
         visible={yarnPickerVisible}
         onClose={() => setYarnPickerVisible(false)}
         category="yarn"
-        selectedIds={yarnUsedIds}
-        onSelectionChange={setYarnUsedIds}
+        selectedIds={yarnMaterials.map(y => y.itemId)}
+        onSelectionChange={(newIds) => {
+          // Preserve existing quantities, add new items with quantity 1
+          const existingMap = new Map(yarnMaterials.map(y => [y.itemId, y.quantity]));
+          setYarnMaterials(newIds.map(id => ({
+            itemId: id,
+            quantity: existingMap.get(id) ?? 1,
+          })));
+        }}
       />
 
       <MaterialPickerModal

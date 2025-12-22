@@ -32,7 +32,7 @@ import { useImageActions } from '@/hooks/useImageActions';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, cardShadow, buttonShadow } from '@/constants/pixelRatio';
-import { ProjectStatus, ProjectType } from '@/types';
+import { ProjectStatus, ProjectType, ProjectYarn } from '@/types';
 import { getProjectTypeOptions } from '@/constants/projectTypes';
 
 export default function AddProjectScreen() {
@@ -53,7 +53,7 @@ export default function AddProjectScreen() {
   const [status, setStatus] = useState<ProjectStatus>('to-do');
   const [projectType, setProjectType] = useState<ProjectType | undefined>(undefined);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
-  const [yarnUsedIds, setYarnUsedIds] = useState<string[]>([]);
+  const [yarnMaterials, setYarnMaterials] = useState<ProjectYarn[]>([]);
   const [hookUsedIds, setHookUsedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [fullscreenImageUri, setFullscreenImageUri] = useState<string | null>(null);
@@ -249,7 +249,13 @@ export default function AddProjectScreen() {
   };
 
   const handleRemoveYarn = (id: string) => {
-    setYarnUsedIds(yarnUsedIds.filter((yarnId) => yarnId !== id));
+    setYarnMaterials(yarnMaterials.filter((yarn) => yarn.itemId !== id));
+  };
+
+  const handleYarnQuantityChange = (id: string, quantity: number) => {
+    setYarnMaterials(yarnMaterials.map((yarn) =>
+      yarn.itemId === id ? { ...yarn, quantity } : yarn
+    ));
   };
 
   const handleRemoveHook = (id: string) => {
@@ -277,7 +283,7 @@ export default function AddProjectScreen() {
         status,
         projectType,
         startDate,
-        yarnUsedIds,
+        yarnMaterials,
         hookUsedIds,
       });
       router.dismiss();
@@ -447,10 +453,12 @@ export default function AddProjectScreen() {
           />
 
           <SelectedMaterialsPreview
-            items={inventory.filter((item) => yarnUsedIds.includes(item.id))}
+            items={inventory.filter((item) => yarnMaterials.some(y => y.itemId === item.id))}
             onRemove={handleRemoveYarn}
             emptyText={t('projects.noYarnAdded')}
             category="yarn"
+            quantities={Object.fromEntries(yarnMaterials.map(y => [y.itemId, y.quantity]))}
+            onQuantityChange={handleYarnQuantityChange}
           />
 
           <View style={styles.sectionDivider} />
@@ -584,8 +592,15 @@ export default function AddProjectScreen() {
         visible={yarnPickerVisible}
         onClose={() => setYarnPickerVisible(false)}
         category="yarn"
-        selectedIds={yarnUsedIds}
-        onSelectionChange={setYarnUsedIds}
+        selectedIds={yarnMaterials.map(y => y.itemId)}
+        onSelectionChange={(newIds) => {
+          // Preserve existing quantities, add new items with quantity 1
+          const existingMap = new Map(yarnMaterials.map(y => [y.itemId, y.quantity]));
+          setYarnMaterials(newIds.map(id => ({
+            itemId: id,
+            quantity: existingMap.get(id) ?? 1,
+          })));
+        }}
       />
 
       <MaterialPickerModal

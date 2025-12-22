@@ -37,6 +37,12 @@ export interface InspirationSource {
   description?: string; // Multiline description
 }
 
+// Yarn used in a project with quantity tracking
+export interface ProjectYarn {
+  itemId: string; // Reference to inventory item ID
+  quantity: number; // How many balls/skeins needed for this project
+}
+
 export interface Project {
   id: string;
   title: string;
@@ -59,8 +65,9 @@ export interface Project {
   completedDate?: Date; // Auto-set when status becomes 'completed'
 
   // Phase 2: Materials
-  yarnUsedIds?: string[]; // Array of inventory item IDs (yarn category)
+  yarnUsedIds?: string[]; // Legacy: Array of inventory item IDs (yarn category)
   hookUsedIds?: string[]; // Array of inventory item IDs (hook category)
+  yarnMaterials?: ProjectYarn[]; // Yarn with quantity tracking (replaces yarnUsedIds)
 
   // Phase 3: Work progress and inspiration
   workProgress?: WorkProgressEntry[]; // Array of work entries

@@ -4,15 +4,15 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
-  Platform,
   Pressable,
 } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import { Image } from 'expo-image';
-import { X } from 'lucide-react-native';
+import { ChevronRight, Minus, Plus } from 'lucide-react-native';
 import { router } from 'expo-router';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
+import { normalizeBorder } from '@/constants/pixelRatio';
 import { useImageActions } from '@/hooks/useImageActions';
 import { useLanguage } from '@/hooks/language-context';
 import type { InventoryItem } from '@/types';
@@ -23,16 +23,18 @@ interface SelectedMaterialsPreviewProps {
   onRemove: (id: string) => void;
   emptyText?: string;
   category: 'yarn' | 'hook';
+  // Yarn quantity tracking (optional)
+  quantities?: Record<string, number>; // itemId -> quantity
+  onQuantityChange?: (id: string, quantity: number) => void;
 }
-
-const CARD_WIDTH = 140;
-const IMAGE_HEIGHT = 187; // 3:4 aspect ratio (matches project details)
 
 export function SelectedMaterialsPreview({
   items,
   onRemove,
   emptyText,
   category,
+  quantities,
+  onQuantityChange,
 }: SelectedMaterialsPreviewProps) {
   const { showImageActions } = useImageActions();
   const { t } = useLanguage();
@@ -48,6 +50,18 @@ export function SelectedMaterialsPreview({
     });
   };
 
+  const renderRightActions = (itemId: string) => (
+    <TouchableOpacity
+      style={styles.deleteAction}
+      onPress={() => onRemove(itemId)}
+      accessible={true}
+      accessibilityRole="button"
+      accessibilityLabel={t('common.remove')}
+    >
+      <Text style={styles.deleteActionText}>{t('common.remove')}</Text>
+    </TouchableOpacity>
+  );
+
   if (items.length === 0) {
     return (
       <View style={styles.emptyContainer}>
@@ -58,92 +72,160 @@ export function SelectedMaterialsPreview({
     );
   }
 
-  return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={styles.container}
-      contentContainerStyle={styles.content}
-    >
-      {items.map((item) => {
-        const image = item.images?.[0];
+  // Hooks: Vertical list layout
+  if (category === 'hook') {
+    return (
+      <View style={styles.hooksList}>
+        {items.map((item, index) => {
+          const image = item.images?.[0];
+          const isLast = index === items.length - 1;
 
-        // Get subtitle based on category
-        let subtitle = '';
-        if (category === 'yarn' && item.yarnDetails) {
-          const parts: string[] = [];
-          if (item.yarnDetails.brand?.name) parts.push(item.yarnDetails.brand.name);
-          if (item.yarnDetails.colorName) parts.push(item.yarnDetails.colorName);
-          subtitle = parts.join(' · ');
-        } else if (category === 'hook' && item.hookDetails) {
-          const parts: string[] = [];
-          if (item.hookDetails.sizeMm) parts.push(`${item.hookDetails.sizeMm}mm`);
-          if (item.hookDetails.brand) parts.push(item.hookDetails.brand);
-          subtitle = parts.join(' · ');
-        }
+          // Get subtitle for hook
+          const subtitleParts: string[] = [];
+          if (item.hookDetails?.brand) subtitleParts.push(item.hookDetails.brand);
+          if (item.hookDetails?.material) subtitleParts.push(item.hookDetails.material);
+          const subtitle = subtitleParts.join(' · ');
+
+          return (
+            <Swipeable
+              key={item.id}
+              renderRightActions={() => renderRightActions(item.id)}
+              overshootRight={false}
+            >
+              <Pressable
+                style={[styles.hookRow, !isLast && styles.hookRowBorder]}
+                onPress={() => router.push(`/inventory/${item.id}`)}
+                onLongPress={() => handleLongPress(item)}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={`${item.hookDetails?.size || item.name}${subtitle ? `, ${subtitle}` : ''}`}
+                accessibilityHint={t('materials.longPressForOptions')}
+              >
+                {image ? (
+                  <Image
+                    source={getImageSource(image)}
+                    style={styles.hookThumb}
+                    contentFit="cover"
+                    transition={200}
+                    cachePolicy="memory-disk"
+                  />
+                ) : (
+                  <View style={[styles.hookThumb, styles.hookThumbPlaceholder]}>
+                    <Text style={styles.hookPlaceholderText}>
+                      {item.name.substring(0, 2).toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+                <View style={styles.hookInfo}>
+                  <Text style={styles.hookName} numberOfLines={1}>
+                    {item.hookDetails?.size || item.name}
+                  </Text>
+                  {subtitle && (
+                    <Text style={styles.hookSubtitle} numberOfLines={1}>
+                      {subtitle}
+                    </Text>
+                  )}
+                </View>
+                <ChevronRight size={18} color={Colors.warmGray} />
+              </Pressable>
+            </Swipeable>
+          );
+        })}
+      </View>
+    );
+  }
+
+  // Yarn: Vertical list layout with optional quantity controls
+  return (
+    <View style={styles.hooksList}>
+      {items.map((item, index) => {
+        const image = item.images?.[0];
+        const isLast = index === items.length - 1;
+        const quantity = quantities?.[item.id] ?? 1;
+
+        // Get subtitle for yarn
+        const subtitleParts: string[] = [];
+        if (item.yarnDetails?.brand?.name) subtitleParts.push(item.yarnDetails.brand.name);
+        if (item.yarnDetails?.colorName) subtitleParts.push(item.yarnDetails.colorName);
+        const subtitle = subtitleParts.join(' · ');
 
         return (
-          <Pressable
+          <Swipeable
             key={item.id}
-            style={styles.card}
-            onLongPress={() => handleLongPress(item)}
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel={`${item.name}${subtitle ? `, ${subtitle}` : ''}`}
-            accessibilityHint={t('materials.longPressForOptions')}
+            renderRightActions={() => renderRightActions(item.id)}
+            overshootRight={false}
           >
-            <View style={styles.imageContainer}>
+            <Pressable
+              style={[styles.hookRow, !isLast && styles.hookRowBorder]}
+              onPress={() => router.push(`/inventory/${item.id}`)}
+              onLongPress={() => handleLongPress(item)}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`${item.name}${subtitle ? `, ${subtitle}` : ''}, quantity ${quantity}`}
+              accessibilityHint={t('materials.longPressForOptions')}
+            >
               {image ? (
                 <Image
                   source={getImageSource(image)}
-                  style={styles.image}
+                  style={styles.hookThumb}
                   contentFit="cover"
                   transition={200}
                   cachePolicy="memory-disk"
                 />
               ) : (
-                <View style={[styles.image, styles.imagePlaceholder]}>
-                  <Text style={styles.placeholderText}>
+                <View style={[styles.hookThumb, styles.hookThumbPlaceholder]}>
+                  <Text style={styles.hookPlaceholderText}>
                     {item.name.substring(0, 2).toUpperCase()}
                   </Text>
                 </View>
               )}
-              <TouchableOpacity
-                style={styles.removeButton}
-                onPress={() => onRemove(item.id)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                accessible={true}
-                accessibilityRole="button"
-                accessibilityLabel={t('common.remove')}
-              >
-                <X size={14} color={Colors.white} strokeWidth={2.5} />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.cardContent}>
-              <Text style={styles.cardTitle} numberOfLines={2}>
-                {item.name}
-              </Text>
-              {subtitle && (
-                <Text style={styles.cardSubtitle} numberOfLines={1}>
-                  {subtitle}
+              <View style={styles.hookInfo}>
+                <Text style={styles.hookName} numberOfLines={1}>
+                  {item.name}
                 </Text>
+                {subtitle && (
+                  <Text style={styles.hookSubtitle} numberOfLines={1}>
+                    {subtitle}
+                  </Text>
+                )}
+              </View>
+              {/* Quantity controls for yarn (only when onQuantityChange is provided) */}
+              {onQuantityChange ? (
+                <View style={styles.quantityContainer}>
+                  <TouchableOpacity
+                    style={[styles.quantityButton, quantity <= 1 && styles.quantityButtonDisabled]}
+                    onPress={() => quantity > 1 && onQuantityChange(item.id, quantity - 1)}
+                    disabled={quantity <= 1}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('common.decrease')}
+                  >
+                    <Minus size={16} color={quantity <= 1 ? Colors.warmGray : Colors.white} />
+                  </TouchableOpacity>
+                  <Text style={styles.quantityText}>{quantity}</Text>
+                  <TouchableOpacity
+                    style={styles.quantityButton}
+                    onPress={() => onQuantityChange(item.id, quantity + 1)}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('common.increase')}
+                  >
+                    <Plus size={16} color={Colors.white} />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <ChevronRight size={18} color={Colors.warmGray} />
               )}
-            </View>
-          </Pressable>
+            </Pressable>
+          </Swipeable>
         );
       })}
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    marginVertical: 8,
-  },
-  content: {
-    paddingVertical: 8,
-    gap: 12,
-  },
+  // Common
   emptyContainer: {
     paddingVertical: 24,
     paddingHorizontal: 16,
@@ -155,72 +237,93 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
-  card: {
-    width: CARD_WIDTH,
-    backgroundColor: Colors.white,
+
+  // Materials: Vertical list (used for both yarn and hooks)
+  hooksList: {
+    marginVertical: 8,
+  },
+  hookRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    minHeight: 80,
+    gap: 12,
+  },
+  hookRowBorder: {
+    borderBottomWidth: normalizeBorder(1),
+    borderBottomColor: Colors.border,
+  },
+  hookThumb: {
+    width: 64,
+    height: 64,
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: Colors.deepTeal,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: Colors.deepTeal,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-      default: {},
-    }),
+    backgroundColor: Colors.linen,
   },
-  imageContainer: {
-    position: 'relative',
-    width: '100%',
-    height: IMAGE_HEIGHT,
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  imagePlaceholder: {
-    backgroundColor: Colors.beige,
+  hookThumbPlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  placeholderText: {
-    ...Typography.title2,
-    color: Colors.sage,
-    fontWeight: '600',
-  },
-  removeButton: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cardContent: {
-    padding: 8,
-    minHeight: 48,
-  },
-  cardTitle: {
-    ...Typography.caption,
-    color: Colors.charcoal,
-    fontWeight: '600',
-    fontSize: 13,
-    lineHeight: 16,
-    marginBottom: 2,
-  },
-  cardSubtitle: {
+  hookPlaceholderText: {
     ...Typography.caption,
     color: Colors.warmGray,
-    fontSize: 11,
-    lineHeight: 14,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  hookInfo: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  hookName: {
+    ...Typography.body,
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.charcoal,
+  },
+  hookSubtitle: {
+    ...Typography.caption,
+    fontSize: 13,
+    color: Colors.warmGray,
+    marginTop: 2,
+  },
+
+  // Swipe-to-delete action
+  deleteAction: {
+    backgroundColor: '#FF3B30', // iOS system red
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+  },
+  deleteActionText: {
+    ...Typography.body,
+    color: Colors.white,
+    fontWeight: '600',
+    fontSize: 15,
+  },
+
+  // Quantity controls
+  quantityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  quantityButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: Colors.sage,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quantityButtonDisabled: {
+    backgroundColor: Colors.border,
+  },
+  quantityText: {
+    ...Typography.body,
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.charcoal,
+    minWidth: 28,
+    textAlign: 'center',
   },
 });

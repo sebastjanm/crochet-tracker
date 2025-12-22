@@ -346,7 +346,8 @@ export default function ProjectDetailScreen() {
           )}
 
           {/* Yarn Section */}
-          {project.yarnUsedIds && project.yarnUsedIds.length > 0 && (
+          {((project.yarnMaterials && project.yarnMaterials.length > 0) ||
+            (project.yarnUsedIds && project.yarnUsedIds.length > 0)) && (
           <>
           <SectionHeader title={t('projects.materialsYarn')} />
                 <View style={styles.yarnSection}>
@@ -355,7 +356,9 @@ export default function ProjectDetailScreen() {
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.materialsScroll}
                   >
-                    {project.yarnUsedIds.map((yarnId) => {
+                    {(project.yarnMaterials || project.yarnUsedIds?.map(id => ({ itemId: id, quantity: 1 })) || []).map((yarnEntry) => {
+                      const yarnId = typeof yarnEntry === 'string' ? yarnEntry : yarnEntry.itemId;
+                      const quantity = typeof yarnEntry === 'string' ? 1 : yarnEntry.quantity;
                       const yarn = getItemById(yarnId);
                       if (!yarn) {
                         console.warn(`Yarn ${yarnId} not found in inventory!`);
@@ -380,8 +383,9 @@ export default function ProjectDetailScreen() {
                               <FileText size={32} color={Colors.warmGray} />
                             </View>
                           )}
-                          <View style={styles.usedInProjectBadge}>
-                            <CheckCircle size={16} color={Colors.white} />
+                          {/* Quantity badge */}
+                          <View style={styles.quantityBadge}>
+                            <Text style={styles.quantityBadgeText}>×{quantity}</Text>
                           </View>
                           {yarn.yarnDetails?.brand?.name && (
                             <View style={styles.brandBadge}>
@@ -774,6 +778,23 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.deepTeal,
     borderRadius: 12,
     padding: 4,
+  },
+  quantityBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: Colors.deepSage,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    minWidth: 32,
+    alignItems: 'center',
+  },
+  quantityBadgeText: {
+    ...Typography.caption,
+    color: Colors.white,
+    fontSize: 13,
+    fontWeight: '600' as const,
   },
   usedInProjectBadgeSmall: {
     position: 'absolute',

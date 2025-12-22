@@ -57,11 +57,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginTop: 56,
-    marginBottom: 24,
-    paddingBottom: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(139, 154, 123, 0.15)',
+    marginTop: 0,
+    marginBottom: 12,
   },
   headerFirst: {
     marginTop: 0,

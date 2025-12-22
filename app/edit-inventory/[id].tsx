@@ -16,6 +16,7 @@ import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { ModalHeader } from '@/components/ModalHeader';
 import { ImageGallery } from '@/components/ImageGallery';
+import { SectionHeader } from '@/components/SectionHeader';
 import { ProjectSelectorModal } from '@/components/ProjectSelectorModal';
 import { ProjectLinksSummary } from '@/components/ProjectLinksSummary';
 import { useInventory } from '@/hooks/inventory-context';
@@ -422,7 +423,7 @@ export default function EditInventoryScreen() {
             </View>
           </View>
 
-          <Text style={styles.sectionTitle}>{t('inventory.basicInfo')}</Text>
+          <SectionHeader title={t('inventory.basicInfo')} />
 
           {/* Name field - always first, category-specific */}
           {category === 'yarn' && (
@@ -476,7 +477,7 @@ export default function EditInventoryScreen() {
           />
 
           {/* Root level fields - apply to all categories */}
-          <Text style={styles.sectionTitle}>{t('inventory.additionalInfo')}</Text>
+          <SectionHeader title={t('inventory.additionalInfo')} />
 
           <View style={styles.fieldGroup}>
             <Text style={styles.sectionLabel}>{t('inventory.usedInProjects')}</Text>
@@ -497,7 +498,7 @@ export default function EditInventoryScreen() {
           {/* Category-specific details section */}
           {category === 'yarn' && (
             <>
-              <Text style={styles.sectionTitle}>{t('inventory.yarnDetails')}</Text>
+              <SectionHeader title={t('inventory.yarnDetails')} />
 
               <Input
                 label={t('inventory.brand')}
@@ -588,7 +589,7 @@ export default function EditInventoryScreen() {
                 onChangeText={setYarnNeedleSizeMm}
               />
 
-              <Text style={styles.sectionTitle}>{t('inventory.purchaseInfo')}</Text>
+              <SectionHeader title={t('inventory.purchaseInfo')} />
 
               <Input
                 label={t('inventory.store')}
@@ -612,7 +613,7 @@ export default function EditInventoryScreen() {
                 keyboardType="decimal-pad"
               />
 
-              <Text style={styles.sectionTitle}>{t('inventory.storageSection')}</Text>
+              <SectionHeader title={t('inventory.storageSection')} />
 
               <Input
                 label={t('inventory.storageLocation')}
@@ -625,7 +626,7 @@ export default function EditInventoryScreen() {
 
           {category === 'hook' && (
             <>
-              <Text style={styles.sectionTitle}>{t('inventory.hookDetails')}</Text>
+              <SectionHeader title={t('inventory.hookDetails')} />
 
               <Input
                 label={t('inventory.brand')}
@@ -687,7 +688,7 @@ export default function EditInventoryScreen() {
                 onChangeText={setHookMaterial}
               />
 
-              <Text style={styles.sectionTitle}>{t('inventory.purchaseInfo')}</Text>
+              <SectionHeader title={t('inventory.purchaseInfo')} />
 
               <Input
                 label={t('inventory.store')}
@@ -711,7 +712,7 @@ export default function EditInventoryScreen() {
                 keyboardType="decimal-pad"
               />
 
-              <Text style={styles.sectionTitle}>{t('inventory.storageSection')}</Text>
+              <SectionHeader title={t('inventory.storageSection')} />
 
               <Input
                 label={t('inventory.storageLocation')}
@@ -724,7 +725,7 @@ export default function EditInventoryScreen() {
 
           {category === 'other' && (
             <>
-              <Text style={styles.sectionTitle}>{t('inventory.itemDetails')}</Text>
+              <SectionHeader title={t('inventory.itemDetails')} />
 
               <View style={styles.fieldGroup}>
                 <Text style={styles.sectionLabel}>{t('inventory.type')}</Text>
@@ -794,7 +795,7 @@ export default function EditInventoryScreen() {
                 onChangeText={setOtherMaterial}
               />
 
-              <Text style={styles.sectionTitle}>{t('inventory.purchaseInfo')}</Text>
+              <SectionHeader title={t('inventory.purchaseInfo')} />
 
               <Input
                 label={t('inventory.store')}
@@ -818,7 +819,7 @@ export default function EditInventoryScreen() {
                 keyboardType="decimal-pad"
               />
 
-              <Text style={styles.sectionTitle}>{t('inventory.storageSection')}</Text>
+              <SectionHeader title={t('inventory.storageSection')} />
 
               <Input
                 label={t('inventory.storageLocation')}
@@ -868,12 +869,6 @@ const styles = StyleSheet.create({
     color: Colors.error,
     textAlign: 'center',
     marginTop: 20,
-  },
-  sectionTitle: {
-    ...Typography.title3,
-    color: Colors.charcoal,
-    marginTop: 24,
-    marginBottom: 12,
   },
   categorySection: {
     marginBottom: 16,

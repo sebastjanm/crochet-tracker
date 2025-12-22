@@ -434,7 +434,6 @@ export const mockProjects: Project[] = [
     startDate: new Date('2024-11-22'),
     yarnUsedIds: ['yarn-001', 'yarn-007'],
     hookUsedIds: ['hook-002'],
-    colorNotes: 'Belo-rdeča kombinacija z črnimi robovi.',
     notes: 'Delam 36 kvadratov v 6x6 postavitvi. Vsak kvadrat meri 15 cm.',
     workProgress: [
       {
@@ -509,7 +508,6 @@ export const mockProjects: Project[] = [
     startDate: new Date('2024-12-15'),
     yarnUsedIds: ['yarn-004', 'yarn-007'],
     hookUsedIds: ['hook-003'],
-    colorNotes: 'Siva z črnimi detajli na rokavih.',
     notes: 'Velikost M. Delam od spodaj navzgor.',
     workProgress: [
       {

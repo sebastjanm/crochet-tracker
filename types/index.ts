@@ -61,7 +61,6 @@ export interface Project {
   // Phase 2: Materials
   yarnUsedIds?: string[]; // Array of inventory item IDs (yarn category)
   hookUsedIds?: string[]; // Array of inventory item IDs (hook category)
-  colorNotes?: string; // Free-form color notes
 
   // Phase 3: Work progress and inspiration
   workProgress?: WorkProgressEntry[]; // Array of work entries

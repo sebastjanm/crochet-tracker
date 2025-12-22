@@ -60,7 +60,6 @@ export default function EditProjectScreen() {
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [yarnUsedIds, setYarnUsedIds] = useState<string[]>([]);
   const [hookUsedIds, setHookUsedIds] = useState<string[]>([]);
-  const [colorNotes, setColorNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [fullscreenImageUri, setFullscreenImageUri] = useState<ProjectImage | null>(null);
 
@@ -80,7 +79,6 @@ export default function EditProjectScreen() {
       setStartDate(project.startDate);
       setYarnUsedIds(project.yarnUsedIds || []);
       setHookUsedIds(project.hookUsedIds || []);
-      setColorNotes(project.colorNotes || '');
     }
   }, [project]);
 
@@ -309,7 +307,6 @@ export default function EditProjectScreen() {
         startDate,
         yarnUsedIds,
         hookUsedIds,
-        colorNotes: colorNotes.trim() || undefined,
       };
       console.log('📤 Submitting update with yarnUsedIds:', yarnUsedIds);
       console.log('📤 Submitting update with hookUsedIds:', hookUsedIds);
@@ -608,17 +605,7 @@ export default function EditProjectScreen() {
 
           <View style={styles.sectionDivider} />
 
-          {/* SECTION 6: Additional Details */}
-          <Input
-            label={t('projects.colorNotes')}
-            placeholder={t('projects.colorNotesPlaceholder')}
-            value={colorNotes}
-            onChangeText={setColorNotes}
-            multiline
-            numberOfLines={2}
-          />
-
-          {/* Notes - PRO FEATURE */}
+          {/* SECTION 6: Additional Details - Notes (PRO FEATURE) */}
           {isPro ? (
             <Input
               label={t('projects.notes')}

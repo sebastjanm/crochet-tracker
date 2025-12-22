@@ -19,7 +19,6 @@ import {
   CheckCircle,
   Clock,
   Lightbulb,
-  Calendar,
   PauseCircle,
   RotateCcw,
   BookOpen,
@@ -32,7 +31,6 @@ import {
 import { Button } from '@/components/Button';
 import { UniversalHeader } from '@/components/UniversalHeader';
 import { ImageGallery } from '@/components/ImageGallery';
-import { ProjectTypeBadge } from '@/components/ProjectTypeBadge';
 import { SectionHeader } from '@/components/SectionHeader';
 import { useProjects } from '@/hooks/projects-context';
 import { useInventory } from '@/hooks/inventory-context';
@@ -192,7 +190,14 @@ export default function ProjectDetailScreen() {
               style={styles.titleOverlay}
               pointerEvents="none"
             >
-              <Text style={styles.projectTitle} numberOfLines={2}>{project.title}</Text>
+              <View style={styles.titleOverlayContent}>
+                <Text style={styles.projectTitle} numberOfLines={2}>{project.title}</Text>
+                {project.projectType && (
+                  <Text style={styles.projectTypeSubtitle}>
+                    {t(`projects.projectTypes.${project.projectType}`)}
+                  </Text>
+                )}
+              </View>
               {project.images.length > 1 && (
                 <Text style={styles.imageCounter}>
                   {currentImageIndex + 1}/{project.images.length}
@@ -204,56 +209,60 @@ export default function ProjectDetailScreen() {
           /* Large title when no images (Apple HIG pattern) */
           <View style={styles.noImageTitleContainer}>
             <Text style={styles.largeTitle}>{project.title}</Text>
+            {project.projectType && (
+              <Text style={styles.projectTypeSubtitleDark}>
+                {t(`projects.projectTypes.${project.projectType}`)}
+              </Text>
+            )}
           </View>
         )}
 
         <View style={styles.content}>
-          <View style={styles.badgesContainer}>
-            {project.projectType && (
-              <ProjectTypeBadge type={project.projectType} />
+          {/* Combined Info Section */}
+          <View style={styles.infoSection}>
+            {/* Status Row */}
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>{t('projects.status')}</Text>
+              <View
+                style={styles.statusValue}
+                accessible={true}
+                accessibilityRole="text"
+                accessibilityLabel={`${t('projects.status')}: ${getStatusLabel(project.status)}`}
+              >
+                {getStatusIcon(project.status)}
+                <Text style={[styles.infoValue, { color: getStatusColor(project.status) }]}>
+                  {getStatusLabel(project.status)}
+                </Text>
+              </View>
+            </View>
+
+            {/* Start Date Row */}
+            {project.startDate && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>{t('projects.started')}</Text>
+                <Text style={styles.infoValue}>
+                  {new Date(project.startDate).toLocaleDateString()}
+                </Text>
+              </View>
             )}
 
-            <View
-              style={[
-                styles.statusBadge,
-                { backgroundColor: getStatusColor(project.status) },
-              ]}
-              accessible={true}
-              accessibilityRole="text"
-              accessibilityLabel={`Project status: ${getStatusLabel(project.status)}`}
-            >
-              {getStatusIcon(project.status)}
-              <Text style={styles.statusText}>
-                {getStatusLabel(project.status)}
-              </Text>
-            </View>
+            {/* Completed Date Row */}
+            {project.status === 'completed' && project.completedDate && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>{t('projects.completedDate')}</Text>
+                <Text style={styles.infoValue}>
+                  {new Date(project.completedDate).toLocaleDateString()}
+                </Text>
+              </View>
+            )}
           </View>
 
-          {(project.startDate || (project.status === 'completed' && project.completedDate)) && (
-            <View style={styles.datesContainer}>
-              {project.startDate && (
-                <View style={styles.dateRow}>
-                  <Calendar size={16} color={Colors.warmGray} />
-                  <Text style={styles.dateLabel}>{t('projects.started')}:</Text>
-                  <Text style={styles.dateValue}>
-                    {new Date(project.startDate).toLocaleDateString()}
-                  </Text>
-                </View>
-              )}
-              {project.status === 'completed' && project.completedDate && (
-                <View style={styles.dateRow}>
-                  <CheckCircle size={16} color={Colors.warmGray} />
-                  <Text style={styles.dateLabel}>{t('projects.completedDate')}:</Text>
-                  <Text style={styles.dateValue}>
-                    {new Date(project.completedDate).toLocaleDateString()}
-                  </Text>
-                </View>
-              )}
-            </View>
-          )}
-
-          <View style={styles.sectionDivider} />
-
+          {/* Pattern Section - only show if has content */}
+          {((project.patternImages && project.patternImages.length > 0) ||
+            project.patternPdf ||
+            project.patternUrl ||
+            project.inspirationUrl) && (
+          <>
           <SectionHeader title={t('projects.pattern')} />
 
           {project.patternImages && project.patternImages.length > 0 && (
@@ -333,13 +342,14 @@ export default function ProjectDetailScreen() {
                   </TouchableOpacity>
                 )}
               </View>
+          </>
+          )}
 
-          <View style={styles.sectionDivider} />
-
+          {/* Yarn Section */}
+          {project.yarnUsedIds && project.yarnUsedIds.length > 0 && (
+          <>
           <SectionHeader title={t('projects.materialsYarn')} />
-
-          {project.yarnUsedIds && project.yarnUsedIds.length > 0 ? (
-                <View style={styles.materialsSection}>
+                <View style={styles.yarnSection}>
                   <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
@@ -393,21 +403,13 @@ export default function ProjectDetailScreen() {
                     })}
                   </ScrollView>
                 </View>
-              ) : (
-                <Text style={styles.previewEmptyText}>{t('projects.noYarnAdded')}</Text>
-              )}
-
-          {project.colorNotes && (
-            <View style={styles.colorNotesContainer}>
-              <Text style={styles.colorNotesText}>{project.colorNotes}</Text>
-            </View>
+          </>
           )}
 
-          <View style={styles.sectionDivider} />
-
+          {/* Hooks Section */}
+          {project.hookUsedIds && project.hookUsedIds.length > 0 && (
+          <>
           <SectionHeader title={t('projects.materialsHooks')} />
-
-          {project.hookUsedIds && project.hookUsedIds.length > 0 ? (
                 <View style={styles.hooksList}>
                   {project.hookUsedIds.map((hookId, index) => {
                     const hook = getItemById(hookId);
@@ -453,137 +455,87 @@ export default function ProjectDetailScreen() {
                     );
                   })}
                 </View>
-              ) : (
-                <Text style={styles.previewEmptyText}>{t('projects.noHooksAdded')}</Text>
-              )}
+          </>
+          )}
 
-          <View style={styles.sectionDivider} />
+          {/* PRO Features Section */}
+          <SectionHeader title={t('projects.proSection')} />
 
-          {/* Project Journal Preview - PRO FEATURE */}
-          <TouchableOpacity
-            onPress={() => router.push(`/project-journal/${project.id}`)}
-            activeOpacity={0.7}
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel={`${t('projects.projectJournal')} - ${!isPro ? t('projects.proFeature') : ''}`}
-            accessibilityHint={t('projects.viewFullJournal')}
-          >
-            <View style={styles.sectionHeaderRow}>
-              <View style={styles.sectionHeaderLeft}>
-                <BookOpen size={20} color={Colors.deepSage} />
-                <Text style={styles.sectionTitle}>{t('projects.projectJournal')}</Text>
-                {!isPro && (
-                  <View style={styles.proBadge}>
-                    <Lock size={10} color={Colors.white} />
-                    <Text style={styles.proBadgeText}>PRO</Text>
-                  </View>
-                )}
-                {isPro && project.workProgress && project.workProgress.length > 0 && (
-                  <View style={styles.countBadge}>
-                    <Text style={styles.countText}>{project.workProgress.length}</Text>
-                  </View>
-                )}
-              </View>
-              <ChevronRight size={20} color={Colors.warmGray} />
-            </View>
-            {isPro && (
-              project.workProgress && project.workProgress.length > 0 ? (
-                <View style={styles.previewContent}>
-                  <Text style={styles.entryDate}>
-                    {new Date(project.workProgress[project.workProgress.length - 1].date).toLocaleDateString()}
-                  </Text>
-                  <Text style={styles.previewText} numberOfLines={2}>
-                    {project.workProgress[project.workProgress.length - 1].notes}
-                  </Text>
+          {/* PRO Feature Rows */}
+          <View style={styles.proFeaturesList}>
+            {/* Project Journal Row */}
+            <TouchableOpacity
+              onPress={() => router.push(`/project-journal/${project.id}`)}
+              activeOpacity={0.7}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`${t('projects.projectJournal')}${!isPro ? ` - ${t('projects.proFeature')}` : ''}`}
+              style={styles.proFeatureRow}
+            >
+              <BookOpen size={20} color={Colors.deepSage} />
+              <Text style={styles.proFeatureTitle}>{t('projects.projectJournal')}</Text>
+              {!isPro ? (
+                <View style={styles.proBadge}>
+                  <Lock size={10} color={Colors.white} />
+                  <Text style={styles.proBadgeText}>PRO</Text>
                 </View>
-              ) : (
-                <Text style={styles.previewEmptyText}>{t('projects.noJournalEntries')}</Text>
-              )
-            )}
-          </TouchableOpacity>
-
-          <View style={styles.sectionDivider} />
-
-          {/* Inspiration Preview - PRO FEATURE */}
-          <TouchableOpacity
-            onPress={() => router.push(`/project-inspiration/${project.id}`)}
-            activeOpacity={0.7}
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel={`${t('projects.inspiration')} - ${!isPro ? t('projects.proFeature') : ''}`}
-            accessibilityHint={t('projects.viewFullInspiration')}
-          >
-            <View style={styles.sectionHeaderRow}>
-              <View style={styles.sectionHeaderLeft}>
-                <Lightbulb size={20} color={Colors.deepSage} />
-                <Text style={styles.sectionTitle}>{t('projects.inspiration')}</Text>
-                {!isPro && (
-                  <View style={styles.proBadge}>
-                    <Lock size={10} color={Colors.white} />
-                    <Text style={styles.proBadgeText}>PRO</Text>
-                  </View>
-                )}
-                {isPro && project.inspirationSources && project.inspirationSources.length > 0 && (
-                  <View style={styles.countBadge}>
-                    <Text style={styles.countText}>{project.inspirationSources.length}</Text>
-                  </View>
-                )}
-              </View>
-              <ChevronRight size={20} color={Colors.warmGray} />
-            </View>
-            {isPro && (
-              project.inspirationSources && project.inspirationSources.length > 0 ? (
-                <View style={styles.previewContent}>
-                  {project.inspirationSources[0].images && project.inspirationSources[0].images.length > 0 && (
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      style={styles.inspirationImagesScroll}
-                    >
-                      {project.inspirationSources[0].images.slice(0, 3).map((img, index) => (
-                        <Image
-                          key={index}
-                          source={{ uri: img }}
-                          style={styles.inspirationPreviewImage}
-                          contentFit="cover"
-                          transition={200}
-                        />
-                      ))}
-                    </ScrollView>
-                  )}
-                  <Text style={styles.previewText} numberOfLines={2}>
-                    {project.inspirationSources[0].description || project.inspirationSources[0].patternSource || project.inspirationSources[0].url || t('projects.inspirationSourceAdded')}
-                  </Text>
+              ) : project.workProgress && project.workProgress.length > 0 ? (
+                <View style={styles.countBadge}>
+                  <Text style={styles.countText}>{project.workProgress.length}</Text>
                 </View>
-              ) : (
-                <Text style={styles.previewEmptyText}>{t('projects.noInspirationSources')}</Text>
-              )
-            )}
-          </TouchableOpacity>
+              ) : null}
+              <ChevronRight size={18} color={Colors.warmGray} />
+            </TouchableOpacity>
 
-          {/* Notes Section - PRO FEATURE */}
-          <View style={styles.sectionDivider} />
+            {/* Inspiration Row */}
+            <TouchableOpacity
+              onPress={() => router.push(`/project-inspiration/${project.id}`)}
+              activeOpacity={0.7}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`${t('projects.inspiration')}${!isPro ? ` - ${t('projects.proFeature')}` : ''}`}
+              style={styles.proFeatureRow}
+            >
+              <Lightbulb size={20} color={Colors.deepSage} />
+              <Text style={styles.proFeatureTitle}>{t('projects.inspiration')}</Text>
+              {!isPro ? (
+                <View style={styles.proBadge}>
+                  <Lock size={10} color={Colors.white} />
+                  <Text style={styles.proBadgeText}>PRO</Text>
+                </View>
+              ) : project.inspirationSources && project.inspirationSources.length > 0 ? (
+                <View style={styles.countBadge}>
+                  <Text style={styles.countText}>{project.inspirationSources.length}</Text>
+                </View>
+              ) : null}
+              <ChevronRight size={18} color={Colors.warmGray} />
+            </TouchableOpacity>
 
-          <View style={styles.sectionHeaderRow}>
-            <View style={styles.sectionHeaderLeft}>
+            {/* Notes Row */}
+            <TouchableOpacity
+              onPress={() => router.push(`/edit-project/${project.id}`)}
+              activeOpacity={0.7}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`${t('projects.notes')}${!isPro ? ` - ${t('projects.proFeature')}` : ''}`}
+              style={[styles.proFeatureRow, styles.proFeatureRowLast]}
+            >
               <StickyNote size={20} color={Colors.deepSage} />
-              <Text style={styles.sectionTitle}>{t('projects.notes')}</Text>
+              <Text style={styles.proFeatureTitle}>{t('projects.notes')}</Text>
               {!isPro && (
                 <View style={styles.proBadge}>
                   <Lock size={10} color={Colors.white} />
                   <Text style={styles.proBadgeText}>PRO</Text>
                 </View>
               )}
-            </View>
+              {isPro && project.notes && (
+                <Text style={styles.proFeatureSubtitle} numberOfLines={1}>
+                  {project.notes.substring(0, 30)}{project.notes.length > 30 ? '...' : ''}
+                </Text>
+              )}
+              <ChevronRight size={18} color={Colors.warmGray} />
+            </TouchableOpacity>
           </View>
-
-          {isPro && (
-            project.notes ? (
-              <Text style={styles.notes}>{project.notes}</Text>
-            ) : (
-              <Text style={styles.previewEmptyText}>{t('projects.noNotesAdded')}</Text>
-            )
-          )}
 
           <View style={styles.metadata}>
             <Text style={styles.metaText}>
@@ -673,7 +625,7 @@ const styles = StyleSheet.create({
     color: Colors.charcoal,
   },
   content: {
-    padding: 24,
+    padding: 16,
   },
   projectTitle: {
     ...Typography.title1,
@@ -682,8 +634,6 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.3)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
-    flex: 1,
-    marginRight: 16,
   },
   imageCounter: {
     ...Typography.body,
@@ -729,86 +679,59 @@ const styles = StyleSheet.create({
     padding: 4,
   },
 
-  badgesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 20,
+  titleOverlayContent: {
+    flex: 1,
+    marginRight: 16,
   },
-  statusBadge: {
+  projectTypeSubtitle: {
+    ...Typography.body,
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 14,
+    marginTop: 4,
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  projectTypeSubtitleDark: {
+    ...Typography.body,
+    color: Colors.warmGray,
+    fontSize: 15,
+    marginTop: 4,
+  },
+  infoSection: {
+    marginBottom: 16,
+    paddingBottom: 16,
+    gap: 12,
+    borderBottomWidth: normalizeBorder(0.5),
+    borderBottomColor: `rgba(0, 0, 0, ${normalizeBorderOpacity(0.15)})`,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    minHeight: 24,
+  },
+  infoLabel: {
+    ...Typography.body,
+    color: Colors.warmGray,
+    fontSize: 15,
+  },
+  infoValue: {
+    ...Typography.body,
+    color: Colors.charcoal,
+    fontSize: 15,
+    fontWeight: '500' as const,
+  },
+  statusValue: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 999,
-    minHeight: 36,
   },
-  statusText: {
-    ...Typography.body,
-    color: Colors.white,
-    fontWeight: '600' as const,
-    fontSize: 14,
-    letterSpacing: -0.1,
-  },
-  dateContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  yarnSection: {
     marginBottom: 16,
-  },
-  dateText: {
-    ...Typography.body,
-    color: Colors.warmGray,
-    fontSize: 14,
-  },
-  datesContainer: {
-    marginTop: 12,
-    marginBottom: 8,
-    gap: 8,
-  },
-  dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  dateLabel: {
-    ...Typography.body,
-    color: Colors.warmGray,
-    fontSize: 14,
-    fontWeight: '500' as const,
-  },
-  dateValue: {
-    ...Typography.body,
-    color: Colors.charcoal,
-    fontSize: 14,
-  },
-  sectionTitle: {
-    ...Typography.title3,
-    color: Colors.charcoal,
-    fontWeight: '600' as const,
-    fontSize: 18,
-    letterSpacing: -0.2,
-  },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 44,
-    paddingVertical: 8,
-  },
-  sectionHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flex: 1,
-  },
-  previewContent: {
-    marginTop: 4,
-    marginBottom: 8,
-  },
-  materialsSection: {
-    marginBottom: 20,
+    paddingBottom: 16,
+    borderBottomWidth: normalizeBorder(0.5),
+    borderBottomColor: `rgba(0, 0, 0, ${normalizeBorderOpacity(0.15)})`,
   },
   subsectionTitle: {
     ...Typography.body,
@@ -821,9 +744,9 @@ const styles = StyleSheet.create({
     paddingRight: 24,
   },
   materialCard: {
-    width: 100,
+    width: 140,
     marginRight: 12,
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: 'hidden',
     backgroundColor: Colors.linen,
     borderWidth: normalizeBorder(0.5),
@@ -833,8 +756,8 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   materialImage: {
-    width: 100,
-    height: 133,
+    width: 140,
+    height: 187,
     backgroundColor: Colors.beige,
   },
   materialImagePlaceholder: {
@@ -865,14 +788,14 @@ const styles = StyleSheet.create({
     top: 8,
     left: 8,
     backgroundColor: 'rgba(255,255,255,0.95)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 8,
-    maxWidth: 100,
+    maxWidth: 124,
   },
   brandBadgeText: {
     ...Typography.caption,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600' as const,
     color: Colors.charcoal,
   },
@@ -884,7 +807,7 @@ const styles = StyleSheet.create({
     color: Colors.charcoal,
     fontWeight: '600' as const,
     marginBottom: 4,
-    fontSize: 13,
+    fontSize: 14,
   },
   materialNameUnused: {
     color: Colors.warmGray,
@@ -892,7 +815,7 @@ const styles = StyleSheet.create({
   materialDetail: {
     ...Typography.caption,
     color: Colors.warmGray,
-    fontSize: 11,
+    fontSize: 12,
   },
   materialDetailUnused: {
     opacity: 0.7,
@@ -947,12 +870,16 @@ const styles = StyleSheet.create({
   // Hook list row styles
   hooksList: {
     gap: 8,
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: normalizeBorder(0.5),
+    borderBottomColor: `rgba(0, 0, 0, ${normalizeBorderOpacity(0.15)})`,
   },
   hookListRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
-    minHeight: 52,
+    minHeight: 56,
     gap: 12,
   },
   hookListRowBorder: {
@@ -960,9 +887,9 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   hookListThumb: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
+    width: 48,
+    height: 48,
+    borderRadius: 10,
     backgroundColor: Colors.linen,
   },
   hookListThumbPlaceholder: {
@@ -985,17 +912,8 @@ const styles = StyleSheet.create({
     color: Colors.warmGray,
     marginTop: 2,
   },
-  colorNotesContainer: {
-    marginTop: 8,
-  },
-  colorNotesText: {
-    ...Typography.body,
-    color: Colors.warmGray,
-    fontSize: 14,
-    fontStyle: 'italic',
-  },
   patternImagesScroll: {
-    marginBottom: 16,
+    marginBottom: 8,
   },
   patternImagesContent: {
     paddingRight: 24,
@@ -1013,7 +931,11 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   resourcesList: {
-    gap: 12,
+    gap: 10,
+    paddingBottom: 16,
+    marginBottom: 16,
+    borderBottomWidth: normalizeBorder(0.5),
+    borderBottomColor: `rgba(0, 0, 0, ${normalizeBorderOpacity(0.15)})`,
   },
   resourceButton: {
     flexDirection: 'row',
@@ -1022,7 +944,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     borderRadius: 12,
     padding: 16,
-    marginTop: 16,
     borderWidth: normalizeBorder(1),
     borderColor: Colors.border,
   },
@@ -1058,17 +979,40 @@ const styles = StyleSheet.create({
     color: Colors.warmGray,
     fontSize: 13,
   },
-  notes: {
-    ...Typography.body,
-    color: Colors.warmGray,
-    lineHeight: 22,
+  // PRO Features List Styles
+  proFeaturesList: {
     marginBottom: 16,
+  },
+  proFeatureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 14,
+    minHeight: 52,
+    borderBottomWidth: normalizeBorder(0.5),
+    borderBottomColor: `rgba(0, 0, 0, ${normalizeBorderOpacity(0.15)})`,
+  },
+  proFeatureRowLast: {
+    borderBottomWidth: 0,
+  },
+  proFeatureTitle: {
+    ...Typography.body,
+    color: Colors.charcoal,
+    fontSize: 16,
+    fontWeight: '500' as const,
+    flex: 1,
+  },
+  proFeatureSubtitle: {
+    ...Typography.caption,
+    color: Colors.warmGray,
+    fontSize: 13,
+    maxWidth: 120,
   },
   countBadge: {
     backgroundColor: Colors.deepSage,
-    borderRadius: 12,
+    borderRadius: 10,
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 3,
     minWidth: 24,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1084,9 +1028,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     backgroundColor: Colors.sage,
-    borderRadius: 12,
+    borderRadius: 10,
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 3,
   },
   proBadgeText: {
     ...Typography.caption,
@@ -1095,51 +1039,8 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     letterSpacing: 0.5,
   },
-  lockedPreview: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: Colors.beige,
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 8,
-  },
-  lockedPreviewText: {
-    ...Typography.body,
-    color: Colors.warmGray,
-    fontSize: 14,
-    fontStyle: 'italic',
-  },
-  entryDate: {
-    ...Typography.caption,
-    color: Colors.warmGray,
-    fontSize: 12,
-    marginBottom: 8,
-  },
-  previewText: {
-    ...Typography.body,
-    color: Colors.warmGray,
-    lineHeight: 22,
-  },
-  previewEmptyText: {
-    ...Typography.body,
-    color: Colors.warmGray,
-    fontStyle: 'italic',
-    lineHeight: 22,
-    marginBottom: 8,
-  },
-  inspirationImagesScroll: {
-    marginBottom: 12,
-  },
-  inspirationPreviewImage: {
-    width: 100,
-    height: 133,
-    borderRadius: 8,
-    marginRight: 8,
-    backgroundColor: Colors.beige,
-  },
   metadata: {
-    marginTop: 24,
+    marginTop: 16,
     paddingTop: 16,
     borderTopWidth: normalizeBorder(1),
     borderTopColor: Colors.border,
@@ -1152,7 +1053,7 @@ const styles = StyleSheet.create({
   actionButtonsRow: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 40,
+    marginTop: 24,
     marginBottom: 32,
   },
   editButton: {

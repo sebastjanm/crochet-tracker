@@ -54,7 +54,6 @@ export default function AddProjectScreen() {
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [yarnUsedIds, setYarnUsedIds] = useState<string[]>([]);
   const [hookUsedIds, setHookUsedIds] = useState<string[]>([]);
-  const [colorNotes, setColorNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [fullscreenImageUri, setFullscreenImageUri] = useState<string | null>(null);
 
@@ -255,7 +254,6 @@ export default function AddProjectScreen() {
         startDate,
         yarnUsedIds,
         hookUsedIds,
-        colorNotes: colorNotes.trim() || undefined,
       });
       router.dismiss();
     } catch (error) {
@@ -545,15 +543,6 @@ export default function AddProjectScreen() {
           <View style={styles.sectionDivider} />
 
           {/* SECTION 6: Additional Details */}
-          <Input
-            label={t('projects.colorNotes')}
-            placeholder={t('projects.colorNotesPlaceholder')}
-            value={colorNotes}
-            onChangeText={setColorNotes}
-            multiline
-            numberOfLines={2}
-          />
-
           <Input
             label={t('projects.notes')}
             placeholder={t('projects.additionalNotes')}

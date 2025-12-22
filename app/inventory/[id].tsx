@@ -20,6 +20,7 @@ import {
 import { Button } from '@/components/Button';
 import { UniversalHeader } from '@/components/UniversalHeader';
 import { ImageGallery } from '@/components/ImageGallery';
+import { SectionHeader } from '@/components/SectionHeader';
 import { ProjectSelectorModal } from '@/components/ProjectSelectorModal';
 import { ProjectLinksSummary } from '@/components/ProjectLinksSummary';
 import { useInventory } from '@/hooks/inventory-context';
@@ -203,7 +204,7 @@ export default function InventoryDetailScreen() {
           {/* Yarn-specific details */}
           {item.category === 'yarn' && item.yarnDetails && (
             <View style={styles.detailsCard}>
-              <Text style={styles.sectionTitle}>{t('inventory.yarnDetails')}</Text>
+              <SectionHeader title={t('inventory.yarnDetails')} />
 
               {item.yarnDetails.brand?.name && (
                 <View style={styles.detailRow}>
@@ -313,7 +314,7 @@ export default function InventoryDetailScreen() {
           {/* Hook-specific details */}
           {item.category === 'hook' && item.hookDetails && (
             <View style={styles.detailsCard}>
-              <Text style={styles.sectionTitle}>{t('inventory.hookDetails')}</Text>
+              <SectionHeader title={t('inventory.hookDetails')} />
 
               {item.hookDetails.brand && (
                 <View style={styles.detailRow}>
@@ -356,7 +357,7 @@ export default function InventoryDetailScreen() {
           {/* Other-specific details */}
           {item.category === 'other' && item.otherDetails && (
             <View style={styles.detailsCard}>
-              <Text style={styles.sectionTitle}>{t('inventory.itemDetails')}</Text>
+              <SectionHeader title={t('inventory.itemDetails')} />
 
               {item.otherDetails.type && (
                 <View style={styles.detailRow}>
@@ -391,7 +392,7 @@ export default function InventoryDetailScreen() {
           {/* Description - MOVED DOWN for better hierarchy */}
           {item.description && (
             <View style={styles.descriptionCard}>
-              <Text style={styles.sectionTitle}>{t('common.description')}</Text>
+              <SectionHeader title={t('common.description')} />
               <Text style={styles.description}>{item.description}</Text>
             </View>
           )}
@@ -399,7 +400,7 @@ export default function InventoryDetailScreen() {
           {/* Storage Section */}
           {item.location && (
             <View style={styles.storageCard}>
-              <Text style={styles.sectionTitle}>{t('inventory.storageSection')}</Text>
+              <SectionHeader title={t('inventory.storageSection')} />
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>{t('inventory.location')}</Text>
                 <Text style={styles.detailValue}>{item.location}</Text>
@@ -415,7 +416,7 @@ export default function InventoryDetailScreen() {
             item.otherDetails?.purchaseDate || item.otherDetails?.purchasePrice ||
             item.otherDetails?.store) && (
             <View style={styles.purchaseCard}>
-              <Text style={styles.sectionTitle}>{t('inventory.purchaseInfo')}</Text>
+              <SectionHeader title={t('inventory.purchaseInfo')} />
 
               {/* Store */}
               {(item.yarnDetails?.store || item.hookDetails?.store || item.otherDetails?.store) && (
@@ -483,7 +484,7 @@ export default function InventoryDetailScreen() {
           {/* Notes */}
           {item.notes && (
             <View style={styles.notesCard}>
-              <Text style={styles.sectionTitle}>{t('common.notes')}</Text>
+              <SectionHeader title={t('common.notes')} />
               <Text style={styles.notes}>{item.notes}</Text>
             </View>
           )}
@@ -658,12 +659,6 @@ const styles = StyleSheet.create({
   },
   storageCard: {
     marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.charcoal,
-    marginBottom: 12,
   },
   description: {
     fontSize: 16,

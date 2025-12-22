@@ -290,7 +290,6 @@ export default function AddProjectScreen() {
             value={description}
             onChangeText={setDescription}
             multiline
-            numberOfLines={2}
           />
 
           <Select<ProjectType>
@@ -549,8 +548,6 @@ export default function AddProjectScreen() {
             value={notes}
             onChangeText={setNotes}
             multiline
-            numberOfLines={3}
-            style={styles.textArea}
           />
 
           <View style={styles.footer}>
@@ -587,7 +584,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   textArea: {
-    height: 100,
+    minHeight: 100,
   },
   sectionDivider: {
     height: 1,

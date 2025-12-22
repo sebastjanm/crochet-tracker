@@ -463,8 +463,6 @@ export default function EditInventoryScreen() {
             value={description}
             onChangeText={setDescription}
             multiline
-            numberOfLines={2}
-            style={styles.textArea}
           />
 
           {/* Quantity - always third */}
@@ -836,8 +834,6 @@ export default function EditInventoryScreen() {
             value={notes}
             onChangeText={setNotes}
             multiline
-            numberOfLines={2}
-            style={styles.textArea}
           />
 
           <View style={styles.footer}>
@@ -932,7 +928,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   textArea: {
-    height: 100,
+    minHeight: 100,
     textAlignVertical: 'top',
     paddingTop: 12,
   },

@@ -346,7 +346,6 @@ export default function EditProjectScreen() {
             value={description}
             onChangeText={setDescription}
             multiline
-            numberOfLines={2}
           />
 
           <Select<ProjectType>
@@ -613,8 +612,6 @@ export default function EditProjectScreen() {
               value={notes}
               onChangeText={setNotes}
               multiline
-              numberOfLines={3}
-              style={styles.textArea}
             />
           ) : (
             <View style={styles.proLockedField}>
@@ -668,7 +665,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   textArea: {
-    height: 100,
+    minHeight: 100,
   },
   imageSection: {
     marginBottom: 0,

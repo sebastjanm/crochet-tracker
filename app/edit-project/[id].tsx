@@ -18,7 +18,8 @@ import { Lightbulb, Clock, CheckCircle, Star, Trash2, PauseCircle, RotateCcw, Fi
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { Select } from '@/components/Select';
-import { MaterialCardSelector } from '@/components/MaterialCardSelector';
+import { MaterialPickerModal } from '@/components/MaterialPickerModal';
+import { SelectedMaterialsPreview } from '@/components/SelectedMaterialsPreview';
 import { DatePicker } from '@/components/DatePicker';
 import { ModalHeader } from '@/components/ModalHeader';
 import { SectionHeaderWithAdd } from '@/components/SectionHeaderWithAdd';
@@ -62,6 +63,8 @@ export default function EditProjectScreen() {
   const [hookUsedIds, setHookUsedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [fullscreenImageUri, setFullscreenImageUri] = useState<ProjectImage | null>(null);
+  const [yarnPickerVisible, setYarnPickerVisible] = useState(false);
+  const [hookPickerVisible, setHookPickerVisible] = useState(false);
 
   useEffect(() => {
     if (project) {
@@ -207,10 +210,7 @@ export default function EditProjectScreen() {
       [
         {
           text: t('projects.selectExistingYarn'),
-          onPress: () => {
-            // The MaterialCardSelector below already allows selecting
-            // This just dismisses the alert - user can select from the cards
-          },
+          onPress: () => setYarnPickerVisible(true),
         },
         {
           text: t('projects.addNewYarn'),
@@ -237,10 +237,7 @@ export default function EditProjectScreen() {
       [
         {
           text: t('projects.selectExistingHook'),
-          onPress: () => {
-            // The MaterialCardSelector below already allows selecting
-            // This just dismisses the alert - user can select from the cards
-          },
+          onPress: () => setHookPickerVisible(true),
         },
         {
           text: t('projects.addNewHook'),
@@ -258,22 +255,6 @@ export default function EditProjectScreen() {
         },
       ]
     );
-  };
-
-  const handleToggleYarn = (id: string) => {
-    if (yarnUsedIds.includes(id)) {
-      setYarnUsedIds(yarnUsedIds.filter((yarnId) => yarnId !== id));
-    } else {
-      setYarnUsedIds([...yarnUsedIds, id]);
-    }
-  };
-
-  const handleToggleHook = (id: string) => {
-    if (hookUsedIds.includes(id)) {
-      setHookUsedIds(hookUsedIds.filter((hookId) => hookId !== id));
-    } else {
-      setHookUsedIds([...hookUsedIds, id]);
-    }
   };
 
   const handleRemoveYarn = (id: string) => {
@@ -479,18 +460,11 @@ export default function EditProjectScreen() {
               onAdd={handleAddYarn}
               addButtonLabel={t('projects.addYarnToInventory')}
             />
-            <MaterialCardSelector
-              items={inventory.filter((item) => item.category === 'yarn')}
-              selectedIds={yarnUsedIds}
-              onToggle={handleToggleYarn}
-              onAddNew={handleAddYarn}
-              onRemoveFromProject={handleRemoveYarn}
+            <SelectedMaterialsPreview
+              items={inventory.filter((item) => yarnUsedIds.includes(item.id))}
+              onRemove={handleRemoveYarn}
+              emptyText={t('projects.noYarnAdded')}
               category="yarn"
-              title={t('projects.materialsYarn')}
-              addButtonLabel={t('projects.addYarnToInventory')}
-              emptyMessage={t('projects.noYarnAvailable')}
-              showTitle={false}
-              showAddCard={false}
             />
           </View>
 
@@ -502,18 +476,11 @@ export default function EditProjectScreen() {
               onAdd={handleAddHook}
               addButtonLabel={t('projects.addHookToInventory')}
             />
-            <MaterialCardSelector
-              items={inventory.filter((item) => item.category === 'hook')}
-              selectedIds={hookUsedIds}
-              onToggle={handleToggleHook}
-              onAddNew={handleAddHook}
-              onRemoveFromProject={handleRemoveHook}
+            <SelectedMaterialsPreview
+              items={inventory.filter((item) => hookUsedIds.includes(item.id))}
+              onRemove={handleRemoveHook}
+              emptyText={t('projects.noHooksAdded')}
               category="hook"
-              title={t('projects.materialsHooks')}
-              addButtonLabel={t('projects.addHookToInventory')}
-              emptyMessage={t('projects.noHooksAvailable')}
-              showTitle={false}
-              showAddCard={false}
             />
           </View>
 
@@ -641,6 +608,23 @@ export default function EditProjectScreen() {
         visible={fullscreenImageUri !== null}
         imageUri={fullscreenImageUri}
         onClose={() => setFullscreenImageUri(null)}
+      />
+
+      {/* Material Picker Modals */}
+      <MaterialPickerModal
+        visible={yarnPickerVisible}
+        onClose={() => setYarnPickerVisible(false)}
+        category="yarn"
+        selectedIds={yarnUsedIds}
+        onSelectionChange={setYarnUsedIds}
+      />
+
+      <MaterialPickerModal
+        visible={hookPickerVisible}
+        onClose={() => setHookPickerVisible(false)}
+        category="hook"
+        selectedIds={hookUsedIds}
+        onSelectionChange={setHookUsedIds}
       />
     </SafeAreaView>
   );

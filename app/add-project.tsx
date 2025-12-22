@@ -18,7 +18,8 @@ import { Lightbulb, Clock, CheckCircle, Star, Trash2, PauseCircle, RotateCcw, Fi
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { Select } from '@/components/Select';
-import { MaterialCardSelector } from '@/components/MaterialCardSelector';
+import { MaterialPickerModal } from '@/components/MaterialPickerModal';
+import { SelectedMaterialsPreview } from '@/components/SelectedMaterialsPreview';
 import { DatePicker } from '@/components/DatePicker';
 import { ModalHeader } from '@/components/ModalHeader';
 import { SectionHeaderWithAdd } from '@/components/SectionHeaderWithAdd';
@@ -31,7 +32,7 @@ import { useImageActions } from '@/hooks/useImageActions';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, cardShadow, buttonShadow } from '@/constants/pixelRatio';
-import { ProjectStatus, ProjectType, InventoryItem } from '@/types';
+import { ProjectStatus, ProjectType } from '@/types';
 import { getProjectTypeOptions } from '@/constants/projectTypes';
 
 export default function AddProjectScreen() {
@@ -56,6 +57,8 @@ export default function AddProjectScreen() {
   const [hookUsedIds, setHookUsedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [fullscreenImageUri, setFullscreenImageUri] = useState<string | null>(null);
+  const [yarnPickerVisible, setYarnPickerVisible] = useState(false);
+  const [hookPickerVisible, setHookPickerVisible] = useState(false);
 
   const handleAddPhoto = () => {
     Alert.alert(
@@ -163,22 +166,41 @@ export default function AddProjectScreen() {
 
   const handleAddYarn = () => {
     Alert.alert(
-      t('projects.addNewYarn'),
-      t('projects.formWillClose'),
+      t('projects.addYarn'),
+      undefined,
       [
+        {
+          text: t('projects.selectExistingYarn'),
+          onPress: () => setYarnPickerVisible(true),
+        },
+        {
+          text: t('projects.addNewYarn'),
+          onPress: () => {
+            Alert.alert(
+              t('projects.addNewYarn'),
+              t('projects.formWillClose'),
+              [
+                {
+                  text: t('common.cancel'),
+                  style: 'cancel',
+                },
+                {
+                  text: t('common.continue'),
+                  onPress: () => {
+                    router.dismiss();
+                    router.push({
+                      pathname: '/add-inventory',
+                      params: { category: 'yarn' },
+                    });
+                  },
+                },
+              ]
+            );
+          },
+        },
         {
           text: t('common.cancel'),
           style: 'cancel',
-        },
-        {
-          text: t('common.continue'),
-          onPress: () => {
-            router.dismiss();
-            router.push({
-              pathname: '/add-inventory',
-              params: { category: 'yarn' },
-            });
-          },
         },
       ]
     );
@@ -186,45 +208,48 @@ export default function AddProjectScreen() {
 
   const handleAddHook = () => {
     Alert.alert(
-      t('projects.addNewHook'),
-      t('projects.formWillClose'),
+      t('projects.addHook'),
+      undefined,
       [
+        {
+          text: t('projects.selectExistingHook'),
+          onPress: () => setHookPickerVisible(true),
+        },
+        {
+          text: t('projects.addNewHook'),
+          onPress: () => {
+            Alert.alert(
+              t('projects.addNewHook'),
+              t('projects.formWillClose'),
+              [
+                {
+                  text: t('common.cancel'),
+                  style: 'cancel',
+                },
+                {
+                  text: t('common.continue'),
+                  onPress: () => {
+                    router.dismiss();
+                    router.push({
+                      pathname: '/add-inventory',
+                      params: { category: 'hook' },
+                    });
+                  },
+                },
+              ]
+            );
+          },
+        },
         {
           text: t('common.cancel'),
           style: 'cancel',
-        },
-        {
-          text: t('common.continue'),
-          onPress: () => {
-            router.dismiss();
-            router.push({
-              pathname: '/add-inventory',
-              params: { category: 'hook' },
-            });
-          },
         },
       ]
     );
   };
 
-  const handleToggleYarn = (id: string) => {
-    if (yarnUsedIds.includes(id)) {
-      setYarnUsedIds(yarnUsedIds.filter((yarnId) => yarnId !== id));
-    } else {
-      setYarnUsedIds([...yarnUsedIds, id]);
-    }
-  };
-
   const handleRemoveYarn = (id: string) => {
     setYarnUsedIds(yarnUsedIds.filter((yarnId) => yarnId !== id));
-  };
-
-  const handleToggleHook = (id: string) => {
-    if (hookUsedIds.includes(id)) {
-      setHookUsedIds(hookUsedIds.filter((hookId) => hookId !== id));
-    } else {
-      setHookUsedIds([...hookUsedIds, id]);
-    }
   };
 
   const handleRemoveHook = (id: string) => {
@@ -421,18 +446,11 @@ export default function AddProjectScreen() {
             addButtonLabel={t('projects.addYarnToInventory')}
           />
 
-          <MaterialCardSelector
-            items={inventory.filter((item) => item.category === 'yarn')}
-            selectedIds={yarnUsedIds}
-            onToggle={handleToggleYarn}
-            onAddNew={handleAddYarn}
-            onRemoveFromProject={handleRemoveYarn}
+          <SelectedMaterialsPreview
+            items={inventory.filter((item) => yarnUsedIds.includes(item.id))}
+            onRemove={handleRemoveYarn}
+            emptyText={t('projects.noYarnAdded')}
             category="yarn"
-            title={t('projects.materialsYarn')}
-            addButtonLabel={t('projects.addYarnToInventory')}
-            emptyMessage={t('projects.noYarnAvailable')}
-            showTitle={false}
-            showAddCard={false}
           />
 
           <View style={styles.sectionDivider} />
@@ -443,18 +461,11 @@ export default function AddProjectScreen() {
             addButtonLabel={t('projects.addHookToInventory')}
           />
 
-          <MaterialCardSelector
-            items={inventory.filter((item) => item.category === 'hook')}
-            selectedIds={hookUsedIds}
-            onToggle={handleToggleHook}
-            onAddNew={handleAddHook}
-            onRemoveFromProject={handleRemoveHook}
+          <SelectedMaterialsPreview
+            items={inventory.filter((item) => hookUsedIds.includes(item.id))}
+            onRemove={handleRemoveHook}
+            emptyText={t('projects.noHooksAdded')}
             category="hook"
-            title={t('projects.materialsHooks')}
-            addButtonLabel={t('projects.addHookToInventory')}
-            emptyMessage={t('projects.noHooksAvailable')}
-            showTitle={false}
-            showAddCard={false}
           />
 
           <View style={styles.sectionDivider} />
@@ -566,6 +577,23 @@ export default function AddProjectScreen() {
         visible={fullscreenImageUri !== null}
         imageUri={fullscreenImageUri}
         onClose={() => setFullscreenImageUri(null)}
+      />
+
+      {/* Material Picker Modals */}
+      <MaterialPickerModal
+        visible={yarnPickerVisible}
+        onClose={() => setYarnPickerVisible(false)}
+        category="yarn"
+        selectedIds={yarnUsedIds}
+        onSelectionChange={setYarnUsedIds}
+      />
+
+      <MaterialPickerModal
+        visible={hookPickerVisible}
+        onClose={() => setHookPickerVisible(false)}
+        category="hook"
+        selectedIds={hookUsedIds}
+        onSelectionChange={setHookUsedIds}
       />
     </SafeAreaView>
   );

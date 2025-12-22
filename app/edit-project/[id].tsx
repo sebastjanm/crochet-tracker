@@ -331,7 +331,7 @@ export default function EditProjectScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          {/* SECTION 1: Basic Info - Title & Description */}
+          {/* SECTION 1: Identity - Title, Description, Type */}
           <Input
             label={t('projects.projectTitle')}
             placeholder={t('projects.enterProjectName')}
@@ -347,6 +347,14 @@ export default function EditProjectScreen() {
             onChangeText={setDescription}
             multiline
             numberOfLines={2}
+          />
+
+          <Select<ProjectType>
+            label={t('projects.projectType')}
+            value={projectType}
+            options={getProjectTypeOptions()}
+            onChange={setProjectType}
+            placeholder={t('projects.selectProjectType')}
           />
 
           <View style={styles.sectionDivider} />
@@ -411,7 +419,7 @@ export default function EditProjectScreen() {
 
           <View style={styles.sectionDivider} />
 
-          {/* SECTION 3: Status & Type */}
+          {/* SECTION 3: Status & Date */}
           <View style={styles.statusSection}>
             <Text style={styles.sectionLabel}>{t('projects.status')}</Text>
             <ScrollView
@@ -454,14 +462,6 @@ export default function EditProjectScreen() {
               ))}
             </ScrollView>
           </View>
-
-          <Select<ProjectType>
-            label={t('projects.projectType')}
-            value={projectType}
-            options={getProjectTypeOptions()}
-            onChange={setProjectType}
-            placeholder={t('projects.selectProjectType')}
-          />
 
           <DatePicker
             label={t('projects.startDate')}

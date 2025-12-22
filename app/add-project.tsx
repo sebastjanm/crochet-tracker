@@ -293,6 +293,14 @@ export default function AddProjectScreen() {
             numberOfLines={2}
           />
 
+          <Select<ProjectType>
+            label={t('projects.projectType')}
+            value={projectType}
+            options={getProjectTypeOptions()}
+            onChange={setProjectType}
+            placeholder={t('projects.selectProjectType')}
+          />
+
           <View style={styles.sectionDivider} />
 
           {/* SECTION 2: Photos - Visual representation */}
@@ -353,7 +361,7 @@ export default function AddProjectScreen() {
 
           <View style={styles.sectionDivider} />
 
-          {/* SECTION 3: Status & Type */}
+          {/* SECTION 3: Status & Date */}
           <View style={styles.statusSection}>
             <Text style={styles.sectionLabel}>{t('projects.status')}</Text>
             <ScrollView
@@ -396,14 +404,6 @@ export default function AddProjectScreen() {
               ))}
             </ScrollView>
           </View>
-
-          <Select<ProjectType>
-            label={t('projects.projectType')}
-            value={projectType}
-            options={getProjectTypeOptions()}
-            onChange={setProjectType}
-            placeholder={t('projects.selectProjectType')}
-          />
 
           <DatePicker
             label={t('projects.startDate')}

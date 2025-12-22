@@ -151,7 +151,9 @@ const styles = StyleSheet.create({
   },
   inputMultilineWithFloatingLabel: {
     paddingTop: 32,
+    paddingBottom: 16,
     textAlignVertical: 'top',
+    minHeight: 100,
   },
   inputError: {
     borderColor: ACCESSIBLE_COLORS.errorAccessible,

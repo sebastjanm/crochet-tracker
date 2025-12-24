@@ -50,7 +50,7 @@ export function UniversalHeader({
         {showBack && (
           <TouchableOpacity
             onPress={handleBack}
-            style={styles.backButton}
+            style={styles.headerButton}
             activeOpacity={0.7}
           >
             <ChevronLeft size={24} color={Colors.deepSage} strokeWidth={2.5} />
@@ -67,7 +67,7 @@ export function UniversalHeader({
         {showHelp && (
           <TouchableOpacity
             onPress={handleHelp}
-            style={styles.helpButton}
+            style={styles.headerButton}
             activeOpacity={0.7}
           >
             <HelpCircle size={28} color={Colors.deepSage} strokeWidth={2.5} />
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
-  backButton: {
+  headerButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -118,14 +118,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-  },
-  helpButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginRight: 8,
-    borderRadius: 20,
-    backgroundColor: Colors.linen,
   },
 });

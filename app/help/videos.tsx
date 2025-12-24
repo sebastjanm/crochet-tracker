@@ -94,14 +94,12 @@ export default function VideoGuides() {
           <View style={styles.headerRow}>
             <TouchableOpacity
               onPress={() => router.back()}
-              style={styles.backButton}
+              style={styles.headerButton}
               accessibilityLabel={t('common.back')}
               accessibilityRole="button"
             >
-              <View style={styles.backCircle}>
-                <ChevronLeft size={24} color={Colors.charcoal} strokeWidth={2.5} style={styles.backChevron} />
-              </View>
-              <Text style={styles.backText}>{t('common.back')}</Text>
+              <ChevronLeft size={24} color={Colors.deepSage} strokeWidth={2.5} />
+              <Text style={styles.backLabel}>{t('common.back')}</Text>
             </TouchableOpacity>
           </View>
           <Text style={styles.title}>{t('help.videosTitle')}</Text>
@@ -174,27 +172,19 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 12,
   },
-  backButton: {
+  headerButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 44,
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: Colors.linen,
   },
-  backCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.cream,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backChevron: {
-    marginLeft: -6,
-  },
-  backText: {
-    fontSize: 17,
-    color: Colors.charcoal,
-    fontWeight: '400',
-    marginLeft: 8,
+  backLabel: {
+    fontSize: 16,
+    color: Colors.deepSage,
+    fontWeight: '600',
   },
   container: {
     flex: 1,

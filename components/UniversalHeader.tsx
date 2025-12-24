@@ -67,10 +67,10 @@ export function UniversalHeader({
         {showHelp && (
           <TouchableOpacity
             onPress={handleHelp}
-            style={styles.headerButton}
+            style={styles.helpButton}
             activeOpacity={0.7}
           >
-            <HelpCircle size={28} color={Colors.deepSage} strokeWidth={2.5} />
+            <HelpCircle size={32} color={Colors.deepSage} strokeWidth={2} />
           </TouchableOpacity>
         )}
       </View>
@@ -118,5 +118,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+  },
+  helpButton: {
+    padding: 8,
+    marginRight: 8,
   },
 });

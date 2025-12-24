@@ -146,7 +146,7 @@ export default function ProjectsScreen() {
               accessibilityLabel="Help and support"
               accessibilityHint="Get help and view tutorials"
             >
-              <HelpCircle size={isSmallDevice ? 24 : 28} color={Colors.deepSage} strokeWidth={2.5} />
+              <HelpCircle size={32} color={Colors.deepSage} strokeWidth={2} />
             </TouchableOpacity>
           </View>
         </View>
@@ -295,17 +295,11 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
   helpButton: {
-    padding: isSmallDevice ? 6 : 8,
-    backgroundColor: Colors.linen,
-    borderRadius: 24,
+    padding: 8,
     minWidth: 44,
     minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    ...Platform.select({
-      ...cardShadow,
-      default: {},
-    }),
   },
   container: {
     flex: 1,

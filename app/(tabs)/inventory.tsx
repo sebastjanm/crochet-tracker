@@ -111,7 +111,7 @@ export default function InventoryScreen() {
               accessibilityLabel="Help and support"
               accessibilityHint="Get help and view tutorials"
             >
-              <HelpCircle size={isSmallDevice ? 24 : 28} color={Colors.deepSage} strokeWidth={2.5} />
+              <HelpCircle size={32} color={Colors.deepSage} strokeWidth={2} />
             </TouchableOpacity>
           </View>
         </View>
@@ -263,17 +263,11 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   helpButton: {
-    padding: isSmallDevice ? 6 : 8,
-    backgroundColor: Colors.linen,
-    borderRadius: 24,
+    padding: 8,
     minWidth: 44,
     minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    ...Platform.select({
-      ...cardShadow,
-      default: {},
-    }),
   },
   filterWrapper: {
     backgroundColor: Colors.filterBar,

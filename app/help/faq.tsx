@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { ChevronDown, ChevronRight } from 'lucide-react-native';
+import { ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, router } from 'expo-router';
 import Colors from '@/constants/colors';
 import { Card } from '@/components/Card';
 import { useLanguage } from '@/hooks/language-context';
@@ -159,21 +159,37 @@ export default function FAQ() {
   }, {} as Record<string, { displayName: string; items: FAQItem[] }>);
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScrollView
-        ref={scrollViewRef}
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.header}>
+    <View style={styles.backgroundContainer}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <View style={styles.headerWrapper}>
+          <View style={styles.headerRow}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={styles.backButton}
+              accessibilityLabel={t('common.back')}
+              accessibilityRole="button"
+            >
+              <View style={styles.backCircle}>
+                <ChevronLeft size={24} color={Colors.charcoal} strokeWidth={2.5} style={styles.backChevron} />
+              </View>
+              <Text style={styles.backText}>{t('common.back')}</Text>
+            </TouchableOpacity>
+          </View>
           <Text style={styles.title}>{t('help.faqTitle')}</Text>
           <Text style={styles.subtitle}>
             {t('help.faqSubtitle')}
           </Text>
         </View>
+      </SafeAreaView>
 
-        {Object.entries(groupedFAQ).map(([categoryId, { displayName, items }]) => (
+      <View style={styles.container}>
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {Object.entries(groupedFAQ).map(([categoryId, { displayName, items }]) => (
           <View
             key={categoryId}
             style={styles.categorySection}
@@ -213,24 +229,62 @@ export default function FAQ() {
             </View>
           </View>
         ))}
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  backgroundContainer: {
+    flex: 1,
+    backgroundColor: Colors.headerBg,
+  },
+  safeArea: {
+    backgroundColor: Colors.headerBg,
+  },
+  headerWrapper: {
+    backgroundColor: Colors.headerBg,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    paddingTop: 8,
+    paddingBottom: 12,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 44,
+  },
+  backCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.cream,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backChevron: {
+    marginLeft: -6,
+  },
+  backText: {
+    fontSize: 17,
+    color: Colors.charcoal,
+    fontWeight: '400',
+    marginLeft: 8,
+  },
   container: {
     flex: 1,
-    backgroundColor: Colors.cream,
+    backgroundColor: Colors.beige,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     padding: 20,
-  },
-  header: {
-    marginBottom: 32,
   },
   title: {
     fontSize: 28,
@@ -253,7 +307,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   faqGrid: {
-    gap: 12,
+    gap: 16,
   },
   faqItem: {
     width: '100%',

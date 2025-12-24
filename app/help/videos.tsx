@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { Play } from 'lucide-react-native';
+import { Play, ChevronLeft } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import Colors from '@/constants/colors';
 import { Card } from '@/components/Card';
 import { useLanguage } from '@/hooks/language-context';
@@ -19,7 +19,6 @@ interface VideoGuide {
 
 
 export default function VideoGuides() {
-  const router = useRouter();
   const { t } = useLanguage();
 
   const videoGuides: VideoGuide[] = useMemo(() => [
@@ -89,20 +88,36 @@ export default function VideoGuides() {
   }, {} as Record<string, VideoGuide[]>);
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.header}>
+    <View style={styles.backgroundContainer}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <View style={styles.headerWrapper}>
+          <View style={styles.headerRow}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={styles.backButton}
+              accessibilityLabel={t('common.back')}
+              accessibilityRole="button"
+            >
+              <View style={styles.backCircle}>
+                <ChevronLeft size={24} color={Colors.charcoal} strokeWidth={2.5} style={styles.backChevron} />
+              </View>
+              <Text style={styles.backText}>{t('common.back')}</Text>
+            </TouchableOpacity>
+          </View>
           <Text style={styles.title}>{t('help.videosTitle')}</Text>
           <Text style={styles.subtitle}>
             {t('help.videosSubtitle')}
           </Text>
         </View>
+      </SafeAreaView>
 
-        {Object.entries(groupedVideos).map(([category, videos]) => (
+      <View style={styles.container}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {Object.entries(groupedVideos).map(([category, videos]) => (
           <View key={category} style={styles.categorySection}>
             <Text style={styles.categoryTitle}>{category}</Text>
             <View style={styles.videosGrid}>
@@ -134,24 +149,62 @@ export default function VideoGuides() {
             </View>
           </View>
         ))}
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  backgroundContainer: {
+    flex: 1,
+    backgroundColor: Colors.headerBg,
+  },
+  safeArea: {
+    backgroundColor: Colors.headerBg,
+  },
+  headerWrapper: {
+    backgroundColor: Colors.headerBg,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    paddingTop: 8,
+    paddingBottom: 12,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 44,
+  },
+  backCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.cream,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backChevron: {
+    marginLeft: -6,
+  },
+  backText: {
+    fontSize: 17,
+    color: Colors.charcoal,
+    fontWeight: '400',
+    marginLeft: 8,
+  },
   container: {
     flex: 1,
-    backgroundColor: Colors.cream,
+    backgroundColor: Colors.beige,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     padding: 20,
-  },
-  header: {
-    marginBottom: 32,
   },
   title: {
     fontSize: 28,

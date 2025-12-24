@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { router, Stack } from 'expo-router';
+import { router } from 'expo-router';
 import { BookOpen, Play, X } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Colors from '@/constants/colors';
@@ -30,35 +30,33 @@ export default function HelpCenter() {
   ];
 
   return (
-    <>
-      <Stack.Screen 
-        options={{ 
-          title: t('help.title'),
-          headerShown: true,
-          headerLeft: () => (
-            <TouchableOpacity 
+    <View style={styles.backgroundContainer}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <View style={styles.headerWrapper}>
+          <View style={styles.headerRow}>
+            <TouchableOpacity
               onPress={() => router.back()}
-              style={styles.headerButton}
+              style={styles.closeButton}
+              accessibilityLabel={t('common.close')}
+              accessibilityRole="button"
             >
               <X size={24} color={Colors.charcoal} />
             </TouchableOpacity>
-          ),
-        }} 
-      />
-      <SafeAreaView style={styles.container} edges={['bottom']}>
-        <ScrollView 
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.header}>
-            <Text style={styles.title}>{t('help.title')}</Text>
-            <Text style={styles.subtitle}>
-              {t('help.subtitle')}
-            </Text>
           </View>
+          <Text style={styles.title}>{t('help.title')}</Text>
+          <Text style={styles.subtitle}>
+            {t('help.subtitle')}
+          </Text>
+        </View>
+      </SafeAreaView>
 
-          <View style={styles.optionsContainer}>
+        <View style={styles.container}>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.optionsContainer}>
             {helpOptions.map((option) => {
               const IconComponent = option.icon;
               return (
@@ -92,29 +90,49 @@ export default function HelpCenter() {
                 </TouchableOpacity>
               );
             })}
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    </>
+            </View>
+          </ScrollView>
+        </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  backgroundContainer: {
+    flex: 1,
+    backgroundColor: Colors.headerBg,
+  },
+  safeArea: {
+    backgroundColor: Colors.headerBg,
+  },
+  headerWrapper: {
+    backgroundColor: Colors.headerBg,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    paddingTop: 8,
+    paddingBottom: 12,
+  },
+  closeButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.cream,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   container: {
     flex: 1,
-    backgroundColor: Colors.cream,
+    backgroundColor: Colors.beige,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     padding: 20,
-  },
-  headerButton: {
-    padding: 8,
-  },
-  header: {
-    marginBottom: 32,
   },
   title: {
     fontSize: 28,

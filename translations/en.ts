@@ -749,10 +749,12 @@ export default {
     videoGuides: 'Quick Video Guides',
     videoGuidesDescription: 'Watch short tutorials to learn quickly',
     // FAQ
-    faqTitle: 'Frequently Asked Questions',
+    faqNavTitle: 'FAQ',
+    faqTitle: 'Frequently asked questions',
     faqSubtitle: 'Find answers to common questions about using the app',
     // Video Guides
-    videosTitle: 'Quick Video Guides',
+    videosNavTitle: 'Videos',
+    videosTitle: 'Video Guides',
     videosSubtitle: 'Watch short tutorials to learn the app features quickly',
     // Categories
     gettingStarted: 'Getting Started',

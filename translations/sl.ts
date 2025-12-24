@@ -749,9 +749,11 @@ export default {
     videoGuides: 'Hitri video priročniki',
     videoGuidesDescription: 'Oglejte si kratke priročnike za hitro učenje',
     // FAQ
-    faqTitle: 'Pogosto zastavljena vprašanja',
+    faqNavTitle: 'Vprašanja',
+    faqTitle: 'Pogosta vprašanja',
     faqSubtitle: 'Poiščite odgovore na pogosta vprašanja o uporabi aplikacije',
     // Video Guides
+    videosNavTitle: 'Videi',
     videosTitle: 'Hitri video priročniki',
     videosSubtitle: 'Oglejte si kratke priročnike za hitro učenje funkcij aplikacije',
     // Categories

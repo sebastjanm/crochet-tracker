@@ -5,19 +5,15 @@ export default function HelpLayout() {
   return (
     <Stack
       screenOptions={{
-        headerBackTitle: "Back",
-        headerStyle: {
-          backgroundColor: Colors.cream,
-        },
-        headerTintColor: Colors.charcoal,
-        headerTitleStyle: {
-          fontWeight: '600',
+        headerShown: false,
+        contentStyle: {
+          backgroundColor: Colors.headerBg,
         },
       }}
     >
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="faq" options={{ title: "FAQ" }} />
-      <Stack.Screen name="videos" options={{ title: "Video Guides" }} />
+      <Stack.Screen name="index" />
+      <Stack.Screen name="faq" />
+      <Stack.Screen name="videos" />
     </Stack>
   );
 }

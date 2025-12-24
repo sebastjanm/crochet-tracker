@@ -21,6 +21,7 @@ const queryClient = new QueryClient();
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: Colors.headerBg,
   },
 });
 
@@ -29,7 +30,7 @@ export default function RootLayout() {
     async function prepare() {
       try {
         // Set root background color to prevent white flash
-        await SystemUI.setBackgroundColorAsync(Colors.cream);
+        await SystemUI.setBackgroundColorAsync(Colors.headerBg);
 
         // Configure Android navigation bar for edge-to-edge
         if (Platform.OS === 'android') {

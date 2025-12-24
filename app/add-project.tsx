@@ -296,7 +296,11 @@ export default function AddProjectScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ModalHeader title={t('projects.newProject')} />
+      <ModalHeader
+        title={t('projects.newProject')}
+        showHelp={true}
+        helpSection="projects"
+      />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

@@ -1,7 +1,7 @@
 import { Tabs, router } from "expo-router";
 import { Volleyball, Box, User, Wrench } from "lucide-react-native";
 import React, { useEffect } from "react";
-import { Platform } from "react-native";
+import { Platform, View, StyleSheet } from "react-native";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/hooks/auth-context";
 import { useLanguage } from "@/hooks/language-context";
@@ -24,26 +24,25 @@ export default function TabLayout() {
         tabBarInactiveTintColor: Colors.warmGray,
         tabBarShowLabel: true,
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: '600',
-          marginBottom: 4,
+          letterSpacing: 0.2,
         },
+        tabBarBackground: () => (
+          <View style={styles.tabBarBackground}>
+            {/* Corner fills - these sit behind the rounded corners */}
+            <View style={styles.cornerFillLeft} />
+            <View style={styles.cornerFillRight} />
+            {/* Main rounded background with shadow */}
+            <View style={styles.tabBarRounded} />
+          </View>
+        ),
         tabBarStyle: {
-          backgroundColor: Colors.white,
-          borderTopColor: Colors.border,
-          borderTopWidth: normalizeBorder(1),
-          ...Platform.select({
-            ios: {
-              shadowColor: Colors.black,
-              shadowOffset: { width: 0, height: -2 },
-              shadowOpacity: 0.08,
-              shadowRadius: 8,
-            },
-            android: {
-              elevation: 8,
-            },
-            default: {},
-          }),
+          backgroundColor: 'transparent',
+          borderTopWidth: 0,
+          paddingTop: 10,
+          paddingBottom: Platform.OS === 'ios' ? 0 : 8,
+          height: Platform.OS === 'ios' ? 88 : 68,
         },
         headerStyle: {
           backgroundColor: Colors.cream,
@@ -80,9 +79,6 @@ export default function TabLayout() {
             />
           ),
           tabBarAccessibilityLabel: t('tabs.projects'),
-          tabBarItemStyle: {
-            paddingVertical: 2,
-          },
         }}
       />
       <Tabs.Screen
@@ -98,9 +94,6 @@ export default function TabLayout() {
             />
           ),
           tabBarAccessibilityLabel: t('tabs.inventory'),
-          tabBarItemStyle: {
-            paddingVertical: 2,
-          },
         }}
       />
       <Tabs.Screen
@@ -116,9 +109,6 @@ export default function TabLayout() {
             />
           ),
           tabBarAccessibilityLabel: t('tabs.tools'),
-          tabBarItemStyle: {
-            paddingVertical: 2,
-          },
         }}
       />
       <Tabs.Screen
@@ -134,11 +124,57 @@ export default function TabLayout() {
             />
           ),
           tabBarAccessibilityLabel: t('tabs.profile'),
-          tabBarItemStyle: {
-            paddingVertical: 2,
-          },
         }}
       />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBarBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  cornerFillLeft: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 32,
+    height: 32,
+    backgroundColor: Colors.white,
+  },
+  cornerFillRight: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 32,
+    height: 32,
+    backgroundColor: Colors.white,
+  },
+  tabBarRounded: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    borderTopWidth: normalizeBorder(1),
+    borderTopColor: Colors.border,
+    ...Platform.select({
+      ios: {
+        shadowColor: Colors.black,
+        shadowOffset: { width: 0, height: -8 },
+        shadowOpacity: 0.12,
+        shadowRadius: 20,
+      },
+      android: {
+        elevation: 24,
+      },
+    }),
+  },
+});

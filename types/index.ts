@@ -168,8 +168,8 @@ export interface HookDetails {
   // ===== PHYSICAL PROPERTIES =====
   lengthCm?: number; // Total length in cm
   lengthIn?: number; // Total length in inches
-  handleType?: 'ergonomic' | 'inline' | 'tapered' | 'standard';
-  material?: 'aluminum' | 'steel' | 'plastic' | 'bamboo' | 'wood' | 'resin' | 'carbonFiber' | 'other';
+  handleType?: 'standard' | 'ergonomic' | 'tunisian' | 'steel' | 'inline' | 'tapered';
+  material?: 'steel' | 'aluminum' | 'bamboo' | 'wood' | 'plastic' | 'nickel' | 'brass' | 'resin' | 'carbonFiber' | 'other';
   handleMaterial?: string; // e.g., "synthetic rubber", "silicone"
 
   // ===== FEATURES =====

@@ -394,24 +394,18 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   backgroundContainer: {
     flex: 1,
-    backgroundColor: Colors.cream,
+    backgroundColor: Colors.headerBg,
   },
   safeArea: {
-    backgroundColor: Colors.cream,
+    backgroundColor: Colors.headerBg,
   },
   container: {
     flex: 1,
     backgroundColor: Colors.beige,
   },
   customHeader: {
-    backgroundColor: Colors.cream,
-    paddingBottom: isSmallDevice ? 12 : 16,
-    borderBottomWidth: normalizeBorder(1),
-    borderBottomColor: Colors.border,
-    ...Platform.select({
-      ...cardShadow,
-      default: {},
-    }),
+    backgroundColor: Colors.headerBg,
+    paddingBottom: isSmallDevice ? 4 : 6,
   },
   headerContent: {
     flexDirection: 'row',

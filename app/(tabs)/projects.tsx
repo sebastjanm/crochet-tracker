@@ -101,14 +101,14 @@ export default function ProjectsScreen() {
             transition={200}
             cachePolicy="memory-disk"
           />
-        <View style={[styles.statusIndicator, { backgroundColor: getStatusColor(item.status) }]}>
-          {getStatusIcon(item.status)}
-        </View>
-        <View style={styles.overlay}>
-          <Text style={styles.projectTitle} numberOfLines={2}>
-            {item.title}
-          </Text>
-        </View>
+          <View style={[styles.statusIndicator, { backgroundColor: getStatusColor(item.status) }]}>
+            {getStatusIcon(item.status)}
+          </View>
+          <View style={styles.projectInfo}>
+            <Text style={styles.projectTitle} numberOfLines={2}>
+              {item.title}
+            </Text>
+          </View>
         </View>
       </TouchableOpacity>
     );
@@ -131,10 +131,10 @@ export default function ProjectsScreen() {
             <Avatar user={user || undefined} size={isSmallDevice ? 44 : isTablet ? 52 : 56} />
             <View style={styles.textContainer}>
               <Text style={styles.headerGreeting} numberOfLines={1} ellipsizeMode="tail">
-                {t('home.greeting')}, {userName}
+                {t('home.greeting')}
               </Text>
-              <Text style={styles.headerSubtitle} numberOfLines={1} ellipsizeMode="tail">
-                {t('projects.manageYourProjects')}
+              <Text style={styles.headerUserName} numberOfLines={1} ellipsizeMode="tail">
+                {userName}
               </Text>
             </View>
             <TouchableOpacity
@@ -152,13 +152,13 @@ export default function ProjectsScreen() {
         </View>
       </SafeAreaView>
       
-      <View style={styles.container}>
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        style={styles.categoriesContainer}
-        contentContainerStyle={styles.categoriesContent}
-      >
+      <View style={styles.filterWrapper}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.categoriesContainer}
+          contentContainerStyle={styles.categoriesContent}
+        >
         {statusFilters.map((item) => (
           <TouchableOpacity
             key={item.key}
@@ -192,8 +192,10 @@ export default function ProjectsScreen() {
             </Text>
           </TouchableOpacity>
         ))}
-      </ScrollView>
+        </ScrollView>
+      </View>
 
+      <View style={styles.container}>
       {filteredProjects.length === 0 ? (
         <EmptyState
           icon={<Volleyball size={64} color={Colors.warmGray} />}
@@ -249,20 +251,14 @@ export default function ProjectsScreen() {
 const styles = StyleSheet.create({
   backgroundContainer: {
     flex: 1,
-    backgroundColor: Colors.cream,
+    backgroundColor: Colors.headerBg,
   },
   safeArea: {
-    backgroundColor: Colors.cream,
+    backgroundColor: Colors.headerBg,
   },
   customHeader: {
-    backgroundColor: Colors.cream,
-    paddingBottom: isSmallDevice ? 12 : 16,
-    borderBottomWidth: normalizeBorder(1),
-    borderBottomColor: Colors.border,
-    ...Platform.select({
-      ...cardShadow,
-      default: {},
-    }),
+    backgroundColor: Colors.headerBg,
+    paddingBottom: isSmallDevice ? 4 : 6,
   },
   headerContent: {
     flexDirection: 'row',
@@ -282,20 +278,21 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   headerGreeting: {
+    ...Typography.body,
+    color: Colors.warmGray,
+    fontWeight: '400' as const,
+    fontSize: isSmallDevice ? 13 : isTablet ? 16 : 14,
+    lineHeight: isSmallDevice ? 17 : isTablet ? 21 : 18,
+    letterSpacing: 0.2,
+    marginBottom: 2,
+  },
+  headerUserName: {
     ...Typography.title2,
     color: Colors.charcoal,
     fontWeight: '700' as const,
-    fontSize: isSmallDevice ? 20 : isTablet ? 28 : 24,
-    lineHeight: isSmallDevice ? 26 : isTablet ? 34 : 30,
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    ...Typography.body,
-    color: Colors.warmGray,
-    fontSize: isSmallDevice ? 13 : 14,
-    fontWeight: '500' as const,
-    lineHeight: isSmallDevice ? 17 : 18,
-    opacity: 0.9,
+    fontSize: isSmallDevice ? 20 : isTablet ? 26 : 22,
+    lineHeight: isSmallDevice ? 26 : isTablet ? 32 : 28,
+    letterSpacing: -0.3,
   },
   helpButton: {
     padding: isSmallDevice ? 6 : 8,
@@ -314,11 +311,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.beige,
   },
-  categoriesContainer: {
-    maxHeight: 80,
+  filterWrapper: {
     backgroundColor: Colors.filterBar,
     marginTop: 0,
-    paddingVertical: 8,
+  },
+  categoriesContainer: {
+    maxHeight: 80,
+    backgroundColor: 'transparent',
   },
   categoriesContent: {
     paddingHorizontal: 16,
@@ -475,10 +474,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   projectCard: {
-    borderRadius: 16,
-    backgroundColor: Colors.white,
+    borderRadius: 12,
+    backgroundColor: Colors.linen,
     borderWidth: normalizeBorder(0.5),
-    borderColor: `rgba(0, 0, 0, ${normalizeBorderOpacity(0.04)})`,
+    borderColor: `rgba(139, 154, 123, ${normalizeBorderOpacity(0.12)})`,
+    overflow: 'hidden',
     ...Platform.select({
       ...cardShadow,
       default: {},
@@ -486,19 +486,11 @@ const styles = StyleSheet.create({
   },
   projectImage: {
     width: '100%',
-    height: 220,
+    height: 140,
     backgroundColor: Colors.beige,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
   },
-  overlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    padding: 16,
-    justifyContent: 'flex-end',
+  projectInfo: {
+    padding: 10,
   },
   statusBadge: {
     position: 'absolute',
@@ -513,12 +505,11 @@ const styles = StyleSheet.create({
     backdropFilter: 'blur(10px)',
   },
   projectTitle: {
-    ...Typography.title3,
-    color: Colors.white,
+    ...Typography.body,
+    color: Colors.charcoal,
     fontWeight: '600' as const,
-    fontSize: 17,
-    lineHeight: 22,
-    letterSpacing: -0.2,
+    fontSize: 14,
+    lineHeight: 18,
   },
   projectStatus: {
     flexDirection: 'row',

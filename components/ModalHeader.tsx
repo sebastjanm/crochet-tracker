@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { X } from 'lucide-react-native';
+import { X, HelpCircle } from 'lucide-react-native';
 import { router } from 'expo-router';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
@@ -9,6 +9,8 @@ import { Typography } from '@/constants/typography';
 interface ModalHeaderProps {
   title: string;
   onClose?: () => void;
+  showHelp?: boolean;
+  helpSection?: 'projects' | 'inventory' | 'yarn' | 'hooks' | 'materials' | 'photos';
   rightAction?: {
     label: string;
     onPress: () => void;
@@ -19,6 +21,8 @@ interface ModalHeaderProps {
 export function ModalHeader({
   title,
   onClose,
+  showHelp = false,
+  helpSection,
   rightAction
 }: ModalHeaderProps) {
   const handleClose = () => {
@@ -34,6 +38,14 @@ export function ModalHeader({
           router.back();
         }
       }
+    }
+  };
+
+  const handleHelp = () => {
+    if (helpSection) {
+      router.push(`/help/faq?section=${helpSection}`);
+    } else {
+      router.push('/help/faq');
     }
   };
 
@@ -53,21 +65,36 @@ export function ModalHeader({
       </TouchableOpacity>
       
       <Text style={styles.title} numberOfLines={1}>{title}</Text>
-      
-      {rightAction ? (
-        <TouchableOpacity 
-          onPress={rightAction.onPress}
-          disabled={rightAction.disabled}
-          style={[styles.actionButton, rightAction.disabled && styles.actionButtonDisabled]}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.actionText, rightAction.disabled && styles.actionTextDisabled]}>
-            {rightAction.label}
-          </Text>
-        </TouchableOpacity>
-      ) : (
-        <View style={styles.placeholder} />
-      )}
+
+      <View style={styles.rightSection}>
+        {showHelp && (
+          <TouchableOpacity
+            onPress={handleHelp}
+            style={styles.helpButton}
+            activeOpacity={0.7}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Help"
+            accessibilityHint="Opens help and FAQ section"
+          >
+            <HelpCircle size={22} color={Colors.deepSage} strokeWidth={2.5} />
+          </TouchableOpacity>
+        )}
+        {rightAction ? (
+          <TouchableOpacity
+            onPress={rightAction.onPress}
+            disabled={rightAction.disabled}
+            style={[styles.actionButton, rightAction.disabled && styles.actionButtonDisabled]}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.actionText, rightAction.disabled && styles.actionTextDisabled]}>
+              {rightAction.label}
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.placeholder} />
+        )}
+      </View>
       </View>
     </SafeAreaView>
   );
@@ -121,5 +148,18 @@ const styles = StyleSheet.create({
   },
   placeholder: {
     width: 32,
+  },
+  rightSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  helpButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.sage + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

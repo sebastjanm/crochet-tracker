@@ -166,15 +166,21 @@ export default function ProjectDetailScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <UniversalHeader
-        title=""
-        showBack={true}
-        backLabel={t('common.back')}
-        showHelp={false}
-      />
+    <View style={styles.backgroundContainer}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <View style={styles.headerWrapper}>
+          <UniversalHeader
+            title=""
+            showBack={true}
+            backLabel={t('common.back')}
+            showHelp={true}
+            helpSection="projects"
+          />
+        </View>
+      </SafeAreaView>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <View style={styles.container}>
+        <ScrollView showsVerticalScrollIndicator={false}>
         {/* Image with title overlay (Apple HIG style) */}
         {project.images && project.images.length > 0 ? (
           <View style={styles.imageGalleryContainer}>
@@ -578,15 +584,27 @@ export default function ProjectDetailScreen() {
             </TouchableOpacity>
           </View>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  backgroundContainer: {
+    flex: 1,
+    backgroundColor: Colors.headerBg,
+  },
+  safeArea: {
+    backgroundColor: Colors.headerBg,
+  },
+  headerWrapper: {
+    backgroundColor: Colors.headerBg,
+    paddingVertical: 12,
+  },
   container: {
     flex: 1,
-    backgroundColor: Colors.cream,
+    backgroundColor: Colors.beige,
   },
   errorContainer: {
     flex: 1,

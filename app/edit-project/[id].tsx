@@ -316,7 +316,11 @@ export default function EditProjectScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ModalHeader title={t('projects.editProject')} />
+      <ModalHeader
+        title={t('projects.editProject')}
+        showHelp={true}
+        helpSection="projects"
+      />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

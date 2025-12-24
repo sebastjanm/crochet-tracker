@@ -10,6 +10,7 @@ interface UniversalHeaderProps {
   showBack?: boolean;
   backLabel?: string;
   showHelp?: boolean;
+  helpSection?: 'projects' | 'inventory' | 'yarn' | 'hooks' | 'materials' | 'photos';
   onBackPress?: () => void;
   onHelpPress?: () => void;
   rightAction?: React.ReactNode;
@@ -20,6 +21,7 @@ export function UniversalHeader({
   showBack = false,
   backLabel,
   showHelp = true,
+  helpSection,
   onBackPress,
   onHelpPress,
   rightAction,
@@ -35,6 +37,8 @@ export function UniversalHeader({
   const handleHelp = () => {
     if (onHelpPress) {
       onHelpPress();
+    } else if (helpSection) {
+      router.push(`/help/faq?section=${helpSection}`);
     } else {
       router.push('/help');
     }
@@ -91,7 +95,7 @@ const styles = StyleSheet.create({
     padding: 8,
     marginRight: 4,
     borderRadius: 20,
-    backgroundColor: Colors.cream,
+    backgroundColor: Colors.white,
   },
   backButtonWithLabel: {
     flexDirection: 'row',
@@ -101,7 +105,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginRight: 12,
     borderRadius: 20,
-    backgroundColor: Colors.cream,
+    backgroundColor: Colors.white,
   },
   backLabel: {
     ...Typography.body,
@@ -125,6 +129,6 @@ const styles = StyleSheet.create({
     marginRight: 12,
     padding: 8,
     borderRadius: 20,
-    backgroundColor: Colors.cream,
+    backgroundColor: Colors.white,
   },
 });

@@ -1,4 +1,8 @@
 {
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
   "permissions": {
     "allow": [
       "Bash(mkdir:*)",
@@ -75,7 +79,8 @@
       "Bash(bash -c 'for key in itemAdded itemUpdated itemDeleted startInventory stock unit scanningBarcode productFound productNotFound reviewInfo lookupFailed; do echo -n \"\"$key: \"\"; grep -r \"\"inventory\\\\.$key\"\" app/ components/ hooks/ 2>/dev/null | wc -l; done')",
       "Bash(wc:*)",
       "WebFetch(domain:svetmetraze.si)",
-      "Bash(tr:*)"
+      "Bash(tr:*)",
+      "Bash(git diff:*)"
     ],
     "deny": [],
     "ask": []

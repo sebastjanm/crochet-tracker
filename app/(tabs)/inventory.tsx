@@ -13,7 +13,7 @@ import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { router } from 'expo-router';
-import { Plus, Package, Volleyball, Grid3x3, Wrench, HelpCircle, FolderGit2 } from 'lucide-react-native';
+import { Plus, Package, Volleyball, Grid3x3, Wrench, HelpCircle } from 'lucide-react-native';
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
 import { useInventory } from '@/hooks/inventory-context';
@@ -44,8 +44,8 @@ export default function InventoryScreen() {
   ];
 
   const renderItem = ({ item }: { item: InventoryItem }) => {
-    // Get display name from root level
     const displayName = item.name || 'Untitled';
+    const brandName = item.yarnDetails?.brand?.name || item.hookDetails?.brand || '';
 
     return (
       <TouchableOpacity
@@ -54,7 +54,7 @@ export default function InventoryScreen() {
         activeOpacity={0.7}
         accessible={true}
         accessibilityRole="button"
-        accessibilityLabel={`${displayName}${item.yarnDetails?.brand ? `, ${item.yarnDetails.brand}` : ''}`}
+        accessibilityLabel={`${displayName}${brandName ? `, ${brandName}` : ''}, ${item.quantity} items`}
         accessibilityHint={`View ${displayName} details`}
       >
         <View style={styles.itemCard}>
@@ -64,50 +64,25 @@ export default function InventoryScreen() {
             <View style={[styles.itemImage, styles.placeholderImage]}>
               {item.category === 'yarn' ? (
                 <Volleyball size={32} color={Colors.warmGray} />
+              ) : item.category === 'hook' ? (
+                <Wrench size={32} color={Colors.warmGray} />
               ) : (
                 <Package size={32} color={Colors.warmGray} />
               )}
             </View>
           )}
+          <View style={styles.quantityBadge}>
+            <Text style={styles.quantityBadgeText}>{item.quantity}</Text>
+          </View>
           <View style={styles.itemInfo}>
-            <View>
-              <Text style={styles.itemTitle} numberOfLines={2}>
-                {displayName}
+            <Text style={styles.itemTitle} numberOfLines={2}>
+              {displayName}
+            </Text>
+            {brandName ? (
+              <Text style={styles.itemBrand} numberOfLines={1}>
+                {brandName}
               </Text>
-              {item.yarnDetails?.brand?.name && (
-                <Text style={styles.itemBrand} numberOfLines={1}>
-                  {item.yarnDetails.brand.name}
-                </Text>
-              )}
-              {item.yarnDetails?.fibers && item.yarnDetails.fibers.length > 0 && (
-                <Text style={styles.itemComposition} numberOfLines={2}>
-                  {item.yarnDetails.fibers.map(f => `${f.percentage}% ${f.fiberType}`).join(', ')}
-                </Text>
-              )}
-              {item.yarnDetails?.colorName && (
-                <Text style={styles.colorName} numberOfLines={1}>
-                  {item.yarnDetails.colorName}
-                </Text>
-              )}
-              {(item.yarnDetails?.grams != null && item.yarnDetails?.meters != null) && (
-                <Text style={styles.itemSpecs}>
-                  {item.yarnDetails.grams}g • {item.yarnDetails.meters}m
-                </Text>
-              )}
-            </View>
-            <View style={styles.itemMeta}>
-              <Text style={styles.itemQuantity}>
-                {t('inventory.qty')}: {item.quantity}
-              </Text>
-              {item.usedInProjects && item.usedInProjects.length > 0 && (
-                <View style={styles.projectBadge}>
-                  <FolderGit2 size={12} color={Colors.deepSage} />
-                  <Text style={styles.projectBadgeText}>
-                    {item.usedInProjects.length}
-                  </Text>
-                </View>
-              )}
-            </View>
+            ) : null}
           </View>
         </View>
       </TouchableOpacity>
@@ -242,20 +217,14 @@ export default function InventoryScreen() {
 const styles = StyleSheet.create({
   backgroundContainer: {
     flex: 1,
-    backgroundColor: Colors.cream,
+    backgroundColor: Colors.headerBg,
   },
   safeArea: {
-    backgroundColor: Colors.cream,
+    backgroundColor: Colors.headerBg,
   },
   customHeader: {
-    backgroundColor: Colors.cream,
-    paddingBottom: isSmallDevice ? 12 : 16,
-    borderBottomWidth: normalizeBorder(1),
-    borderBottomColor: Colors.border,
-    ...Platform.select({
-      ...cardShadow,
-      default: {},
-    }),
+    backgroundColor: Colors.headerBg,
+    paddingBottom: isSmallDevice ? 4 : 6,
   },
   container: {
     flex: 1,
@@ -404,11 +373,11 @@ const styles = StyleSheet.create({
   },
   itemCard: {
     width: '100%',
-    minHeight: 240,
     backgroundColor: Colors.linen,
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: normalizeBorder(0.5),
     borderColor: `rgba(139, 154, 123, ${normalizeBorderOpacity(0.12)})`,
+    overflow: 'hidden',
     ...Platform.select({
       ...cardShadow,
       default: {},
@@ -416,105 +385,56 @@ const styles = StyleSheet.create({
   },
   itemImage: {
     width: '100%',
-    height: 160,
+    height: 140,
     resizeMode: 'cover',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
   },
   placeholderImage: {
     backgroundColor: Colors.beige,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  quantityBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: Colors.deepSage,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    minWidth: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quantityBadgeText: {
+    ...Typography.caption,
+    color: Colors.white,
+    fontWeight: '600' as const,
+    fontSize: 12,
+    lineHeight: 14,
+  },
   itemInfo: {
-    flex: 1,
-    padding: 12,
+    padding: 10,
   },
   itemTitle: {
     ...Typography.body,
     color: Colors.charcoal,
-    fontWeight: '500' as const,
-    marginBottom: 6,
-    fontSize: 15,
-    lineHeight: 20,
-    letterSpacing: -0.1,
-    minHeight: 20,
+    fontWeight: '600' as const,
+    fontSize: 14,
+    lineHeight: 18,
+    marginBottom: 2,
   },
   itemBrand: {
     ...Typography.caption,
-    color: Colors.sage,
-    marginBottom: 4,
-    fontWeight: '600' as const,
-    fontSize: 13,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  itemComposition: {
-    ...Typography.caption,
     color: Colors.warmGray,
-    marginBottom: 8,
     fontSize: 12,
     lineHeight: 16,
-  },
-  itemSpecs: {
-    ...Typography.caption,
-    color: Colors.warmGray,
-    marginTop: 6,
-    fontSize: 12,
-    fontWeight: '500' as const,
-  },
-  colorName: {
-    ...Typography.caption,
-    color: Colors.charcoal,
-    fontStyle: 'italic',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  itemMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: normalizeBorder(1),
-    borderTopColor: Colors.border,
+    marginBottom: 4,
   },
   itemQuantity: {
     ...Typography.caption,
-    color: Colors.charcoal,
-    fontWeight: '500' as const,
-    fontSize: 13,
-    backgroundColor: 'rgba(139, 154, 123, 0.12)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  projectBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(74, 93, 79, 0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  projectBadgeText: {
-    ...Typography.caption,
-    color: Colors.deepSage,
+    color: Colors.sage,
     fontWeight: '600' as const,
     fontSize: 12,
-  },
-  colorDot: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  colorIndicator: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: normalizeBorder(1),
-    borderColor: Colors.border,
   },
   fab: {
     position: 'absolute',

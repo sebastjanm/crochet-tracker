@@ -18,6 +18,7 @@ import {
   ImageIcon,
   Mic,
   Sparkles,
+  HelpCircle,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
@@ -125,14 +126,34 @@ export default function ToolsScreen() {
 
   return (
     <View style={styles.backgroundContainer}>
-      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>{t('tools.title')}</Text>
-          <Text style={styles.headerSubtitle}>{t('tools.subtitle')}</Text>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <View style={styles.customHeader}>
+          <View style={styles.headerContent}>
+            <View style={styles.titleContainer}>
+              <Text style={styles.headerTitle} numberOfLines={1} ellipsizeMode="tail">
+                {t('tools.title')}
+              </Text>
+              <Text style={styles.headerSubtitle} numberOfLines={1} ellipsizeMode="tail">
+                {t('tools.subtitle')}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => router.push('/help')}
+              style={styles.helpButton}
+              activeOpacity={0.7}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Help and support"
+              accessibilityHint="Get help and view tutorials"
+            >
+              <HelpCircle size={isSmallDevice ? 24 : 28} color={Colors.deepSage} strokeWidth={2.5} />
+            </TouchableOpacity>
+          </View>
         </View>
+      </SafeAreaView>
 
-        {/* 2×3 Grid */}
+      {/* 2×3 Grid */}
+      <View style={styles.container}>
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.gridContainer}
@@ -209,7 +230,7 @@ export default function ToolsScreen() {
             })}
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }
@@ -217,38 +238,66 @@ export default function ToolsScreen() {
 const styles = StyleSheet.create({
   backgroundContainer: {
     flex: 1,
-    backgroundColor: Colors.beige,
+    backgroundColor: Colors.headerBg,
   },
   safeArea: {
+    backgroundColor: Colors.headerBg,
+  },
+  customHeader: {
+    backgroundColor: Colors.headerBg,
+    paddingBottom: isSmallDevice ? 4 : 6,
+  },
+  container: {
     flex: 1,
+    backgroundColor: Colors.beige,
   },
   scrollView: {
     flex: 1,
   },
-  header: {
-    paddingHorizontal: isSmallDevice ? 20 : isTablet ? 40 : 24,
-    paddingTop: isSmallDevice ? 12 : isTablet ? 24 : 16,
-    paddingBottom: isSmallDevice ? 16 : isTablet ? 32 : 20,
+  headerContent: {
+    flexDirection: 'row',
     alignItems: 'center',
-    minHeight: isSmallDevice ? 72 : isTablet ? 92 : 96,
+    justifyContent: 'space-between',
+    paddingHorizontal: isSmallDevice ? 16 : isTablet ? 32 : 20,
+    paddingVertical: isSmallDevice ? 12 : 16,
+    maxWidth: isTablet ? 1200 : '100%',
+    alignSelf: 'center',
+    width: '100%',
+    height: isSmallDevice ? 72 : isTablet ? 92 : 96,
+  },
+  titleContainer: {
+    flex: 1,
     justifyContent: 'center',
+    minWidth: 0,
   },
   headerTitle: {
-    ...Typography.largeTitle,
+    ...Typography.title1,
     color: Colors.charcoal,
-    fontWeight: '300' as const,
-    fontSize: isSmallDevice ? 28 : isTablet ? 40 : 32,
-    letterSpacing: -0.5,
-    marginBottom: 6,
-    textAlign: 'center',
+    fontWeight: '700' as const,
+    fontSize: isSmallDevice ? 24 : isTablet ? 32 : 28,
+    lineHeight: isSmallDevice ? 30 : isTablet ? 38 : 34,
+    marginBottom: 4,
   },
   headerSubtitle: {
     ...Typography.body,
     color: Colors.warmGray,
-    fontSize: isSmallDevice ? 14 : isTablet ? 17 : 15,
-    fontWeight: '400' as const,
-    textAlign: 'center',
-    opacity: 0.85,
+    fontSize: isSmallDevice ? 13 : 14,
+    fontWeight: '500' as const,
+    lineHeight: isSmallDevice ? 17 : 18,
+    opacity: 0.9,
+  },
+  helpButton: {
+    padding: isSmallDevice ? 6 : 8,
+    backgroundColor: Colors.white,
+    borderRadius: 24,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      ...cardShadow,
+      default: {},
+    }),
   },
   gridContainer: {
     flex: 1,

@@ -17,7 +17,9 @@ import { Input } from '@/components/Input';
 import { ModalHeader } from '@/components/ModalHeader';
 import { ImageGallery } from '@/components/ImageGallery';
 import { SectionHeader } from '@/components/SectionHeader';
+import { Select } from '@/components/Select';
 import { ProjectSelectorModal } from '@/components/ProjectSelectorModal';
+import { Minus, Plus } from 'lucide-react-native';
 import { ProjectLinksSummary } from '@/components/ProjectLinksSummary';
 import { useInventory } from '@/hooks/inventory-context';
 import { useProjects } from '@/hooks/projects-context';
@@ -306,8 +308,8 @@ export default function EditInventoryScreen() {
       brand: hookBrand.trim() || undefined,
       model: hookModel.trim() || undefined,
       sizeMm: hookSizeMm ? parseFloat(hookSizeMm) : undefined,
-      handleType: (hookHandleType.trim() || undefined) as 'ergonomic' | 'inline' | 'tapered' | 'standard' | undefined,
-      material: (hookMaterial.trim() || undefined) as 'aluminum' | 'steel' | 'plastic' | 'bamboo' | 'wood' | 'resin' | 'carbonFiber' | 'other' | undefined,
+      handleType: (hookHandleType.trim() || undefined) as 'standard' | 'ergonomic' | 'tunisian' | 'steel' | 'inline' | 'tapered' | undefined,
+      material: (hookMaterial.trim() || undefined) as 'steel' | 'aluminum' | 'bamboo' | 'wood' | 'plastic' | 'nickel' | 'brass' | 'resin' | 'carbonFiber' | 'other' | undefined,
       storageLocation: storage.trim() || undefined,
       store: hookStore.trim() || undefined,
       purchaseDate: parseEUDate(hookPurchaseDate),
@@ -367,7 +369,11 @@ export default function EditInventoryScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ModalHeader title={t('inventory.editItem')} />
+      <ModalHeader
+        title={t('inventory.editItem')}
+        showHelp={true}
+        helpSection="inventory"
+      />
 
       <KeyboardAvoidingView
         style={styles.keyboardView}
@@ -466,13 +472,42 @@ export default function EditInventoryScreen() {
           />
 
           {/* Quantity - always third */}
-          <Input
-            label={category === 'yarn' ? t('inventory.quantitySkeins') : t('inventory.quantityPieces')}
-            placeholder="1"
-            value={quantity}
-            onChangeText={setQuantity}
-            keyboardType="numeric"
-          />
+          <View style={styles.quantitySection}>
+            <Text style={styles.quantityLabel}>
+              {category === 'yarn' ? t('inventory.quantitySkeins') : t('inventory.quantityPieces')}
+            </Text>
+            <View style={styles.quantityControls}>
+              <TouchableOpacity
+                style={[
+                  styles.quantityButton,
+                  parseInt(quantity) <= 1 && styles.quantityButtonDisabled,
+                ]}
+                onPress={() => {
+                  const current = parseInt(quantity) || 1;
+                  if (current > 1) setQuantity((current - 1).toString());
+                }}
+                disabled={parseInt(quantity) <= 1}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={t('common.decrease')}
+              >
+                <Minus size={20} color={parseInt(quantity) <= 1 ? Colors.warmGray : Colors.white} />
+              </TouchableOpacity>
+              <Text style={styles.quantityValue}>{quantity || '1'}</Text>
+              <TouchableOpacity
+                style={styles.quantityButton}
+                onPress={() => {
+                  const current = parseInt(quantity) || 1;
+                  setQuantity((current + 1).toString());
+                }}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={t('common.increase')}
+              >
+                <Plus size={20} color={Colors.white} />
+              </TouchableOpacity>
+            </View>
+          </View>
 
           {/* Root level fields - apply to all categories */}
           <SectionHeader title={t('inventory.additionalInfo')} />
@@ -648,42 +683,34 @@ export default function EditInventoryScreen() {
                 keyboardType="decimal-pad"
               />
 
-              <View style={styles.fieldGroup}>
-                <Text style={styles.sectionLabel}>{t('inventory.handleType')}</Text>
-                <View style={styles.handleTypeButtons}>
-                  {['ergonomic', 'standard', 'inline', 'tapered'].map((type) => (
-                    <TouchableOpacity
-                      key={type}
-                      style={[
-                        styles.handleTypeButton,
-                        hookHandleType === type && styles.handleTypeButtonActive,
-                      ]}
-                      onPress={() => setHookHandleType(type)}
-                      activeOpacity={0.7}
-                      accessible={true}
-                      accessibilityRole="radio"
-                      accessibilityLabel={t(`inventory.handleType_${type}`)}
-                      accessibilityState={{
-                        selected: hookHandleType === type,
-                        checked: hookHandleType === type,
-                      }}
-                    >
-                      <Text style={[
-                        styles.handleTypeButtonText,
-                        hookHandleType === type && styles.handleTypeButtonTextActive,
-                      ]}>
-                        {t(`inventory.handleType_${type}`)}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
+              <Select
+                label={t('inventory.handleType')}
+                value={hookHandleType}
+                onChange={setHookHandleType}
+                options={[
+                  { value: 'standard', label: t('inventory.handleType_standard') },
+                  { value: 'ergonomic', label: t('inventory.handleType_ergonomic') },
+                  { value: 'tunisian', label: t('inventory.handleType_tunisian') },
+                  { value: 'steel', label: t('inventory.handleType_steel') },
+                  { value: 'inline', label: t('inventory.handleType_inline') },
+                  { value: 'tapered', label: t('inventory.handleType_tapered') },
+                ]}
+              />
 
-              <Input
+              <Select
                 label={t('inventory.material')}
-                placeholder={t('inventory.materialPlaceholder')}
                 value={hookMaterial}
-                onChangeText={setHookMaterial}
+                onChange={setHookMaterial}
+                options={[
+                  { value: 'steel', label: t('inventory.material_steel') },
+                  { value: 'aluminum', label: t('inventory.material_aluminum') },
+                  { value: 'bamboo', label: t('inventory.material_bamboo') },
+                  { value: 'wood', label: t('inventory.material_wood') },
+                  { value: 'plastic', label: t('inventory.material_plastic') },
+                  { value: 'nickel', label: t('inventory.material_nickel') },
+                  { value: 'brass', label: t('inventory.material_brass') },
+                  { value: 'other', label: t('inventory.material_other') },
+                ]}
               />
 
               <SectionHeader title={t('inventory.purchaseInfo')} />
@@ -1056,6 +1083,41 @@ const styles = StyleSheet.create({
   handleTypeButtonTextActive: {
     color: Colors.white,
     fontWeight: '600' as const,
+  },
+  // Quantity stepper styles
+  quantitySection: {
+    marginBottom: 20,
+  },
+  quantityLabel: {
+    ...Typography.body,
+    color: Colors.charcoal,
+    marginBottom: 12,
+    fontWeight: '500' as const,
+  },
+  quantityControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+  },
+  quantityButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: Colors.sage,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quantityButtonDisabled: {
+    backgroundColor: Colors.border,
+  },
+  quantityValue: {
+    ...Typography.title2,
+    fontSize: 24,
+    fontWeight: '600' as const,
+    color: Colors.charcoal,
+    minWidth: 48,
+    textAlign: 'center',
   },
   typeButtons: {
     flexDirection: 'row',

@@ -1,16 +1,20 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { ChevronDown, ChevronRight } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLocalSearchParams } from 'expo-router';
 import Colors from '@/constants/colors';
 import { Card } from '@/components/Card';
 import { useLanguage } from '@/hooks/language-context';
 import { normalizeBorder } from '@/constants/pixelRatio';
 
+type FAQSection = 'projects' | 'inventory' | 'yarn' | 'hooks' | 'materials' | 'photos' | 'general';
+
 interface FAQItem {
   id: string;
   question: string;
   answer: string;
+  categoryId: FAQSection;
   category: string;
 }
 
@@ -18,46 +22,122 @@ interface FAQItem {
 
 export default function FAQ() {
   const { t } = useLanguage();
+  const { section } = useLocalSearchParams<{ section?: FAQSection }>();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const scrollViewRef = useRef<ScrollView>(null);
+  const categoryPositions = useRef<Record<string, number>>({});
 
   const faqData: FAQItem[] = useMemo(() => [
+    // Projects
     {
-      id: '1',
-      category: t('help.projects'),
-      question: t('help.faq1Question'),
-      answer: t('help.faq1Answer'),
+      id: 'p1',
+      categoryId: 'projects',
+      category: t('help.faqCategoryProjects'),
+      question: t('help.faqProjectsQ1'),
+      answer: t('help.faqProjectsA1'),
     },
     {
-      id: '2',
-      category: t('help.projects'),
-      question: t('help.faq2Question'),
-      answer: t('help.faq2Answer'),
+      id: 'p2',
+      categoryId: 'projects',
+      category: t('help.faqCategoryProjects'),
+      question: t('help.faqProjectsQ2'),
+      answer: t('help.faqProjectsA2'),
+    },
+    // Inventory
+    {
+      id: 'i1',
+      categoryId: 'inventory',
+      category: t('help.faqCategoryInventory'),
+      question: t('help.faqInventoryQ1'),
+      answer: t('help.faqInventoryA1'),
     },
     {
-      id: '3',
-      category: t('help.inventory'),
-      question: t('help.faq3Question'),
-      answer: t('help.faq3Answer'),
+      id: 'i2',
+      categoryId: 'inventory',
+      category: t('help.faqCategoryInventory'),
+      question: t('help.faqInventoryQ2'),
+      answer: t('help.faqInventoryA2'),
+    },
+    // Yarn
+    {
+      id: 'y1',
+      categoryId: 'yarn',
+      category: t('help.faqCategoryYarn'),
+      question: t('help.faqYarnQ1'),
+      answer: t('help.faqYarnA1'),
     },
     {
-      id: '4',
-      category: t('help.inventory'),
-      question: t('help.faq4Question'),
-      answer: t('help.faq4Answer'),
+      id: 'y2',
+      categoryId: 'yarn',
+      category: t('help.faqCategoryYarn'),
+      question: t('help.faqYarnQ2'),
+      answer: t('help.faqYarnA2'),
+    },
+    // Hooks
+    {
+      id: 'h1',
+      categoryId: 'hooks',
+      category: t('help.faqCategoryHooks'),
+      question: t('help.faqHooksQ1'),
+      answer: t('help.faqHooksA1'),
     },
     {
-      id: '5',
-      category: t('help.general'),
-      question: t('help.faq5Question'),
-      answer: t('help.faq5Answer'),
+      id: 'h2',
+      categoryId: 'hooks',
+      category: t('help.faqCategoryHooks'),
+      question: t('help.faqHooksQ2'),
+      answer: t('help.faqHooksA2'),
+    },
+    // Materials
+    {
+      id: 'm1',
+      categoryId: 'materials',
+      category: t('help.faqCategoryMaterials'),
+      question: t('help.faqMaterialsQ1'),
+      answer: t('help.faqMaterialsA1'),
+    },
+    // Photos
+    {
+      id: 'ph1',
+      categoryId: 'photos',
+      category: t('help.faqCategoryPhotos'),
+      question: t('help.faqPhotosQ1'),
+      answer: t('help.faqPhotosA1'),
+    },
+    // General
+    {
+      id: 'g1',
+      categoryId: 'general',
+      category: t('help.faqCategoryGeneral'),
+      question: t('help.faqGeneralQ1'),
+      answer: t('help.faqGeneralA1'),
     },
     {
-      id: '6',
-      category: t('help.general'),
-      question: t('help.faq6Question'),
-      answer: t('help.faq6Answer'),
+      id: 'g2',
+      categoryId: 'general',
+      category: t('help.faqCategoryGeneral'),
+      question: t('help.faqGeneralQ2'),
+      answer: t('help.faqGeneralA2'),
     },
   ], [t]);
+
+  // Auto-expand and scroll to section when deep-linked
+  useEffect(() => {
+    if (section) {
+      // Expand all items in the target section
+      const sectionItems = faqData.filter(item => item.categoryId === section);
+      const itemIds = new Set(sectionItems.map(item => item.id));
+      setExpandedItems(itemIds);
+
+      // Scroll to section after a short delay to allow layout
+      setTimeout(() => {
+        const position = categoryPositions.current[section];
+        if (position !== undefined && scrollViewRef.current) {
+          scrollViewRef.current.scrollTo({ y: position - 20, animated: true });
+        }
+      }, 100);
+    }
+  }, [section, faqData]);
 
   const toggleExpanded = (id: string) => {
     const newExpanded = new Set(expandedItems);
@@ -69,17 +149,19 @@ export default function FAQ() {
     setExpandedItems(newExpanded);
   };
 
+  // Group by categoryId but use translated category for display
   const groupedFAQ = faqData.reduce((acc, item) => {
-    if (!acc[item.category]) {
-      acc[item.category] = [];
+    if (!acc[item.categoryId]) {
+      acc[item.categoryId] = { displayName: item.category, items: [] };
     }
-    acc[item.category].push(item);
+    acc[item.categoryId].items.push(item);
     return acc;
-  }, {} as Record<string, FAQItem[]>);
+  }, {} as Record<string, { displayName: string; items: FAQItem[] }>);
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScrollView 
+      <ScrollView
+        ref={scrollViewRef}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -91,9 +173,15 @@ export default function FAQ() {
           </Text>
         </View>
 
-        {Object.entries(groupedFAQ).map(([category, items]) => (
-          <View key={category} style={styles.categorySection}>
-            <Text style={styles.categoryTitle}>{category}</Text>
+        {Object.entries(groupedFAQ).map(([categoryId, { displayName, items }]) => (
+          <View
+            key={categoryId}
+            style={styles.categorySection}
+            onLayout={(event) => {
+              categoryPositions.current[categoryId] = event.nativeEvent.layout.y;
+            }}
+          >
+            <Text style={styles.categoryTitle}>{displayName}</Text>
             <View style={styles.faqGrid}>
               {items.map((item) => {
                 const isExpanded = expandedItems.has(item.id);

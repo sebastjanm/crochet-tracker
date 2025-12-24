@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     padding: 8,
     marginRight: 4,
     borderRadius: 20,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.linen,
   },
   backButtonWithLabel: {
     flexDirection: 'row',
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginRight: 12,
     borderRadius: 20,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.linen,
   },
   backLabel: {
     ...Typography.body,

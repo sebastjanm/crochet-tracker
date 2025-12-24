@@ -50,7 +50,7 @@ export function UniversalHeader({
         {showBack && (
           <TouchableOpacity
             onPress={handleBack}
-            style={backLabel ? styles.backButtonWithLabel : styles.backButton}
+            style={styles.backButton}
             activeOpacity={0.7}
           >
             <ChevronLeft size={24} color={Colors.deepSage} strokeWidth={2.5} />
@@ -92,18 +92,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   backButton: {
-    padding: 8,
-    marginRight: 4,
-    borderRadius: 20,
-    backgroundColor: Colors.linen,
-  },
-  backButtonWithLabel: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    marginRight: 12,
+    marginRight: 8,
     borderRadius: 20,
     backgroundColor: Colors.linen,
   },

@@ -120,8 +120,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   helpButton: {
-    marginRight: 12,
-    padding: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginRight: 8,
     borderRadius: 20,
     backgroundColor: Colors.linen,
   },

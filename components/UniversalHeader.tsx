@@ -129,6 +129,6 @@ const styles = StyleSheet.create({
     marginRight: 12,
     padding: 8,
     borderRadius: 20,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.linen,
   },
 });

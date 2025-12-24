@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
   },
   helpButton: {
     padding: isSmallDevice ? 6 : 8,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.linen,
     borderRadius: 24,
     minWidth: 44,
     minHeight: 44,

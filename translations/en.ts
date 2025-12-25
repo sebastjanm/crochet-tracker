@@ -122,6 +122,9 @@ export default {
     registrationFailed: 'Failed to create account. Please try again.',
     emailAlreadyExists: 'This email is already registered. Try logging in.',
     passwordTooWeak: 'Password too weak. Use at least 6 characters.',
+    checkYourEmail: 'Check Your Email',
+    confirmationEmailSent: 'We sent you a confirmation link. Please check your email and click the link to activate your account.',
+    passwordMinLength: 'Minimum 6 characters',
   },
   tabs: {
     projects: 'Projects',

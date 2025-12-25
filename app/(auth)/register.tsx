@@ -19,7 +19,7 @@ import { useLanguage } from '@/hooks/language-context';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const isSmallDevice = width < 375;
 const isTablet = width >= 768;
 
@@ -27,7 +27,6 @@ export default function RegisterScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const { t } = useLanguage();
@@ -58,22 +57,14 @@ export default function RegisterScreen() {
       Alert.alert(t('common.error'), t('auth.passwordTooShort'));
       return;
     }
-    if (!confirmPassword) {
-      Alert.alert(t('common.error'), t('auth.confirmPasswordRequired'));
-      return;
-    }
-    if (password !== confirmPassword) {
-      Alert.alert(t('common.error'), t('auth.passwordsDoNotMatch'));
-      return;
-    }
 
     setLoading(true);
     try {
       await register(name.trim(), email, password);
       Alert.alert(
-        t('common.success'),
-        t('auth.accountCreated'),
-        [{ text: 'OK', onPress: () => router.replace('/projects') }]
+        t('auth.checkYourEmail'),
+        t('auth.confirmationEmailSent'),
+        [{ text: 'OK', onPress: () => router.replace('/(auth)/login') }]
       );
     } catch (error: unknown) {
       // Parse Supabase auth errors
@@ -145,14 +136,7 @@ export default function RegisterScreen() {
               autoCapitalize="none"
             />
 
-            <Input
-              label={t('auth.confirmPassword')}
-              placeholder="••••••••"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-              autoCapitalize="none"
-            />
+            <Text style={styles.passwordHint}>{t('auth.passwordMinLength')}</Text>
 
             <Button
               title={t('auth.registerButton')}
@@ -260,5 +244,11 @@ const styles = StyleSheet.create({
     fontSize: isSmallDevice ? 14 : 16,
     color: Colors.warmGray,
     textAlign: 'center',
+  },
+  passwordHint: {
+    ...Typography.caption,
+    color: Colors.warmGray,
+    marginTop: 4,
+    marginBottom: 8,
   },
 });

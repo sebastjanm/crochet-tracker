@@ -13,7 +13,7 @@
   },
   "simple-git-hooks": {
     "pre-commit": "bun run lint && bunx tsc --noEmit",
-    "pre-push": "bunx expo doctor"
+    "pre-push": "bunx expo-doctor"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",

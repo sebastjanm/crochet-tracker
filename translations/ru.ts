@@ -659,6 +659,9 @@ export default {
     settingsComingSoon: 'Настройки скоро появятся!',
     helpCenter: 'Центр помощи',
     legal: 'Правовая информация',
+    chooseAvatar: 'Выбрать аватар',
+    changeAvatar: 'Изменить аватар',
+    tapToChangeAvatar: 'Нажмите, чтобы выбрать новый аватар',
   },
   accessibility: {
     projectImage: 'Изображение проекта',

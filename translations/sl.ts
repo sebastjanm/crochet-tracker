@@ -672,6 +672,9 @@ export default {
     settingsComingSoon: 'Nastavitve kmalu na voljo!',
     helpCenter: 'Center za pomoč',
     legal: 'Pravne informacije',
+    chooseAvatar: 'Izberi avatar',
+    changeAvatar: 'Spremeni avatar',
+    tapToChangeAvatar: 'Tapni za izbiro novega avatarja',
   },
   accessibility: {
     projectImage: 'Slika projekta',

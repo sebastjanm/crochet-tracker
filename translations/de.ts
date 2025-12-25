@@ -659,6 +659,9 @@ export default {
     settingsComingSoon: 'Einstellungen kommen bald!',
     helpCenter: 'Hilfezentrum',
     legal: 'Rechtliches',
+    chooseAvatar: 'Avatar wählen',
+    changeAvatar: 'Avatar ändern',
+    tapToChangeAvatar: 'Tippen, um einen neuen Avatar zu wählen',
   },
   accessibility: {
     projectImage: 'Projektbild',

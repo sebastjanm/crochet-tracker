@@ -31,6 +31,7 @@ import {
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Avatar } from '@/components/Avatar';
+import { AvatarPickerModal } from '@/components/AvatarPickerModal';
 import { useAuth } from '@/hooks/auth-context';
 import { useProjects } from '@/hooks/projects-context';
 import { useInventory } from '@/hooks/inventory-context';
@@ -61,6 +62,7 @@ export default function ProfileScreen() {
     clearError,
   } = useSupabaseSync();
   const [isLoadingMockData, setIsLoadingMockData] = useState(false);
+  const [isAvatarPickerVisible, setIsAvatarPickerVisible] = useState(false);
 
   const handleSync = async () => {
     const result = await sync();
@@ -123,6 +125,10 @@ export default function ProfileScreen() {
         { text: t('common.cancel'), style: 'cancel' },
       ]
     );
+  };
+
+  const handleAvatarSelect = async (avatarName: string) => {
+    await updateUser({ avatar: avatarName });
   };
 
   // Development-only functions for loading mock data
@@ -278,12 +284,30 @@ export default function ProfileScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false} style={styles.container}>
         <View style={styles.profileInfo}>
-          <View style={styles.avatarContainer}>
+          <TouchableOpacity
+            style={styles.avatarContainer}
+            onPress={() => setIsAvatarPickerVisible(true)}
+            activeOpacity={0.8}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel={t('profile.changeAvatar')}
+            accessibilityHint={t('profile.tapToChangeAvatar')}
+          >
             <Avatar user={user || undefined} size={96} />
-          </View>
+            <View style={styles.avatarEditBadge}>
+              <Text style={styles.avatarEditText}>✏️</Text>
+            </View>
+          </TouchableOpacity>
           <Text style={styles.name}>{user?.name || t('profile.defaultName')}</Text>
           <Text style={styles.email}>{user?.email}</Text>
         </View>
+
+        <AvatarPickerModal
+          visible={isAvatarPickerVisible}
+          onClose={() => setIsAvatarPickerVisible(false)}
+          currentAvatar={user?.avatar}
+          onSelectAvatar={handleAvatarSelect}
+        />
 
         <View style={styles.statsContainer}>
           <Card style={styles.statsCard}>
@@ -526,6 +550,23 @@ const styles = StyleSheet.create({
   },
   avatarContainer: {
     marginBottom: 16,
+    position: 'relative',
+  },
+  avatarEditBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: Colors.beige,
+  },
+  avatarEditText: {
+    fontSize: 14,
   },
 
   name: {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { User } from 'lucide-react-native';
-import { getUserAvatar, getInitials } from '@/constants/avatars';
+import { getUserAvatar, getInitials, CUTE_AVATARS } from '@/constants/avatars';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 
@@ -17,8 +17,15 @@ interface AvatarProps {
 
 export function Avatar({ user, size = 48, showEmoji = true }: AvatarProps) {
   const identifier = user?.email || user?.name || '';
-  const avatarStyle = getUserAvatar(identifier);
   const initials = getInitials(user?.name);
+
+  // Check if user has a stored avatar preference
+  const storedAvatar = user?.avatar
+    ? CUTE_AVATARS.find(a => a.name === user.avatar)
+    : null;
+
+  // Use stored avatar if available, otherwise fall back to hash-based
+  const avatarStyle = storedAvatar || getUserAvatar(identifier);
   
   const containerSize = size;
   const emojiSize = Math.floor(size * 0.5);

@@ -18,9 +18,8 @@ import { useAuth } from '@/hooks/auth-context';
 import { useLanguage } from '@/hooks/language-context';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
-import { buttonShadow } from '@/constants/pixelRatio';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const isSmallDevice = width < 375;
 const isTablet = width >= 768;
 
@@ -77,11 +76,6 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-        <View style={styles.badgeContainer}>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>App terminated</Text>
-          </View>
-        </View>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardView}
@@ -151,30 +145,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.cream,
-  },
-  badgeContainer: {
-    position: 'absolute' as const,
-    top: isSmallDevice ? 40 : 60,
-    right: isSmallDevice ? -30 : -40,
-    zIndex: 999,
-    transform: [{ rotate: '45deg' }],
-  },
-  badge: {
-    backgroundColor: Colors.terracotta,
-    paddingVertical: isSmallDevice ? 8 : 12,
-    paddingHorizontal: isSmallDevice ? 40 : 60,
-    ...Platform.select({
-      ...buttonShadow,
-      default: {},
-    }),
-  },
-  badgeText: {
-    color: Colors.cream,
-    fontSize: isSmallDevice ? 12 : 14,
-    fontWeight: '700' as const,
-    letterSpacing: 1,
-    textTransform: 'uppercase' as const,
-    textAlign: 'center' as const,
   },
   keyboardView: {
     flex: 1,

@@ -6,7 +6,9 @@ import {
   Text,
   StyleSheet,
   Animated,
+  TouchableOpacity,
 } from 'react-native';
+import { Eye, EyeOff } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { MAX_FONT_SIZE_MULTIPLIER, ACCESSIBLE_COLORS } from '@/constants/accessibility';
@@ -27,10 +29,14 @@ export const Input: React.FC<InputProps> = ({
   accessibilityLabel,
   value,
   multiline,
+  secureTextEntry,
   ...props
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [animatedLabelPosition] = useState(new Animated.Value(value ? 1 : 0));
+  const [showPassword, setShowPassword] = useState(false);
+
+  const isPasswordField = secureTextEntry === true;
 
   const hasValue = value && value.length > 0;
   const shouldFloat = isFocused || hasValue;
@@ -76,6 +82,7 @@ export const Input: React.FC<InputProps> = ({
             shouldFloat && styles.inputWithFloatingLabel,
             shouldFloat && multiline && styles.inputMultilineWithFloatingLabel,
             error && styles.inputError,
+            isPasswordField && styles.inputWithIcon,
             style,
           ]}
           placeholderTextColor="transparent"
@@ -87,8 +94,24 @@ export const Input: React.FC<InputProps> = ({
           onBlur={() => setIsFocused(false)}
           value={value}
           multiline={multiline}
+          secureTextEntry={isPasswordField && !showPassword}
           {...props}
         />
+        {isPasswordField && (
+          <TouchableOpacity
+            onPress={() => setShowPassword(!showPassword)}
+            style={styles.eyeIcon}
+            accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+            accessibilityRole="button"
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            {showPassword ? (
+              <EyeOff size={20} color={Colors.warmGray} />
+            ) : (
+              <Eye size={20} color={Colors.warmGray} />
+            )}
+          </TouchableOpacity>
+        )}
       </View>
       {helper && !error && (
         <Text
@@ -158,6 +181,18 @@ const styles = StyleSheet.create({
   inputError: {
     borderColor: ACCESSIBLE_COLORS.errorAccessible,
     borderWidth: 2,
+  },
+  inputWithIcon: {
+    paddingRight: 48,
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 16,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 24,
   },
   helper: {
     ...Typography.caption2,

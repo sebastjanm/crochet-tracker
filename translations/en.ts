@@ -672,6 +672,9 @@ export default {
     settingsComingSoon: 'Settings coming soon!',
     helpCenter: 'Help Center',
     legal: 'Legal',
+    chooseAvatar: 'Choose Avatar',
+    changeAvatar: 'Change avatar',
+    tapToChangeAvatar: 'Tap to choose a new avatar',
   },
   accessibility: {
     projectImage: 'Project image',

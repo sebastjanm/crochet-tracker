@@ -67,15 +67,15 @@ export default function ProjectsScreen() {
   const getStatusColor = (status: ProjectStatus) => {
     switch (status) {
       case 'to-do':
-        return '#FFB84D'; // Warm orange
+        return Colors.filterToDo;
       case 'in-progress':
-        return '#2C7873'; // Deep teal
+        return Colors.filterInProgress;
       case 'on-hold':
-        return '#9C27B0'; // Purple
+        return Colors.filterOnHold;
       case 'completed':
-        return '#4CAF50'; // Green
+        return Colors.filterCompleted;
       case 'frogged':
-        return '#FF6B6B'; // Coral red
+        return Colors.filterFrogged;
     }
   };
 
@@ -116,11 +116,11 @@ export default function ProjectsScreen() {
 
   const statusFilters = [
     { key: 'all', label: t('projects.all'), count: projects.length, icon: <Volleyball size={18} color={filter === 'all' ? Colors.white : Colors.deepSage} />, color: Colors.deepSage },
-    { key: 'to-do', label: t('projects.toDo'), count: toDoCount, icon: <Lightbulb size={18} color={filter === 'to-do' ? Colors.white : '#FFB84D'} />, color: '#FFB84D' },
-    { key: 'in-progress', label: t('projects.inProgress'), count: inProgressCount, icon: <Clock size={18} color={filter === 'in-progress' ? Colors.white : '#2C7873'} />, color: '#2C7873' },
-    { key: 'on-hold', label: t('projects.onHold'), count: onHoldCount, icon: <PauseCircle size={18} color={filter === 'on-hold' ? Colors.white : '#9C27B0'} />, color: '#9C27B0' },
-    { key: 'completed', label: t('projects.completed'), count: completedCount, icon: <CheckCircle size={18} color={filter === 'completed' ? Colors.white : '#4CAF50'} />, color: '#4CAF50' },
-    { key: 'frogged', label: t('projects.frogged'), count: froggedCount, icon: <RotateCcw size={18} color={filter === 'frogged' ? Colors.white : '#FF6B6B'} />, color: '#FF6B6B' },
+    { key: 'to-do', label: t('projects.toDo'), count: toDoCount, icon: <Lightbulb size={18} color={filter === 'to-do' ? Colors.white : Colors.filterToDo} />, color: Colors.filterToDo },
+    { key: 'in-progress', label: t('projects.inProgress'), count: inProgressCount, icon: <Clock size={18} color={filter === 'in-progress' ? Colors.white : Colors.filterInProgress} />, color: Colors.filterInProgress },
+    { key: 'on-hold', label: t('projects.onHold'), count: onHoldCount, icon: <PauseCircle size={18} color={filter === 'on-hold' ? Colors.white : Colors.filterOnHold} />, color: Colors.filterOnHold },
+    { key: 'completed', label: t('projects.completed'), count: completedCount, icon: <CheckCircle size={18} color={filter === 'completed' ? Colors.white : Colors.filterCompleted} />, color: Colors.filterCompleted },
+    { key: 'frogged', label: t('projects.frogged'), count: froggedCount, icon: <RotateCcw size={18} color={filter === 'frogged' ? Colors.white : Colors.filterFrogged} />, color: Colors.filterFrogged },
   ];
 
   return (
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.1,
   },
   categoryLabelActive: {
-    color: Colors.charcoal,
+    color: Colors.white,
     fontWeight: '600' as const,
   },
   categoryCount: {
@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
     overflow: 'visible',
   },
   categoryCountActive: {
-    backgroundColor: Colors.deepSage,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     color: Colors.white,
     fontWeight: '600' as const,
     borderWidth: normalizeBorder(0),

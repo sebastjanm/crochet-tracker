@@ -39,6 +39,17 @@ export const Colors = {
   terracotta: '#C67B5C',         // Warm accent, alerts
 
   // ===========================================
+  // FILTER CHIP COLORS
+  // ===========================================
+  filterToDo: '#FFB84D',         // To-do status (amber)
+  filterInProgress: '#2C7873',   // In-progress status (teal)
+  filterOnHold: '#9C27B0',       // On-hold status (purple)
+  filterCompleted: '#4CAF50',    // Completed status (green)
+  filterFrogged: '#FF6B6B',      // Frogged status (coral)
+  filterYarn: '#FFB84D',         // Yarn category (amber)
+  filterOther: '#9C27B0',        // Other category (purple)
+
+  // ===========================================
   // DECORATIVE - Yarn inspiration (optional)
   // ===========================================
   clay: '#C8A593',               // Warm accent

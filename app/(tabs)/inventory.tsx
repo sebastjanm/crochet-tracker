@@ -38,9 +38,9 @@ export default function InventoryScreen() {
 
   const categories = [
     { id: 'all', label: t('inventory.all'), count: items.length, icon: <Grid3x3 size={18} color={selectedCategory === 'all' ? Colors.white : Colors.deepSage} />, color: Colors.deepSage },
-    { id: 'yarn', label: t('inventory.yarn'), count: yarnCount, icon: <Volleyball size={18} color={selectedCategory === 'yarn' ? Colors.white : '#FFB84D'} />, color: '#FFB84D' },
+    { id: 'yarn', label: t('inventory.yarn'), count: yarnCount, icon: <Volleyball size={18} color={selectedCategory === 'yarn' ? Colors.white : Colors.filterYarn} />, color: Colors.filterYarn },
     { id: 'hook', label: t('inventory.hooks'), count: hookCount, icon: <Wrench size={18} color={selectedCategory === 'hook' ? Colors.white : Colors.sage} />, color: Colors.sage },
-    { id: 'other', label: t('inventory.other'), count: items.filter(i => i.category === 'other').length, icon: <Package size={18} color={selectedCategory === 'other' ? Colors.white : '#9C27B0'} />, color: '#9C27B0' },
+    { id: 'other', label: t('inventory.other'), count: items.filter(i => i.category === 'other').length, icon: <Package size={18} color={selectedCategory === 'other' ? Colors.white : Colors.filterOther} />, color: Colors.filterOther },
   ];
 
   const renderItem = ({ item }: { item: InventoryItem }) => {
@@ -131,7 +131,7 @@ export default function InventoryScreen() {
             key={category.id}
             style={[
               styles.categoryChip,
-              selectedCategory === category.id && styles.categoryChipActive
+              selectedCategory === category.id && [styles.categoryChipActive, { backgroundColor: category.color }]
             ]}
             onPress={() => setSelectedCategory(category.id as any)}
             activeOpacity={0.75}
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.1,
   },
   categoryLabelActive: {
-    color: Colors.charcoal,
+    color: Colors.white,
     fontWeight: '600' as const,
   },
   categoryCount: {
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
     overflow: 'visible',
   },
   categoryCountActive: {
-    backgroundColor: Colors.deepSage,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     color: Colors.white,
     fontWeight: '600' as const,
     borderWidth: normalizeBorder(0),

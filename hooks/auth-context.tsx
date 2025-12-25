@@ -299,7 +299,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     }
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'crochettracker://reset-password',
+      redirectTo: 'artfulspace://reset-password',
     });
 
     if (error) {

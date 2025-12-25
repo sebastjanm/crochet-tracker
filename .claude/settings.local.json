@@ -80,7 +80,9 @@
       "Bash(wc:*)",
       "WebFetch(domain:svetmetraze.si)",
       "Bash(tr:*)",
-      "Bash(git diff:*)"
+      "Bash(git diff:*)",
+      "Bash(eas init:*)",
+      "Bash(bun install:*)"
     ],
     "deny": [],
     "ask": []

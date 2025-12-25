@@ -83,7 +83,12 @@
       "Bash(git diff:*)",
       "Bash(eas init:*)",
       "Bash(bun install:*)",
-      "Bash(sudo rm:*)"
+      "Bash(sudo rm:*)",
+      "Bash(xargs cat:*)",
+      "WebFetch(domain:docs.turso.tech)",
+      "Bash(supabase link:*)",
+      "Bash(supabase db push:*)",
+      "Bash(git reset:*)"
     ],
     "deny": [],
     "ask": []

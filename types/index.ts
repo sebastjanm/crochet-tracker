@@ -280,11 +280,15 @@ export interface InventoryItem {
   barcode?: string;
 }
 
+export type UserRole = 'ordinary' | 'pro' | 'admin';
+
 export interface User {
   id: string;
   name: string;
   email: string;
   avatar?: string;
   currency?: string; // Default currency for purchases (EUR, USD, etc.)
-  isPro?: boolean; // Pro subscription status
+  role: UserRole; // User role: ordinary (free), pro (paid), admin (full access)
+  isPro?: boolean; // Deprecated: use role === 'pro' || role === 'admin'
+  isAdmin?: boolean; // Deprecated: use role === 'admin'
 }

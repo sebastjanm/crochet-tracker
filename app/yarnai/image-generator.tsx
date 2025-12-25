@@ -13,16 +13,16 @@ import {
   Image,
   Dimensions,
 } from 'react-native';
-
-const { width } = Dimensions.get('window');
-const isSmallDevice = width < 375;
-const isTablet = width >= 768;
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ImageIcon, RotateCcw } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { useLanguage } from '@/hooks/language-context';
-import { cardShadow, normalizeBorder, normalizeBorderOpacity } from '@/constants/pixelRatio';
+import { cardShadow } from '@/constants/pixelRatio';
 import { MAX_FONT_SIZE_MULTIPLIER } from '@/constants/accessibility';
+import { UniversalHeader } from '@/components/UniversalHeader';
+
+const { width } = Dimensions.get('window');
 
 const IMAGE_API_URL = 'https://toolkit.rork.com/images/generate/';
 
@@ -30,6 +30,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.cream,
+  },
+  safeArea: {
+    backgroundColor: Colors.headerBg,
+  },
+  headerWrapper: {
+    backgroundColor: Colors.headerBg,
+    paddingVertical: 12,
   },
   scrollContent: {
     padding: 16,
@@ -258,11 +265,20 @@ export default function ImageGenerator() {
 
   return (
     <View style={styles.container}>
-      <KeyboardAvoidingView 
+      <SafeAreaView edges={['top']} style={styles.safeArea}>
+        <View style={styles.headerWrapper}>
+          <UniversalHeader
+            title={t('yarnai.imageGeneratorTitle')}
+            showBack={true}
+            showHelp={true}
+          />
+        </View>
+      </SafeAreaView>
+      <KeyboardAvoidingView
         style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >

@@ -24,6 +24,9 @@ import {
   DollarSign,
   Database,
   Trash2,
+  Cloud,
+  CloudOff,
+  RefreshCw,
 } from 'lucide-react-native';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
@@ -32,6 +35,7 @@ import { useAuth } from '@/hooks/auth-context';
 import { useProjects } from '@/hooks/projects-context';
 import { useInventory } from '@/hooks/inventory-context';
 import { useLanguage } from '@/hooks/language-context';
+import { useSupabaseSync } from '@/hooks/useSupabaseSync';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, cardShadow } from '@/constants/pixelRatio';
@@ -47,7 +51,31 @@ export default function ProfileScreen() {
   const { projects, completedCount, inProgressCount, refreshProjects } = useProjects();
   const { items, refreshItems } = useInventory();
   const { language, changeLanguage, t } = useLanguage();
+  const {
+    sync,
+    isSyncing,
+    lastSyncedAt,
+    error: syncError,
+    isEnabled: isSyncEnabled,
+    isOnline,
+    clearError,
+  } = useSupabaseSync();
   const [isLoadingMockData, setIsLoadingMockData] = useState(false);
+
+  const handleSync = async () => {
+    const result = await sync();
+    if (result?.success) {
+      Alert.alert(
+        'Sync Complete',
+        `Pushed ${result.pushed} items, pulled ${result.pulled} items`,
+        [{ text: 'OK' }]
+      );
+    } else if (syncError) {
+      Alert.alert('Sync Failed', syncError.message, [
+        { text: 'OK', onPress: clearError },
+      ]);
+    }
+  };
 
   const userName = user?.name?.split(' ')[0] || t('profile.defaultName');
 
@@ -320,6 +348,50 @@ export default function ProfileScreen() {
           <View style={styles.debugContainer}>
             <Text style={styles.debugTitle}>🛠️ Developer Tools</Text>
             <Card>
+              {/* Cloud Sync Button */}
+              <TouchableOpacity
+                style={styles.debugItem}
+                onPress={handleSync}
+                disabled={isSyncing || !isSyncEnabled || !isOnline}
+                activeOpacity={0.7}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Sync with Supabase cloud"
+              >
+                {isSyncing ? (
+                  <ActivityIndicator size="small" color={Colors.deepTeal} />
+                ) : isSyncEnabled && isOnline ? (
+                  <Cloud size={20} color={Colors.deepTeal} />
+                ) : (
+                  <CloudOff size={20} color={Colors.warmGray} />
+                )}
+                <View style={styles.syncLabelContainer}>
+                  <Text style={[styles.debugLabel, (!isSyncEnabled || !isOnline) && styles.disabledLabel]}>
+                    {isSyncing ? 'Syncing...' : 'Sync Now'}
+                  </Text>
+                  {lastSyncedAt && (
+                    <Text style={styles.syncTimestamp}>
+                      Last: {lastSyncedAt.toLocaleTimeString()}
+                    </Text>
+                  )}
+                  {!isSyncEnabled && (
+                    <Text style={styles.syncWarning}>
+                      Pro + Supabase required
+                    </Text>
+                  )}
+                  {isSyncEnabled && !isOnline && (
+                    <Text style={styles.syncWarning}>
+                      Offline
+                    </Text>
+                  )}
+                </View>
+                <Text style={styles.debugDescription}>
+                  {!isSyncEnabled ? 'Not configured' : !isOnline ? 'No connection' : 'Push to cloud'}
+                </Text>
+              </TouchableOpacity>
+
+              <View style={styles.menuDivider} />
+
               <TouchableOpacity
                 style={styles.debugItem}
                 onPress={handleLoadMockData}
@@ -583,5 +655,23 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 12,
     fontStyle: 'italic',
+  },
+  syncLabelContainer: {
+    flex: 1,
+  },
+  syncTimestamp: {
+    ...Typography.caption,
+    color: Colors.warmGray,
+    fontSize: 11,
+    marginTop: 2,
+  },
+  syncWarning: {
+    ...Typography.caption,
+    color: Colors.terracotta,
+    fontSize: 11,
+    marginTop: 2,
+  },
+  disabledLabel: {
+    color: Colors.warmGray,
   },
 });

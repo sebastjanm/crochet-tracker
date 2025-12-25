@@ -1,28 +1,18 @@
 import { Stack } from 'expo-router';
 import Colors from '@/constants/colors';
-import { Typography } from '@/constants/typography';
-import { useLanguage } from '@/hooks/language-context';
 
 export default function YarnAILayout() {
-  const { t } = useLanguage();
-
   return (
     <Stack
       screenOptions={{
-        headerStyle: {
-          backgroundColor: Colors.cream,
-        },
-        headerTintColor: Colors.charcoal,
-        headerTitleStyle: {
-          ...Typography.title3,
-        },
-        headerShadowVisible: false,
+        headerShown: false,
+        contentStyle: { backgroundColor: Colors.cream },
       }}
     >
-      <Stack.Screen name="chat" options={{ title: t('yarnai.chatTitle') }} />
-      <Stack.Screen name="ideas" options={{ title: t('yarnai.projectIdeasTitle') }} />
-      <Stack.Screen name="image-generator" options={{ title: t('yarnai.imageGeneratorTitle') }} />
-      <Stack.Screen name="voice" options={{ title: t('yarnai.voiceAssistantTitle') }} />
+      <Stack.Screen name="chat" />
+      <Stack.Screen name="ideas" />
+      <Stack.Screen name="image-generator" />
+      <Stack.Screen name="voice" />
     </Stack>
   );
 }

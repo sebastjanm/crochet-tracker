@@ -1,11 +1,28 @@
+/**
+ * Inventory Context with SQLite Storage
+ *
+ * Provides inventory item CRUD operations with offline-first SQLite persistence.
+ * Uses useSQLiteContext from expo-sqlite for database access.
+ *
+ * @see https://docs.expo.dev/versions/latest/sdk/sqlite/
+ */
+
 import createContextHook from '@nkzw/create-context-hook';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useState, useEffect, useMemo } from 'react';
+import { useSQLiteContext } from 'expo-sqlite';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { InventoryItem } from '@/types';
 import { useImagePicker } from './useImagePicker';
 import { syncInventoryToProjects, removeInventoryFromProjects } from '@/lib/sync';
+import {
+  InventoryItemRow,
+  mapRowToInventoryItem,
+  mapInventoryItemToRow,
+  generateId,
+  now,
+} from '@/lib/database/schema';
 
 export const [InventoryProvider, useInventory] = createContextHook(() => {
+  const db = useSQLiteContext();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -13,81 +30,117 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'quantity'>('name');
   const { showImagePickerOptions, isPickingImage } = useImagePicker();
 
-  useEffect(() => {
-    loadInventory();
-  }, []);
-
-  const loadInventory = async () => {
+  /**
+   * Load all inventory items from SQLite database.
+   */
+  const loadInventory = useCallback(async () => {
     try {
-      const data = await AsyncStorage.getItem('inventory');
-      if (data) {
-        try {
-          const parsed = JSON.parse(data);
-          setItems(parsed.map((item: any) => ({
-            ...item,
-            dateAdded: new Date(item.dateAdded),
-            lastUpdated: new Date(item.lastUpdated),
-            // Convert nested dates in category details
-            yarnDetails: item.yarnDetails ? {
-              ...item.yarnDetails,
-              purchaseDate: item.yarnDetails.purchaseDate ? new Date(item.yarnDetails.purchaseDate) : undefined,
-            } : undefined,
-            hookDetails: item.hookDetails ? {
-              ...item.hookDetails,
-              purchaseDate: item.hookDetails.purchaseDate ? new Date(item.hookDetails.purchaseDate) : undefined,
-            } : undefined,
-          })));
-        } catch (parseError) {
-          console.error('Failed to parse inventory data, resetting:', parseError);
-          // Clear corrupted data and start fresh
-          await AsyncStorage.removeItem('inventory');
-          setItems([]);
-        }
-      } else {
-        // No data in storage - clear the state
-        setItems([]);
-      }
+      const rows = await db.getAllAsync<InventoryItemRow>(
+        'SELECT * FROM inventory_items ORDER BY last_updated DESC'
+      );
+
+      const loadedItems = rows.map((row) => {
+        const item = mapRowToInventoryItem(row);
+
+        // Ensure dates are properly converted
+        return {
+          ...item,
+          yarnDetails: item.yarnDetails
+            ? {
+                ...item.yarnDetails,
+                purchaseDate: item.yarnDetails.purchaseDate
+                  ? new Date(item.yarnDetails.purchaseDate)
+                  : undefined,
+              }
+            : undefined,
+          hookDetails: item.hookDetails
+            ? {
+                ...item.hookDetails,
+                purchaseDate: item.hookDetails.purchaseDate
+                  ? new Date(item.hookDetails.purchaseDate)
+                  : undefined,
+              }
+            : undefined,
+        };
+      });
+
+      setItems(loadedItems);
+      console.log(`[Inventory] Loaded ${loadedItems.length} items from SQLite`);
     } catch (error) {
-      console.error('Failed to load inventory:', error);
+      console.error('[Inventory] Failed to load items:', error);
+      setItems([]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [db]);
 
-  const saveInventory = async (updatedItems: InventoryItem[]) => {
-    try {
-      await AsyncStorage.setItem('inventory', JSON.stringify(updatedItems));
-    } catch (error) {
-      console.error('Failed to save inventory:', error);
-    }
-  };
+  useEffect(() => {
+    loadInventory();
+  }, [loadInventory]);
 
-  const addItem = async (item: Omit<InventoryItem, 'id' | 'dateAdded' | 'lastUpdated'>) => {
-    const now = new Date();
+  /**
+   * Add a new inventory item to the database.
+   */
+  const addItem = async (
+    item: Omit<InventoryItem, 'id' | 'dateAdded' | 'lastUpdated'>
+  ): Promise<InventoryItem> => {
+    const id = generateId();
+    const timestamp = now();
+    const row = mapInventoryItemToRow(item);
+
+    await db.runAsync(
+      `INSERT INTO inventory_items (
+        id, category, name, description, images, quantity, unit,
+        yarn_details, hook_details, other_details, location, tags,
+        used_in_projects, notes, barcode, date_added, last_updated, pending_sync
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        row.category,
+        row.name,
+        row.description,
+        row.images,
+        row.quantity,
+        row.unit,
+        row.yarn_details,
+        row.hook_details,
+        row.other_details,
+        row.location,
+        row.tags,
+        row.used_in_projects,
+        row.notes,
+        row.barcode,
+        timestamp,
+        timestamp,
+        1, // pending_sync = true
+      ]
+    );
+
     const newItem: InventoryItem = {
       ...item,
-      id: Date.now().toString(),
-      dateAdded: now,
-      lastUpdated: now,
+      id,
+      dateAdded: new Date(timestamp),
+      lastUpdated: new Date(timestamp),
     };
-    
-    const updated = [...items, newItem];
-    setItems(updated);
-    await saveInventory(updated);
+
+    setItems((prev) => [newItem, ...prev]);
+    console.log(`[Inventory] Added item: ${newItem.name}`);
     return newItem;
   };
 
+  /**
+   * Add an item with barcode, updating quantity if it already exists.
+   */
   const addItemWithBarcode = async (
     barcode: string,
     additionalData: Partial<InventoryItem>
-  ) => {
-    const existingItem = items.find(item => item.barcode === barcode);
+  ): Promise<InventoryItem> => {
+    const existingItem = items.find((item) => item.barcode === barcode);
 
     if (existingItem) {
       // If item with same barcode exists, just update quantity
       await updateItem(existingItem.id, {
         quantity: existingItem.quantity + (additionalData.quantity || 1),
-        lastUpdated: new Date()
       });
       return existingItem;
     }
@@ -96,24 +149,29 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     const category = additionalData.category || 'other';
     const itemName = additionalData.name || 'Unknown Item';
 
-    const newItem = await addItem({
+    return addItem({
       name: itemName,
       description: additionalData.description,
       images: additionalData.images || [],
       quantity: additionalData.quantity || 1,
       category,
       barcode,
-      ...additionalData
+      ...additionalData,
     } as Omit<InventoryItem, 'id' | 'dateAdded' | 'lastUpdated'>);
-
-    return newItem;
   };
 
+  /**
+   * Update an existing inventory item.
+   */
   const updateItem = async (id: string, updates: Partial<InventoryItem>) => {
-    const existingItem = items.find(item => item.id === id);
+    const existingItem = items.find((item) => item.id === id);
+    if (!existingItem) {
+      console.error(`[Inventory] Item ${id} not found`);
+      return;
+    }
 
     // Sync projects if usedInProjects changed
-    if (existingItem && updates.usedInProjects !== undefined) {
+    if (updates.usedInProjects !== undefined) {
       try {
         await syncInventoryToProjects(
           id,
@@ -121,52 +179,104 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
           updates.usedInProjects ?? [],
           existingItem.usedInProjects ?? []
         );
-        console.log('✅ Projects synced with inventory item changes');
+        console.log('[Inventory] Projects synced with inventory changes');
       } catch (error) {
-        console.error('❌ Failed to sync projects:', error);
-        // Continue with inventory update even if sync fails
+        console.error('[Inventory] Failed to sync projects:', error);
+        // Continue with update even if sync fails
       }
     }
 
-    const updated = items.map(item =>
-      item.id === id ? { ...item, ...updates, lastUpdated: new Date() } : item
-    );
-    setItems(updated);
-    await saveInventory(updated);
+    const updatedItem: InventoryItem = {
+      ...existingItem,
+      ...updates,
+      lastUpdated: new Date(),
+    };
+
+    // Optimistic update
+    setItems((prev) => prev.map((item) => (item.id === id ? updatedItem : item)));
+
+    const row = mapInventoryItemToRow(updatedItem);
+    const timestamp = now();
+
+    try {
+      await db.runAsync(
+        `UPDATE inventory_items SET
+          category = ?, name = ?, description = ?, images = ?, quantity = ?,
+          unit = ?, yarn_details = ?, hook_details = ?, other_details = ?,
+          location = ?, tags = ?, used_in_projects = ?, notes = ?, barcode = ?,
+          last_updated = ?, pending_sync = ?
+        WHERE id = ?`,
+        [
+          row.category,
+          row.name,
+          row.description,
+          row.images,
+          row.quantity,
+          row.unit,
+          row.yarn_details,
+          row.hook_details,
+          row.other_details,
+          row.location,
+          row.tags,
+          row.used_in_projects,
+          row.notes,
+          row.barcode,
+          timestamp,
+          1, // pending_sync = true
+          id,
+        ]
+      );
+
+      console.log(`[Inventory] Updated item: ${id}`);
+    } catch (error) {
+      console.error(`[Inventory] Failed to update item ${id}:`, error);
+      setItems((prev) => prev.map((item) => (item.id === id ? existingItem : item)));
+      throw error;
+    }
   };
 
+  /**
+   * Update item quantity by delta.
+   */
   const updateQuantity = async (id: string, delta: number) => {
-    const item = items.find(i => i.id === id);
+    const item = items.find((i) => i.id === id);
     if (item) {
       const newQuantity = Math.max(0, item.quantity + delta);
       await updateItem(id, { quantity: newQuantity });
     }
   };
 
+  /**
+   * Mark an item as used in a project.
+   */
   const markAsUsed = async (id: string, projectId?: string) => {
-    const item = items.find(i => i.id === id);
+    const item = items.find((i) => i.id === id);
     if (item) {
       const usedInProjects = item.usedInProjects || [];
       if (projectId && !usedInProjects.includes(projectId)) {
         usedInProjects.push(projectId);
       }
-      await updateItem(id, {
-        usedInProjects
-      });
+      await updateItem(id, { usedInProjects });
     }
   };
 
+  /**
+   * Add images to an item.
+   */
   const addImages = async (itemId: string, newImages: string[]) => {
-    const item = items.find(i => i.id === itemId);
+    const item = items.find((i) => i.id === itemId);
     if (item) {
       await updateItem(itemId, {
-        images: [...(item.images || []), ...newImages]
+        images: [...(item.images || []), ...newImages],
       });
     }
   };
 
+  /**
+   * Remove an image from an item.
+   */
   const removeImage = async (itemId: string, imageIndex: number) => {
-    const item = items.find(i => i.id === itemId);
+    const item = items.find((i) => i.id === itemId);
     if (item && item.images) {
       const newImages = [...item.images];
       newImages.splice(imageIndex, 1);
@@ -174,71 +284,96 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     }
   };
 
+  /**
+   * Delete an inventory item.
+   */
   const deleteItem = async (id: string) => {
-    const itemToDelete = items.find(item => item.id === id);
+    const itemToDelete = items.find((item) => item.id === id);
 
     // Clean up project references if this item is linked to projects
     if (itemToDelete) {
       try {
         await removeInventoryFromProjects(id, itemToDelete.category);
-        console.log('✅ Projects cleaned up after inventory deletion');
+        console.log('[Inventory] Projects cleaned up after deletion');
       } catch (error) {
-        console.error('❌ Failed to clean up project references:', error);
+        console.error('[Inventory] Failed to clean up project references:', error);
         // Continue with deletion even if cleanup fails
       }
     }
 
-    const updated = items.filter(item => item.id !== id);
-    setItems(updated);
-    await saveInventory(updated);
+    // Optimistic update
+    setItems((prev) => prev.filter((item) => item.id !== id));
+
+    try {
+      await db.runAsync('DELETE FROM inventory_items WHERE id = ?', [id]);
+      console.log(`[Inventory] Deleted item: ${id}`);
+    } catch (error) {
+      console.error(`[Inventory] Failed to delete item ${id}:`, error);
+      await loadInventory();
+      throw error;
+    }
   };
 
-  const getItemById = (id: string) => {
-    return items.find(item => item.id === id);
+  /**
+   * Get an item by ID.
+   */
+  const getItemById = (id: string): InventoryItem | undefined => {
+    return items.find((item) => item.id === id);
   };
 
-  const getItemsByCategory = (category: InventoryItem['category']) => {
-    return items.filter(item => item.category === category);
+  /**
+   * Get all items by category.
+   */
+  const getItemsByCategory = (category: InventoryItem['category']): InventoryItem[] => {
+    return items.filter((item) => item.category === category);
   };
 
-  const getItemByBarcode = (barcode: string) => {
-    return items.find(item => item.barcode === barcode);
+  /**
+   * Get an item by barcode.
+   */
+  const getItemByBarcode = (barcode: string): InventoryItem | undefined => {
+    return items.find((item) => item.barcode === barcode);
   };
 
-  const searchItems = (query: string) => {
+  /**
+   * Search items by query.
+   */
+  const searchItems = (query: string): InventoryItem[] => {
     const lowerQuery = query.toLowerCase();
-    return items.filter(item =>
-      item.name?.toLowerCase().includes(lowerQuery) ||
-      item.description?.toLowerCase().includes(lowerQuery) ||
-      item.yarnDetails?.brand?.name?.toLowerCase().includes(lowerQuery) ||
-      item.yarnDetails?.colorName?.toLowerCase().includes(lowerQuery) ||
-      item.hookDetails?.brand?.toLowerCase().includes(lowerQuery) ||
-      item.barcode?.includes(query)
+    return items.filter(
+      (item) =>
+        item.name?.toLowerCase().includes(lowerQuery) ||
+        item.description?.toLowerCase().includes(lowerQuery) ||
+        item.yarnDetails?.brand?.name?.toLowerCase().includes(lowerQuery) ||
+        item.yarnDetails?.colorName?.toLowerCase().includes(lowerQuery) ||
+        item.hookDetails?.brand?.toLowerCase().includes(lowerQuery) ||
+        item.barcode?.includes(query)
     );
   };
 
   // Filtered and sorted items based on current filters
   const filteredItems = useMemo(() => {
     let filtered = items;
-    
+
     // Apply category filter
     if (selectedCategory !== 'all') {
-      filtered = filtered.filter(item => item.category === selectedCategory);
+      filtered = filtered.filter((item) => item.category === selectedCategory);
     }
-    
+
     // Apply search filter
     if (searchQuery) {
       const lowerQuery = searchQuery.toLowerCase();
-      filtered = filtered.filter(item =>
-        item.name?.toLowerCase().includes(lowerQuery) ||
-        item.description?.toLowerCase().includes(lowerQuery) ||
-        item.yarnDetails?.brand?.name?.toLowerCase().includes(lowerQuery) ||
-        item.yarnDetails?.colorName?.toLowerCase().includes(lowerQuery) ||
-        item.hookDetails?.brand?.toLowerCase().includes(lowerQuery) ||
-        item.barcode?.includes(searchQuery)
+      filtered = filtered.filter(
+        (item) =>
+          item.name?.toLowerCase().includes(lowerQuery) ||
+          item.description?.toLowerCase().includes(lowerQuery) ||
+          item.yarnDetails?.brand?.name?.toLowerCase().includes(lowerQuery) ||
+          item.yarnDetails?.colorName?.toLowerCase().includes(lowerQuery) ||
+          item.hookDetails?.brand?.toLowerCase().includes(lowerQuery) ||
+          item.barcode?.includes(searchQuery)
       );
     }
-    
+
     // Apply sorting
     filtered = [...filtered].sort((a, b) => {
       switch (sortBy) {
@@ -254,23 +389,23 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
           return 0;
       }
     });
-    
+
     return filtered;
   }, [items, selectedCategory, searchQuery, sortBy]);
 
   // Statistics
   const statistics = useMemo(() => {
-    const yarnItems = items.filter(i => i.category === 'yarn');
-    const hookItems = items.filter(i => i.category === 'hook');
-    const otherItems = items.filter(i => i.category === 'other');
+    const yarnItems = items.filter((i) => i.category === 'yarn');
+    const hookItems = items.filter((i) => i.category === 'hook');
+    const otherItems = items.filter((i) => i.category === 'other');
 
     // Calculate total value from yarn and hook purchase prices
     const totalValue = items.reduce((sum, item) => {
       if (item.category === 'yarn' && item.yarnDetails?.purchasePrice) {
-        return sum + (item.yarnDetails.purchasePrice * item.quantity);
+        return sum + item.yarnDetails.purchasePrice * item.quantity;
       }
       if (item.category === 'hook' && item.hookDetails?.purchasePrice) {
-        return sum + (item.hookDetails.purchasePrice * item.quantity);
+        return sum + item.hookDetails.purchasePrice * item.quantity;
       }
       return sum;
     }, 0);
@@ -283,16 +418,18 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
       hookCount: hookItems.length,
       otherCount: otherItems.length,
       uniqueBrands: new Set([
-        ...yarnItems.map(i => i.yarnDetails?.brand?.name).filter(Boolean),
-        ...hookItems.map(i => i.hookDetails?.brand).filter(Boolean)
-      ]).size
+        ...yarnItems.map((i) => i.yarnDetails?.brand?.name).filter(Boolean),
+        ...hookItems.map((i) => i.hookDetails?.brand).filter(Boolean),
+      ]).size,
     };
   }, [items]);
 
-  // Refresh items from AsyncStorage (for cross-context sync)
+  /**
+   * Refresh items from database.
+   */
   const refreshItems = async () => {
     await loadInventory();
-    console.log('🔄 Inventory refreshed from AsyncStorage');
+    console.log('[Inventory] Refreshed from SQLite');
   };
 
   return {

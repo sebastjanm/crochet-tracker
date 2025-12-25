@@ -34,7 +34,9 @@ export const mockUser: User = {
   name: 'Breda Crochet',
   email: 'breda.crochet@example.com',
   currency: 'EUR',
+  role: 'ordinary',
   isPro: false,
+  isAdmin: false,
 };
 
 // =======================

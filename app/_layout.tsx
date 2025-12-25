@@ -4,14 +4,16 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
 import { setButtonStyleAsync } from "expo-navigation-bar";
-import React, { useEffect } from "react";
-import { StyleSheet, Platform } from "react-native";
+import { SQLiteProvider } from "expo-sqlite";
+import React, { useEffect, Suspense } from "react";
+import { StyleSheet, Platform, View, ActivityIndicator } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider } from "@/hooks/auth-context";
 import { ProjectsProvider } from "@/hooks/projects-context";
 import { InventoryProvider } from "@/hooks/inventory-context";
 import { LanguageProvider } from "@/hooks/language-context";
+import { migrateDatabase } from "@/lib/database/migrations";
 import Colors from "@/constants/colors";
 
 SplashScreen.preventAutoHideAsync();
@@ -23,7 +25,24 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.headerBg,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.headerBg,
+  },
 });
+
+/**
+ * Loading fallback shown while SQLite database initializes.
+ */
+function DatabaseLoadingFallback() {
+  return (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color={Colors.deepTeal} />
+    </View>
+  );
+}
 
 export default function RootLayout() {
   useEffect(() => {
@@ -59,48 +78,52 @@ export default function RootLayout() {
         <GestureHandlerRootView style={styles.container}>
           <LanguageProvider>
             <AuthProvider>
-              <ProjectsProvider>
-                <InventoryProvider>
-                    <Stack
-                      screenOptions={{
-                        headerShown: false,
-                      }}
-                    >
-                    {/* Main app routes */}
-                    <Stack.Screen name="index" />
-                    <Stack.Screen name="(auth)" />
-                    <Stack.Screen name="(tabs)" />
-                    <Stack.Screen name="help" />
-                    <Stack.Screen name="legal" />
-                    <Stack.Screen name="project/[id]" />
-                    <Stack.Screen name="video-player" />
+              <Suspense fallback={<DatabaseLoadingFallback />}>
+                <SQLiteProvider
+                  databaseName="artful.db"
+                  onInit={migrateDatabase}
+                >
+                  <ProjectsProvider>
+                    <InventoryProvider>
+                      <Stack
+                        screenOptions={{
+                          headerShown: false,
+                        }}
+                      >
+                        {/* Main app routes */}
+                        <Stack.Screen name="index" />
+                        <Stack.Screen name="(auth)" />
+                        <Stack.Screen name="(tabs)" />
+                        <Stack.Screen name="help" />
+                        <Stack.Screen name="legal" />
+                        <Stack.Screen name="project/[id]" />
+                        <Stack.Screen name="video-player" />
 
-                    {/* YarnAI routes */}
-                    <Stack.Screen name="yarnai/chat" />
-                    <Stack.Screen name="yarnai/ideas" />
-                    <Stack.Screen name="yarnai/image-generator" />
-                    <Stack.Screen name="yarnai/voice" />
+                        {/* YarnAI routes - nested layout handles individual screens */}
+                        <Stack.Screen name="yarnai" />
 
-                    {/* Modal routes */}
-                    <Stack.Screen
-                      name="add-inventory"
-                      options={{ presentation: 'modal' }}
-                    />
-                    <Stack.Screen
-                      name="edit-inventory/[id]"
-                      options={{ presentation: 'modal' }}
-                    />
-                    <Stack.Screen
-                      name="add-project"
-                      options={{ presentation: 'modal' }}
-                    />
-                    <Stack.Screen
-                      name="edit-project/[id]"
-                      options={{ presentation: 'modal' }}
-                    />
-                  </Stack>
-                </InventoryProvider>
-              </ProjectsProvider>
+                        {/* Modal routes */}
+                        <Stack.Screen
+                          name="add-inventory"
+                          options={{ presentation: 'modal' }}
+                        />
+                        <Stack.Screen
+                          name="edit-inventory/[id]"
+                          options={{ presentation: 'modal' }}
+                        />
+                        <Stack.Screen
+                          name="add-project"
+                          options={{ presentation: 'modal' }}
+                        />
+                        <Stack.Screen
+                          name="edit-project/[id]"
+                          options={{ presentation: 'modal' }}
+                        />
+                      </Stack>
+                    </InventoryProvider>
+                  </ProjectsProvider>
+                </SQLiteProvider>
+              </Suspense>
             </AuthProvider>
           </LanguageProvider>
         </GestureHandlerRootView>

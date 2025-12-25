@@ -82,7 +82,8 @@
       "Bash(tr:*)",
       "Bash(git diff:*)",
       "Bash(eas init:*)",
-      "Bash(bun install:*)"
+      "Bash(bun install:*)",
+      "Bash(sudo rm:*)"
     ],
     "deny": [],
     "ask": []

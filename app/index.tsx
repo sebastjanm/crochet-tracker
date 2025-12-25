@@ -58,8 +58,8 @@ export default function RootIndex() {
           <View style={styles.logoContainer}>
             <YarnBallLogo size={64} color={Colors.white} />
           </View>
-          <Text style={styles.appName}>Yarn Tracker</Text>
-          <Text style={styles.tagline}>Track your knitting projects</Text>
+          <Text style={styles.appName}>Crochet Tracker</Text>
+          <Text style={styles.tagline}>Track your crochet projects</Text>
         </Animated.View>
       </SafeAreaView>
     );

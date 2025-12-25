@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Plus, Trash2 } from 'lucide-react-native';
+import { Plus, Trash2, BookOpen } from 'lucide-react-native';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { ModalHeader } from '@/components/ModalHeader';
@@ -203,7 +203,7 @@ export default function ProjectJournalScreen() {
 
           {workProgress.length === 0 && !isAddingEntry ? (
             <EmptyState
-              icon="BookOpen"
+              icon={<BookOpen size={48} color={Colors.warmGray} />}
               title={t('projects.noJournalEntries')}
               description={t('projects.noJournalEntriesDescription')}
             />

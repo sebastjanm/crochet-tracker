@@ -12,7 +12,7 @@ import {
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Plus, Trash2, Star } from 'lucide-react-native';
+import { Plus, Trash2, Lightbulb } from 'lucide-react-native';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { ModalHeader } from '@/components/ModalHeader';
@@ -164,7 +164,7 @@ export default function ProjectInspirationScreen() {
 
         {inspirationSources.length === 0 ? (
           <EmptyState
-            icon="Lightbulb"
+            icon={<Lightbulb size={48} color={Colors.warmGray} />}
             title={t('projects.noInspirationSources')}
             description={t('projects.noInspirationSourcesDescription')}
           />

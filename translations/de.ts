@@ -125,6 +125,8 @@ export default {
     checkYourEmail: 'Überprüfen Sie Ihre E-Mail',
     confirmationEmailSent: 'Wir haben Ihnen einen Bestätigungslink gesendet. Bitte überprüfen Sie Ihre E-Mail und klicken Sie auf den Link, um Ihr Konto zu aktivieren.',
     passwordMinLength: 'Mindestens 6 Zeichen',
+    showPassword: 'Passwort anzeigen',
+    hidePassword: 'Passwort verbergen',
   },
   tabs: {
     projects: 'Projekte',

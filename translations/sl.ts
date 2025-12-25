@@ -125,6 +125,8 @@ export default {
     checkYourEmail: 'Preverite e-pošto',
     confirmationEmailSent: 'Poslali smo vam potrditveno povezavo. Preverite e-pošto in kliknite povezavo za aktivacijo računa.',
     passwordMinLength: 'Najmanj 6 znakov',
+    showPassword: 'Prikaži geslo',
+    hidePassword: 'Skrij geslo',
   },
   tabs: {
     projects: 'Projekti',

@@ -125,6 +125,8 @@ export default {
     checkYourEmail: 'Проверьте почту',
     confirmationEmailSent: 'Мы отправили вам ссылку для подтверждения. Проверьте почту и нажмите на ссылку для активации аккаунта.',
     passwordMinLength: 'Минимум 6 символов',
+    showPassword: 'Показать пароль',
+    hidePassword: 'Скрыть пароль',
   },
   tabs: {
     projects: 'Проекты',

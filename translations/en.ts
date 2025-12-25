@@ -125,6 +125,8 @@ export default {
     checkYourEmail: 'Check Your Email',
     confirmationEmailSent: 'We sent you a confirmation link. Please check your email and click the link to activate your account.',
     passwordMinLength: 'Minimum 6 characters',
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
   },
   tabs: {
     projects: 'Projects',

@@ -12,6 +12,7 @@ import { Eye, EyeOff } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { MAX_FONT_SIZE_MULTIPLIER, ACCESSIBLE_COLORS } from '@/constants/accessibility';
+import { useLanguage } from '@/hooks/language-context';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -35,6 +36,7 @@ export const Input: React.FC<InputProps> = ({
   const [isFocused, setIsFocused] = useState(false);
   const [animatedLabelPosition] = useState(new Animated.Value(value ? 1 : 0));
   const [showPassword, setShowPassword] = useState(false);
+  const { t } = useLanguage();
 
   const isPasswordField = secureTextEntry === true;
 
@@ -101,7 +103,7 @@ export const Input: React.FC<InputProps> = ({
           <TouchableOpacity
             onPress={() => setShowPassword(!showPassword)}
             style={styles.eyeIcon}
-            accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+            accessibilityLabel={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
             accessibilityRole="button"
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >

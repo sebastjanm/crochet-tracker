@@ -17,7 +17,6 @@ import {
 const { width } = Dimensions.get('window');
 const isSmallDevice = width < 375;
 const isTablet = width >= 768;
-import { Stack } from 'expo-router';
 import { ImageIcon, RotateCcw } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
@@ -259,14 +258,6 @@ export default function ImageGenerator() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen 
-        options={{ 
-          title: t('yarnai.imageGeneratorTitle'),
-          headerStyle: { backgroundColor: Colors.cream },
-          headerTintColor: Colors.charcoal,
-        }} 
-      />
-      
       <KeyboardAvoidingView 
         style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

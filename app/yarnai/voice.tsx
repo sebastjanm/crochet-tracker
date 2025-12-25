@@ -14,7 +14,6 @@ import {
 const { width } = Dimensions.get('window');
 const isSmallDevice = width < 375;
 const isTablet = width >= 768;
-import { Stack } from 'expo-router';
 import { Mic, MicOff, Volume2, MessageSquare } from 'lucide-react-native';
 import { useAudioRecorder, IOSOutputFormat, AudioQuality } from 'expo-audio';
 import * as Audio from 'expo-audio';
@@ -383,14 +382,6 @@ export default function VoiceAssistant() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen 
-        options={{ 
-          title: t('yarnai.voiceAssistantTitle'),
-          headerStyle: { backgroundColor: Colors.cream },
-          headerTintColor: Colors.charcoal,
-        }} 
-      />
-      
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}

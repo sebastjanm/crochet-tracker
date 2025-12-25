@@ -115,6 +115,16 @@ export default {
     accountCreated: 'Račun je bil uspešno ustvarjen',
     emailInvalid: 'Prosimo, vnesite veljaven e-naslov',
     passwordTooShort: 'Geslo mora imeti vsaj 6 znakov',
+    // Supabase Auth error messages
+    emailNotConfirmed: 'Preverite svoj e-poštni nabiralnik in potrdite svoj račun.',
+    tooManyRequests: 'Preveč poskusov. Počakajte in poskusite znova.',
+    serviceUnavailable: 'Storitev ni na voljo. Poskusite znova kasneje.',
+    registrationFailed: 'Ustvarjanje računa ni uspelo. Poskusite znova.',
+    emailAlreadyExists: 'Ta e-pošta je že registrirana. Poskusite se prijaviti.',
+    passwordTooWeak: 'Geslo je prešibko. Uporabite vsaj 6 znakov.',
+    checkYourEmail: 'Preverite e-pošto',
+    confirmationEmailSent: 'Poslali smo vam potrditveno povezavo. Preverite e-pošto in kliknite povezavo za aktivacijo računa.',
+    passwordMinLength: 'Najmanj 6 znakov',
   },
   tabs: {
     projects: 'Projekti',

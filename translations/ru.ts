@@ -51,6 +51,16 @@ export default {
     accountCreated: 'Аккаунт успешно создан',
     emailInvalid: 'Пожалуйста, введите действительный email адрес',
     passwordTooShort: 'Пароль должен содержать не менее 6 символов',
+    // Supabase Auth error messages
+    emailNotConfirmed: 'Пожалуйста, проверьте свою электронную почту и подтвердите аккаунт.',
+    tooManyRequests: 'Слишком много попыток. Подождите и попробуйте снова.',
+    serviceUnavailable: 'Сервис недоступен. Попробуйте позже.',
+    registrationFailed: 'Не удалось создать аккаунт. Попробуйте ещё раз.',
+    emailAlreadyExists: 'Этот email уже зарегистрирован. Попробуйте войти.',
+    passwordTooWeak: 'Слишком слабый пароль. Используйте минимум 6 символов.',
+    checkYourEmail: 'Проверьте почту',
+    confirmationEmailSent: 'Мы отправили вам ссылку для подтверждения. Проверьте почту и нажмите на ссылку для активации аккаунта.',
+    passwordMinLength: 'Минимум 6 символов',
   },
   tabs: {
     projects: 'Проекты',

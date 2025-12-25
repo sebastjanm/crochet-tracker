@@ -51,6 +51,16 @@ export default {
     accountCreated: 'Konto erfolgreich erstellt',
     emailInvalid: 'Bitte geben Sie eine gültige E-Mail-Adresse ein',
     passwordTooShort: 'Passwort muss mindestens 6 Zeichen lang sein',
+    // Supabase Auth error messages
+    emailNotConfirmed: 'Bitte überprüfen Sie Ihre E-Mail und bestätigen Sie Ihr Konto.',
+    tooManyRequests: 'Zu viele Versuche. Bitte warten Sie und versuchen Sie es erneut.',
+    serviceUnavailable: 'Dienst nicht verfügbar. Bitte versuchen Sie es später erneut.',
+    registrationFailed: 'Konto konnte nicht erstellt werden. Bitte versuchen Sie es erneut.',
+    emailAlreadyExists: 'Diese E-Mail ist bereits registriert. Versuchen Sie sich anzumelden.',
+    passwordTooWeak: 'Passwort zu schwach. Verwenden Sie mindestens 6 Zeichen.',
+    checkYourEmail: 'Überprüfen Sie Ihre E-Mail',
+    confirmationEmailSent: 'Wir haben Ihnen einen Bestätigungslink gesendet. Bitte überprüfen Sie Ihre E-Mail und klicken Sie auf den Link, um Ihr Konto zu aktivieren.',
+    passwordMinLength: 'Mindestens 6 Zeichen',
   },
   tabs: {
     projects: 'Projekte',

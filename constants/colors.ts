@@ -50,6 +50,14 @@ export const Colors = {
   filterOther: '#9C27B0',        // Other category (purple)
 
   // ===========================================
+  // VOICE ASSISTANT COLORS
+  // ===========================================
+  voiceRecording: '#EF4444',     // Recording state (red)
+  voiceAssistant: '#8B5CF6',     // Assistant icon (purple)
+  warningBg: '#FEF3C7',          // Warning background (amber)
+  warningText: '#92400E',        // Warning text (brown)
+
+  // ===========================================
   // DECORATIVE - Yarn inspiration (optional)
   // ===========================================
   clay: '#C8A593',               // Warm accent

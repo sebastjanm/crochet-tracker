@@ -11,13 +11,19 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  Dimensions,
 } from 'react-native';
+
+const { width } = Dimensions.get('window');
+const isSmallDevice = width < 375;
+const isTablet = width >= 768;
 import { Stack } from 'expo-router';
 import { ImageIcon, RotateCcw } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { useLanguage } from '@/hooks/language-context';
-import { cardShadow } from '@/constants/pixelRatio';
+import { cardShadow, normalizeBorder, normalizeBorderOpacity } from '@/constants/pixelRatio';
+import { MAX_FONT_SIZE_MULTIPLIER } from '@/constants/accessibility';
 
 const IMAGE_API_URL = 'https://toolkit.rork.com/images/generate/';
 
@@ -270,8 +276,8 @@ export default function ImageGenerator() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <Text style={styles.title}>{t('yarnai.imageGeneratorPageTitle')}</Text>
-            <Text style={styles.subtitle}>
+            <Text style={styles.title} maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}>{t('yarnai.imageGeneratorPageTitle')}</Text>
+            <Text style={styles.subtitle} maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}>
               {t('yarnai.imageGeneratorSubtitle')}
             </Text>
           </View>

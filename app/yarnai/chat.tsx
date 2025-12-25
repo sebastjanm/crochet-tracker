@@ -10,13 +10,19 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Dimensions,
 } from 'react-native';
+
+const { width } = Dimensions.get('window');
+const isSmallDevice = width < 375;
+const isTablet = width >= 768;
 import { Stack } from 'expo-router';
 import { Send, MessageSquare, User, Bot } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { useLanguage } from '@/hooks/language-context';
-import { normalizeBorder, cardShadow } from '@/constants/pixelRatio';
+import { normalizeBorder, normalizeBorderOpacity, cardShadow } from '@/constants/pixelRatio';
+import { MAX_FONT_SIZE_MULTIPLIER } from '@/constants/accessibility';
 
 const CHAT_API_URL = 'https://toolkit.rork.com/text/llm/';
 
@@ -125,9 +131,11 @@ const styles = StyleSheet.create({
   },
   sendButton: {
     backgroundColor: Colors.deepTeal,
-    borderRadius: 20,
-    width: 40,
-    height: 40,
+    borderRadius: 22,
+    width: 44,
+    height: 44,
+    minWidth: 44,
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -325,8 +333,8 @@ export default function YarnAIChat() {
                   color={Colors.deepTeal} 
                   style={styles.emptyIcon}
                 />
-                <Text style={styles.emptyTitle}>{t('yarnai.chatWelcomeTitle')}</Text>
-                <Text style={styles.emptySubtitle}>
+                <Text style={styles.emptyTitle} maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}>{t('yarnai.chatWelcomeTitle')}</Text>
+                <Text style={styles.emptySubtitle} maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}>
                   {t('yarnai.chatWelcomeSubtitle')}
                 </Text>
                 <View style={styles.suggestedQuestions}>
@@ -378,6 +386,7 @@ export default function YarnAIChat() {
                           styles.messageText,
                           message.role === 'user' ? styles.userText : styles.assistantText,
                         ]}
+                        maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}
                       >
                         {message.content}
                       </Text>

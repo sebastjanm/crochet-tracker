@@ -8,7 +8,12 @@ import {
   Alert,
   Platform,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
+
+const { width } = Dimensions.get('window');
+const isSmallDevice = width < 375;
+const isTablet = width >= 768;
 import { Stack } from 'expo-router';
 import { Mic, MicOff, Volume2, MessageSquare } from 'lucide-react-native';
 import { useAudioRecorder, IOSOutputFormat, AudioQuality } from 'expo-audio';
@@ -16,7 +21,8 @@ import * as Audio from 'expo-audio';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { useLanguage } from '@/hooks/language-context';
-import { normalizeBorder, cardShadow, modalShadow } from '@/constants/pixelRatio';
+import { normalizeBorder, normalizeBorderOpacity, cardShadow, modalShadow } from '@/constants/pixelRatio';
+import { MAX_FONT_SIZE_MULTIPLIER } from '@/constants/accessibility';
 
 const STT_API_URL = 'https://toolkit.rork.com/stt/transcribe/';
 const CHAT_API_URL = 'https://toolkit.rork.com/text/llm/';
@@ -76,7 +82,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.deepTeal,
   },
   recordButtonActive: {
-    backgroundColor: '#EF4444',
+    backgroundColor: Colors.voiceRecording,
   },
   recordButtonProcessing: {
     backgroundColor: Colors.warmGray,
@@ -136,7 +142,7 @@ const styles = StyleSheet.create({
     color: Colors.deepTeal,
   },
   assistantSender: {
-    color: '#8B5CF6',
+    color: Colors.voiceAssistant,
   },
   conversationText: {
     ...Typography.body,
@@ -161,7 +167,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   webNotSupported: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: Colors.warningBg,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -169,7 +175,7 @@ const styles = StyleSheet.create({
   },
   webNotSupportedText: {
     ...Typography.body,
-    color: '#92400E',
+    color: Colors.warningText,
     textAlign: 'center',
     lineHeight: 22,
   },
@@ -390,8 +396,8 @@ export default function VoiceAssistant() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>{t('yarnai.voiceAssistantPageTitle')}</Text>
-          <Text style={styles.subtitle}>
+          <Text style={styles.title} maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}>{t('yarnai.voiceAssistantPageTitle')}</Text>
+          <Text style={styles.subtitle} maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}>
             {t('yarnai.voiceAssistantSubtitle')}
           </Text>
         </View>
@@ -448,9 +454,9 @@ export default function VoiceAssistant() {
                       style={styles.conversationIcon}
                     />
                   ) : (
-                    <Volume2 
-                      size={16} 
-                      color={'#8B5CF6'} 
+                    <Volume2
+                      size={16}
+                      color={Colors.voiceAssistant}
                       style={styles.conversationIcon}
                     />
                   )}
@@ -463,7 +469,7 @@ export default function VoiceAssistant() {
                     {item.type === 'user' ? t('yarnai.voiceAssistantYouSaid') : t('yarnai.voiceAssistantYarnAIReplied')}
                   </Text>
                 </View>
-                <Text style={styles.conversationText}>{item.text}</Text>
+                <Text style={styles.conversationText} maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}>{item.text}</Text>
                 <Text style={styles.conversationTime}>
                   {formatTime(item.timestamp)}
                 </Text>

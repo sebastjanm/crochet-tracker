@@ -10,13 +10,19 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Dimensions,
 } from 'react-native';
+
+const { width } = Dimensions.get('window');
+const isSmallDevice = width < 375;
+const isTablet = width >= 768;
 import { Stack } from 'expo-router';
 import { Lightbulb, RotateCcw, Sparkles } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { useLanguage } from '@/hooks/language-context';
-import { cardShadow } from '@/constants/pixelRatio';
+import { cardShadow, normalizeBorder, normalizeBorderOpacity } from '@/constants/pixelRatio';
+import { MAX_FONT_SIZE_MULTIPLIER } from '@/constants/accessibility';
 
 const CHAT_API_URL = 'https://toolkit.rork.com/text/llm/';
 
@@ -177,10 +183,12 @@ const styles = StyleSheet.create({
   suggestionChip: {
     backgroundColor: Colors.cream,
     borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     marginRight: 8,
     marginBottom: 8,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   suggestionChipText: {
     ...Typography.caption,
@@ -347,8 +355,8 @@ Example:
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <Text style={styles.title}>{t('yarnai.projectIdeasPageTitle')}</Text>
-            <Text style={styles.subtitle}>
+            <Text style={styles.title} maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}>{t('yarnai.projectIdeasPageTitle')}</Text>
+            <Text style={styles.subtitle} maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}>
               {t('yarnai.projectIdeasSubtitle')}
             </Text>
           </View>
@@ -422,9 +430,9 @@ Example:
               <Text style={styles.resultTitle}>{t('yarnai.projectIdeasResult')}</Text>
               {ideas.map((idea, index) => (
                 <View key={index} style={styles.ideaCard}>
-                  <Text style={styles.ideaTitle}>{idea.title}</Text>
-                  <Text style={styles.ideaDescription}>{idea.description}</Text>
-                  <Text style={styles.ideaDetails}>
+                  <Text style={styles.ideaTitle} maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}>{idea.title}</Text>
+                  <Text style={styles.ideaDescription} maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}>{idea.description}</Text>
+                  <Text style={styles.ideaDetails} maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}>
                     {idea.difficulty} • {idea.timeEstimate} • {idea.materials}
                   </Text>
                 </View>

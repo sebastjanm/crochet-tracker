@@ -54,8 +54,22 @@ export default function LoginScreen() {
     try {
       await login('User', email, password);
       router.replace('/projects');
-    } catch {
-      Alert.alert(t('common.error'), t('auth.invalidCredentials'));
+    } catch (error: unknown) {
+      // Parse Supabase auth errors
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      let userMessage = t('auth.invalidCredentials');
+
+      if (errorMessage.includes('Invalid login credentials')) {
+        userMessage = t('auth.invalidCredentials');
+      } else if (errorMessage.includes('Email not confirmed')) {
+        userMessage = t('auth.emailNotConfirmed');
+      } else if (errorMessage.includes('Too many requests')) {
+        userMessage = t('auth.tooManyRequests');
+      } else if (errorMessage.includes('not configured')) {
+        userMessage = t('auth.serviceUnavailable');
+      }
+
+      Alert.alert(t('common.error'), userMessage);
     } finally {
       setLoading(false);
     }

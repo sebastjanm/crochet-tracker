@@ -70,10 +70,27 @@ export default function RegisterScreen() {
     setLoading(true);
     try {
       await register(name.trim(), email, password);
-      Alert.alert(t('common.success'), t('auth.accountCreated'));
-      router.replace('/projects');
-    } catch (error) {
-      Alert.alert(t('common.error'), 'Failed to create account');
+      Alert.alert(
+        t('common.success'),
+        t('auth.accountCreated'),
+        [{ text: 'OK', onPress: () => router.replace('/projects') }]
+      );
+    } catch (error: unknown) {
+      // Parse Supabase auth errors
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      let userMessage = t('auth.registrationFailed');
+
+      if (errorMessage.includes('already registered')) {
+        userMessage = t('auth.emailAlreadyExists');
+      } else if (errorMessage.includes('Password should be')) {
+        userMessage = t('auth.passwordTooWeak');
+      } else if (errorMessage.includes('Invalid email')) {
+        userMessage = t('auth.emailInvalid');
+      } else if (errorMessage.includes('not configured')) {
+        userMessage = t('auth.serviceUnavailable');
+      }
+
+      Alert.alert(t('common.error'), userMessage);
     } finally {
       setLoading(false);
     }

@@ -112,9 +112,16 @@ export default {
     backToLogin: 'Back to Login',
     resetPasswordButton: 'Send Reset Email',
     resetPasswordSuccess: 'Password reset email sent successfully',
-    accountCreated: 'Account created successfully',
+    accountCreated: 'Account created successfully! Check your email to verify.',
     emailInvalid: 'Please enter a valid email address',
     passwordTooShort: 'Password must be at least 6 characters',
+    // Supabase Auth error messages
+    emailNotConfirmed: 'Please check your email and confirm your account.',
+    tooManyRequests: 'Too many attempts. Please wait and try again.',
+    serviceUnavailable: 'Service unavailable. Please try again later.',
+    registrationFailed: 'Failed to create account. Please try again.',
+    emailAlreadyExists: 'This email is already registered. Try logging in.',
+    passwordTooWeak: 'Password too weak. Use at least 6 characters.',
   },
   tabs: {
     projects: 'Projects',

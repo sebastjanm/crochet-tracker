@@ -66,7 +66,14 @@ export default function RootIndex() {
   }
 
   if (isLoading) {
-    return null;
+    return (
+      <SafeAreaView style={styles.splashContainer}>
+        <View style={styles.logoContainer}>
+          <YarnBallLogo size={64} color={Colors.white} />
+        </View>
+        <Text style={styles.appName}>Crochet Tracker</Text>
+      </SafeAreaView>
+    );
   }
 
   if (isAuthenticated) {

@@ -295,14 +295,15 @@ async function pullCloudChanges(
   // Get last sync time for incremental sync
   const lastSync = await getLastSyncTime(db);
 
-  // Pull projects
+  // Pull projects - get updated OR newly created since last sync
   let projectsQuery = supabase!
     .from('projects')
     .select('*')
     .eq('user_id', userId);
 
   if (lastSync) {
-    projectsQuery = projectsQuery.gt('updated_at', lastSync);
+    // Pull records that were updated OR created after last sync
+    projectsQuery = projectsQuery.or(`updated_at.gt.${lastSync},created_at.gt.${lastSync}`);
   }
 
   const { data: cloudProjects, error: projectsError } = await projectsQuery;
@@ -316,14 +317,15 @@ async function pullCloudChanges(
     }
   }
 
-  // Pull inventory items
+  // Pull inventory items - get updated OR newly created since last sync
   let inventoryQuery = supabase!
     .from('inventory_items')
     .select('*')
     .eq('user_id', userId);
 
   if (lastSync) {
-    inventoryQuery = inventoryQuery.gt('last_updated', lastSync);
+    // Pull records that were updated OR created after last sync
+    inventoryQuery = inventoryQuery.or(`last_updated.gt.${lastSync},date_added.gt.${lastSync}`);
   }
 
   const { data: cloudInventory, error: inventoryError } = await inventoryQuery;

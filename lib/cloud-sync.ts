@@ -314,18 +314,21 @@ async function pullCloudChanges(
   const lastSync = await getLastSyncTime(db);
   console.log('[CloudSync] Pull starting - lastSync:', lastSync, 'userId:', userId);
 
+  // DEBUG: Force full sync by ignoring lastSync (remove after debugging)
+  const forceFullSync = true;
+
   // Pull projects - get updated OR newly created since last sync
   let projectsQuery = supabase!
     .from('projects')
     .select('*')
     .eq('user_id', userId);
 
-  if (lastSync) {
+  if (lastSync && !forceFullSync) {
     // Pull records that were updated OR created after last sync
     console.log('[CloudSync] Applying incremental filter - OR(updated_at, created_at) > lastSync');
     projectsQuery = projectsQuery.or(`updated_at.gt.${lastSync},created_at.gt.${lastSync}`);
   } else {
-    console.log('[CloudSync] First sync - pulling ALL projects for user');
+    console.log('[CloudSync] Full sync - pulling ALL projects for user (forceFullSync:', forceFullSync, ')');
   }
 
   const { data: cloudProjects, error: projectsError } = await projectsQuery;
@@ -350,7 +353,7 @@ async function pullCloudChanges(
     .select('*')
     .eq('user_id', userId);
 
-  if (lastSync) {
+  if (lastSync && !forceFullSync) {
     // Pull records that were updated OR created after last sync
     inventoryQuery = inventoryQuery.or(`last_updated.gt.${lastSync},date_added.gt.${lastSync}`);
   }

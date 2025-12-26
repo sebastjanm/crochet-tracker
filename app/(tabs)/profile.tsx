@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSQLiteContext } from 'expo-sqlite';
 import { router } from 'expo-router';
 import {
   LogOut,
@@ -37,6 +38,7 @@ import { useProjects } from '@/hooks/projects-context';
 import { useInventory } from '@/hooks/inventory-context';
 import { useLanguage } from '@/hooks/language-context';
 import { useSupabaseSync } from '@/hooks/useSupabaseSync';
+import { performSync } from '@/lib/cloud-sync';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, cardShadow } from '@/constants/pixelRatio';
@@ -48,7 +50,8 @@ const isSmallDevice = width < 375;
 const isTablet = width >= 768;
 
 export default function ProfileScreen() {
-  const { user, logout, updateUser, refreshUser } = useAuth();
+  const db = useSQLiteContext();
+  const { user, logout, updateUser, refreshUser, isPro } = useAuth();
   const { projects, completedCount, inProgressCount, refreshProjects } = useProjects();
   const { items, refreshItems } = useInventory();
   const { language, changeLanguage, t } = useLanguage();
@@ -63,6 +66,7 @@ export default function ProfileScreen() {
   } = useSupabaseSync();
   const [isLoadingMockData, setIsLoadingMockData] = useState(false);
   const [isAvatarPickerVisible, setIsAvatarPickerVisible] = useState(false);
+  const [isManualSyncing, setIsManualSyncing] = useState(false);
 
   const handleSync = async () => {
     const result = await sync();
@@ -76,6 +80,40 @@ export default function ProfileScreen() {
       Alert.alert('Sync Failed', syncError.message, [
         { text: 'OK', onPress: clearError },
       ]);
+    }
+  };
+
+  /**
+   * Manual sync for Pro users - uses performSync directly
+   */
+  const handleManualSync = async () => {
+    if (!user?.id || !isPro) return;
+
+    setIsManualSyncing(true);
+    try {
+      const result = await performSync(db, user.id);
+
+      // Refresh local state if data was pulled
+      if (result.pulled.projects > 0 || result.pulled.inventory > 0) {
+        await refreshProjects();
+        await refreshItems();
+      }
+
+      Alert.alert(
+        t('profile.syncComplete'),
+        `${t('profile.syncPushed')}: ${result.pushed.projects} ${t('profile.projects')}, ${result.pushed.inventory} ${t('profile.inventory')}\n` +
+        `${t('profile.syncPulled')}: ${result.pulled.projects} ${t('profile.projects')}, ${result.pulled.inventory} ${t('profile.inventory')}` +
+        (result.errors.length > 0 ? `\n\n${t('profile.syncErrors')}: ${result.errors.join(', ')}` : ''),
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      Alert.alert(
+        t('profile.syncFailed'),
+        error instanceof Error ? error.message : String(error),
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsManualSyncing(false);
     }
   };
 
@@ -341,6 +379,44 @@ export default function ProfileScreen() {
             </View>
           </Card>
         </View>
+
+        {/* Cloud Sync Section - Pro Users Only */}
+        {isPro && (
+          <View style={styles.syncContainer}>
+            <Text style={styles.sectionTitle}>{t('profile.cloudSync')}</Text>
+            <Card>
+              <TouchableOpacity
+                style={styles.syncButton}
+                onPress={handleManualSync}
+                disabled={isManualSyncing}
+                activeOpacity={0.7}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={t('profile.syncNow')}
+                accessibilityHint={t('profile.syncHint')}
+              >
+                {isManualSyncing ? (
+                  <ActivityIndicator size="small" color={Colors.deepTeal} />
+                ) : (
+                  <Cloud size={24} color={Colors.deepTeal} />
+                )}
+                <View style={styles.syncButtonText}>
+                  <Text style={styles.syncButtonLabel}>
+                    {isManualSyncing ? t('profile.syncing') : t('profile.syncNow')}
+                  </Text>
+                  <Text style={styles.syncButtonDescription}>
+                    {t('profile.syncDescription')}
+                  </Text>
+                </View>
+                <RefreshCw
+                  size={20}
+                  color={isManualSyncing ? Colors.warmGray : Colors.deepTeal}
+                  style={isManualSyncing ? { opacity: 0.5 } : undefined}
+                />
+              </TouchableOpacity>
+            </Card>
+          </View>
+        )}
 
         <View style={styles.menuContainer}>
           <Text style={styles.sectionTitle}>{t('profile.settings')}</Text>
@@ -634,6 +710,30 @@ const styles = StyleSheet.create({
   progressDivider: {
     height: normalizeBorder(1),
     backgroundColor: Colors.border,
+  },
+  syncContainer: {
+    paddingHorizontal: 16,
+    marginBottom: 24,
+  },
+  syncButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 4,
+    gap: 12,
+  },
+  syncButtonText: {
+    flex: 1,
+  },
+  syncButtonLabel: {
+    ...Typography.body,
+    color: Colors.charcoal,
+    fontWeight: '600' as const,
+  },
+  syncButtonDescription: {
+    ...Typography.caption,
+    color: Colors.warmGray,
+    marginTop: 2,
   },
   menuContainer: {
     paddingHorizontal: 16,

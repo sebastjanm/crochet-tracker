@@ -87,15 +87,20 @@ export async function performSync(
     errors: [],
   };
 
+  // DEBUG: Add user info to errors for visibility
+  result.errors.push(`DEBUG: userId=${userId.substring(0, 8)}...`);
+
   // Skip if Supabase not configured
   if (!isSupabaseConfigured() || !supabase) {
     console.log('[CloudSync] Supabase not configured, skipping sync');
+    result.errors.push('Supabase not configured');
     return result;
   }
 
   // Prevent concurrent syncs
   if (isSyncing) {
     console.log('[CloudSync] Sync already in progress, skipping');
+    result.errors.push('Sync already in progress');
     return result;
   }
 
@@ -104,14 +109,17 @@ export async function performSync(
 
   try {
     // Step 1: Claim orphaned records (set user_id where NULL)
-    await claimOrphanedRecords(db, userId);
+    const claimResult = await claimOrphanedRecords(db, userId);
+    if (claimResult.claimed > 0) {
+      result.errors.push(`Claimed ${claimResult.claimed} orphans`);
+    }
 
     // Step 2: Push pending changes to cloud
-    const pushResult = await pushPendingChanges(db, userId);
+    const pushResult = await pushPendingChanges(db, userId, result.errors);
     result.pushed = pushResult;
 
     // Step 3: Pull cloud changes to local
-    const pullResult = await pullCloudChanges(db, userId);
+    const pullResult = await pullCloudChanges(db, userId, result.errors);
     result.pulled = pullResult;
 
     // Step 4: Update last sync timestamp
@@ -182,7 +190,7 @@ export async function getSyncStatus(db: SQLiteDatabase): Promise<SyncStatus> {
 async function claimOrphanedRecords(
   db: SQLiteDatabase,
   userId: string
-): Promise<void> {
+): Promise<{ claimed: number }> {
   const projectsResult = await db.runAsync(
     'UPDATE projects SET user_id = ?, pending_sync = 1 WHERE user_id IS NULL',
     [userId]
@@ -193,11 +201,15 @@ async function claimOrphanedRecords(
     [userId]
   );
 
-  if (projectsResult.changes > 0 || inventoryResult.changes > 0) {
+  const totalClaimed = projectsResult.changes + inventoryResult.changes;
+
+  if (totalClaimed > 0) {
     console.log(
       `[CloudSync] Claimed orphaned records: ${projectsResult.changes} projects, ${inventoryResult.changes} inventory`
     );
   }
+
+  return { claimed: totalClaimed };
 }
 
 // ============================================================================
@@ -209,7 +221,8 @@ async function claimOrphanedRecords(
  */
 async function pushPendingChanges(
   db: SQLiteDatabase,
-  userId: string
+  userId: string,
+  debug: string[]
 ): Promise<{ projects: number; inventory: number }> {
   let projectsPushed = 0;
   let inventoryPushed = 0;
@@ -220,6 +233,11 @@ async function pushPendingChanges(
   const allPending = await db.getAllAsync<{ id: string; user_id: string | null; pending_sync: number }>(
     'SELECT id, user_id, pending_sync FROM projects WHERE pending_sync = 1'
   );
+
+  debug.push(`Local pending: ${allPending.length}`);
+  const matching = allPending.filter(p => p.user_id === userId).length;
+  debug.push(`Matching userId: ${matching}`);
+
   console.log('[CloudSync] All pending projects:', allPending.map(p => ({
     id: p.id,
     user_id: p.user_id,
@@ -305,7 +323,8 @@ async function pushPendingChanges(
  */
 async function pullCloudChanges(
   db: SQLiteDatabase,
-  userId: string
+  userId: string,
+  debug: string[]
 ): Promise<{ projects: number; inventory: number }> {
   let projectsPulled = 0;
   let inventoryPulled = 0;
@@ -332,6 +351,13 @@ async function pullCloudChanges(
   }
 
   const { data: cloudProjects, error: projectsError } = await projectsQuery;
+
+  // Add debug info about Supabase response
+  debug.push(`Cloud projects: ${cloudProjects?.length ?? 0}`);
+  if (projectsError) {
+    debug.push(`Error: ${projectsError.message}`);
+  }
+
   console.log('[CloudSync] Projects query result:', {
     count: cloudProjects?.length ?? 0,
     error: projectsError?.message,

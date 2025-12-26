@@ -17,11 +17,8 @@
 import { supabase } from '@/lib/supabase/client';
 import type { Project, InventoryItem } from '@/lib/supabase/database.types';
 import type { RealtimeChannel } from '@supabase/supabase-js';
-import { imageSyncQueue, type ImageUploadCallbacks } from './image-sync-queue';
+import { imageSyncQueue } from './image-sync-queue';
 import { getLocalImagesToUpload, filterLocalImages } from './type-mappers';
-
-// Re-export for external use
-export type { ImageUploadCallbacks };
 
 // ============================================================================
 // TYPES
@@ -46,6 +43,9 @@ export interface SyncCallbacks {
 /**
  * SyncManager handles Supabase sync for Pro users.
  * Uses Supabase Realtime for live updates.
+ *
+ * NOTE: Image sync queue is initialized separately in LegendStateSyncManager
+ * (_layout.tsx) with proper callbacks that have access to context methods.
  */
 export class SyncManager {
   private userId: string;
@@ -53,12 +53,10 @@ export class SyncManager {
   private isInitialized = false;
   private projectsChannel: RealtimeChannel | null = null;
   private inventoryChannel: RealtimeChannel | null = null;
-  private imageCallbacks: ImageUploadCallbacks;
 
-  constructor(userId: string, callbacks: SyncCallbacks = {}, imageCallbacks: ImageUploadCallbacks = {}) {
+  constructor(userId: string, callbacks: SyncCallbacks = {}) {
     this.userId = userId;
     this.callbacks = callbacks;
-    this.imageCallbacks = imageCallbacks;
   }
 
   /**
@@ -119,9 +117,9 @@ export class SyncManager {
           console.log('[SyncManager] Inventory subscription status:', status);
         });
 
-      // Initialize image sync queue
-      await imageSyncQueue.initialize(this.userId, this.imageCallbacks);
-      console.log('[SyncManager] Image sync queue initialized');
+      // NOTE: Image sync queue is initialized in LegendStateSyncManager (_layout.tsx)
+      // with proper callbacks that have access to replaceProjectImage/replaceInventoryImage.
+      // Do NOT initialize here to avoid overwriting those callbacks.
 
       this.isInitialized = true;
       console.log('[SyncManager] Initialized successfully');
@@ -561,12 +559,14 @@ let currentSyncManager: SyncManager | null = null;
 /**
  * Get or create sync manager for a user.
  * Returns null if user is not Pro or Supabase is not configured.
+ *
+ * NOTE: Image sync queue is initialized separately in LegendStateSyncManager
+ * with proper callbacks. Do not pass image callbacks here.
  */
 export function getSyncManager(
   userId: string,
   isPro: boolean,
-  callbacks?: SyncCallbacks,
-  imageCallbacks?: ImageUploadCallbacks
+  callbacks?: SyncCallbacks
 ): SyncManager | null {
   if (!isPro || !supabase) {
     // Cleanup existing manager if user is no longer Pro
@@ -582,7 +582,7 @@ export function getSyncManager(
     if (currentSyncManager) {
       void currentSyncManager.cleanup();
     }
-    currentSyncManager = new SyncManager(userId, callbacks, imageCallbacks);
+    currentSyncManager = new SyncManager(userId, callbacks);
   }
 
   return currentSyncManager;

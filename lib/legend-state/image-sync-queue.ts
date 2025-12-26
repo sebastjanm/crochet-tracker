@@ -88,8 +88,25 @@ class ImageSyncQueueManager {
    *
    * @param userId - Current user ID (required for upload paths)
    * @param callbacks - Optional callbacks for upload events
+   *
+   * NOTE: If already initialized with callbacks, this will NOT overwrite them
+   * to prevent losing callbacks set by a previous initialization.
+   * Call cleanup() first if you need to reinitialize with new callbacks.
    */
   async initialize(userId: string, callbacks?: ImageUploadCallbacks): Promise<void> {
+    // Guard against reinitializing with empty callbacks
+    // This prevents SyncManager from overwriting callbacks set by LegendStateSyncManager
+    if (this.isInitialized && this.userId === userId) {
+      // Only update callbacks if new ones are provided and have at least one handler
+      if (callbacks?.onImageUploaded || callbacks?.onImageFailed) {
+        console.log('[ImageQueue] Updating callbacks for existing session');
+        this.callbacks = callbacks;
+      } else {
+        console.log('[ImageQueue] Already initialized, skipping (preserving existing callbacks)');
+      }
+      return;
+    }
+
     this.userId = userId;
     this.callbacks = callbacks || {};
 

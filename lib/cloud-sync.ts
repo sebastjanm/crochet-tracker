@@ -500,7 +500,8 @@ async function updateProjectFromCloud(
       default_image_index = ?, pattern_pdf = ?, pattern_url = ?, pattern_images = ?,
       inspiration_url = ?, notes = ?, yarn_used = ?, yarn_used_ids = ?,
       hook_used_ids = ?, yarn_materials = ?, work_progress = ?, inspiration_sources = ?,
-      start_date = ?, completed_date = ?, updated_at = ?, synced_at = ?, pending_sync = 0
+      start_date = ?, completed_date = ?, updated_at = ?, synced_at = ?, pending_sync = 0,
+      user_id = ?
     WHERE id = ?`,
     [
       toSQLite(cloudRow.title),
@@ -524,6 +525,7 @@ async function updateProjectFromCloud(
       toSQLite(cloudRow.completed_date),
       toSQLite(cloudRow.updated_at),
       now(),
+      toSQLite(cloudRow.user_id),
       toSQLite(cloudRow.id),
     ]
   );
@@ -573,7 +575,8 @@ async function updateInventoryFromCloud(
     `UPDATE inventory_items SET
       category = ?, name = ?, description = ?, images = ?, quantity = ?, unit = ?,
       yarn_details = ?, hook_details = ?, other_details = ?, location = ?, tags = ?,
-      used_in_projects = ?, notes = ?, barcode = ?, last_updated = ?, synced_at = ?, pending_sync = 0
+      used_in_projects = ?, notes = ?, barcode = ?, last_updated = ?, synced_at = ?, pending_sync = 0,
+      user_id = ?
     WHERE id = ?`,
     [
       toSQLite(cloudRow.category),
@@ -592,6 +595,7 @@ async function updateInventoryFromCloud(
       toSQLite(cloudRow.barcode),
       toSQLite(cloudRow.last_updated),
       now(),
+      toSQLite(cloudRow.user_id),
       toSQLite(cloudRow.id),
     ]
   );

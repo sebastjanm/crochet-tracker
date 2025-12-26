@@ -336,6 +336,13 @@ export default {
     noNotesAdded: 'No notes added yet',
     notesIsProFeature: 'Notes is a Pro feature',
     notesProDescription: 'Add personal notes and reminders to your projects. Available with Pro subscription.',
+    // Currently Working On feature
+    currentlyWorkingOn: 'Currently Working On',
+    markAsWorkingOn: 'Mark as working on',
+    removeFromWorkingOn: 'Remove from working on',
+    maxActiveProjects: 'You can only have 3 active projects. Unmark one to add another.',
+    addedToWorkingOn: 'Added to Currently Working On',
+    removedFromWorkingOn: 'Removed from Currently Working On',
   },
   inventory: {
     title: 'My Inventory',

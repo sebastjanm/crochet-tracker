@@ -336,6 +336,13 @@ export default {
     noNotesAdded: 'Še ni dodanih zapiskov',
     notesIsProFeature: 'Zapiski so Pro funkcija',
     notesProDescription: 'Dodajte osebne zapiske in opomnike svojim projektom. Na voljo z naročnino Pro.',
+    // Currently Working On feature
+    currentlyWorkingOn: 'Trenutno delam na',
+    markAsWorkingOn: 'Označi kot aktivno',
+    removeFromWorkingOn: 'Odstrani iz aktivnega',
+    maxActiveProjects: 'Imate lahko le 3 aktivne projekte. Odstranite enega, da dodate drugega.',
+    addedToWorkingOn: 'Dodano med aktivne projekte',
+    removedFromWorkingOn: 'Odstranjeno iz aktivnih projektov',
   },
   inventory: {
     title: 'Moja zaloga',

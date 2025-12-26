@@ -72,6 +72,11 @@ export interface Project {
   // Phase 3: Work progress and inspiration
   workProgress?: WorkProgressEntry[]; // Array of work entries
   inspirationSources?: InspirationSource[]; // Array of inspiration sources
+
+  // Phase 4: Currently working on (quick access)
+  isCurrentlyWorkingOn?: boolean; // Max 3 projects can be marked
+  currentlyWorkingOnAt?: string; // ISO timestamp when marked
+  currentlyWorkingOnEndedAt?: string; // ISO timestamp when unmarked
 }
 
 // ===== YARN DATA MODEL (EU / Metric) =====

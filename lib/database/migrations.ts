@@ -40,6 +40,11 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
     currentVersion = 3;
   }
 
+  if (currentVersion < 4) {
+    await migrateToV4(db);
+    currentVersion = 4;
+  }
+
   // Enable WAL mode for better concurrent read/write performance
   await db.execAsync('PRAGMA journal_mode = WAL');
 
@@ -225,5 +230,50 @@ async function migrateToV3(db: SQLiteDatabase): Promise<void> {
   `);
 
   console.log('[SQLite] Migration to v3 complete.');
+}
+
+/**
+ * V4: Add "Currently Working On" feature
+ * - Adds currently_working_on flag to projects
+ * - Adds timestamps for when marked/unmarked
+ * - Creates index for quick access to active projects
+ */
+async function migrateToV4(db: SQLiteDatabase): Promise<void> {
+  console.log('[SQLite] Running migration to v4 (Currently Working On)...');
+
+  // Check if columns exist
+  const projectsCols = await db.getAllAsync<{ name: string }>(
+    "PRAGMA table_info(projects)"
+  );
+
+  const hasCurrentlyWorkingOn = projectsCols.some(col => col.name === 'currently_working_on');
+  const hasCurrentlyWorkingOnAt = projectsCols.some(col => col.name === 'currently_working_on_at');
+  const hasCurrentlyWorkingOnEndedAt = projectsCols.some(col => col.name === 'currently_working_on_ended_at');
+
+  // Add columns if not exist
+  if (!hasCurrentlyWorkingOn) {
+    await db.execAsync('ALTER TABLE projects ADD COLUMN currently_working_on INTEGER NOT NULL DEFAULT 0');
+    console.log('[SQLite] Added currently_working_on column to projects');
+  }
+
+  if (!hasCurrentlyWorkingOnAt) {
+    await db.execAsync('ALTER TABLE projects ADD COLUMN currently_working_on_at TEXT');
+    console.log('[SQLite] Added currently_working_on_at column to projects');
+  }
+
+  if (!hasCurrentlyWorkingOnEndedAt) {
+    await db.execAsync('ALTER TABLE projects ADD COLUMN currently_working_on_ended_at TEXT');
+    console.log('[SQLite] Added currently_working_on_ended_at column to projects');
+  }
+
+  // Create index for quick access to active projects
+  await db.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_projects_currently_working_on ON projects(currently_working_on);
+
+    -- Set schema version
+    PRAGMA user_version = 4;
+  `);
+
+  console.log('[SQLite] Migration to v4 complete.');
 }
 

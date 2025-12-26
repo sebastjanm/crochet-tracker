@@ -332,6 +332,13 @@ export default {
     noNotesAdded: 'Noch keine Notizen hinzugefügt',
     notesIsProFeature: 'Notizen ist eine Pro-Funktion',
     notesProDescription: 'Fügen Sie persönliche Notizen und Erinnerungen zu Ihren Projekten hinzu. Mit Pro-Abonnement verfügbar.',
+    // Currently Working On feature
+    currentlyWorkingOn: 'Aktuell in Arbeit',
+    markAsWorkingOn: 'Als in Arbeit markieren',
+    removeFromWorkingOn: 'Von in Arbeit entfernen',
+    maxActiveProjects: 'Sie können nur 3 aktive Projekte haben. Entfernen Sie eins, um ein anderes hinzuzufügen.',
+    addedToWorkingOn: 'Zu Aktuell in Arbeit hinzugefügt',
+    removedFromWorkingOn: 'Von Aktuell in Arbeit entfernt',
   },
   inventory: {
     title: 'Mein Inventar',

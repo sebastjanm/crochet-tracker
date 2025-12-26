@@ -332,6 +332,13 @@ export default {
     noNotesAdded: 'Заметки ещё не добавлены',
     notesIsProFeature: 'Заметки — функция Pro',
     notesProDescription: 'Добавляйте личные заметки и напоминания к вашим проектам. Доступно с Pro-подпиской.',
+    // Currently Working On feature
+    currentlyWorkingOn: 'Сейчас работаю над',
+    markAsWorkingOn: 'Отметить как активный',
+    removeFromWorkingOn: 'Убрать из активных',
+    maxActiveProjects: 'Можно иметь только 3 активных проекта. Уберите один, чтобы добавить другой.',
+    addedToWorkingOn: 'Добавлено в активные проекты',
+    removedFromWorkingOn: 'Удалено из активных проектов',
   },
   inventory: {
     title: 'Мой инвентарь',

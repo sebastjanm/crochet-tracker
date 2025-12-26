@@ -71,6 +71,10 @@ export interface Database {
           updated_at: string;
           synced_at: string | null;
           deleted: boolean;
+          // Currently Working On feature
+          currently_working_on: boolean;
+          currently_working_on_at: string | null;
+          currently_working_on_ended_at: string | null;
         };
         Insert: {
           id?: string;
@@ -98,6 +102,10 @@ export interface Database {
           updated_at?: string;
           synced_at?: string | null;
           deleted?: boolean;
+          // Currently Working On feature
+          currently_working_on?: boolean;
+          currently_working_on_at?: string | null;
+          currently_working_on_ended_at?: string | null;
         };
         Update: {
           id?: string;
@@ -125,6 +133,10 @@ export interface Database {
           updated_at?: string;
           synced_at?: string | null;
           deleted?: boolean;
+          // Currently Working On feature
+          currently_working_on?: boolean;
+          currently_working_on_at?: string | null;
+          currently_working_on_ended_at?: string | null;
         };
       };
       inventory_items: {

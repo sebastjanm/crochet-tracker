@@ -48,6 +48,10 @@ export function mapLocalProjectToCloud(project: LocalProject, userId: string): C
     updated_at: project.updatedAt.toISOString(),
     synced_at: new Date().toISOString(),
     deleted: false,
+    // Currently Working On feature
+    currently_working_on: project.isCurrentlyWorkingOn ?? false,
+    currently_working_on_at: project.currentlyWorkingOnAt || null,
+    currently_working_on_ended_at: project.currentlyWorkingOnEndedAt || null,
   };
 }
 
@@ -84,6 +88,10 @@ export function mapCloudProjectToLocal(project: CloudProject): LocalProject {
     completedDate: project.completed_date ? new Date(project.completed_date) : undefined,
     createdAt: new Date(project.created_at),
     updatedAt: new Date(project.updated_at),
+    // Currently Working On feature
+    isCurrentlyWorkingOn: project.currently_working_on ?? false,
+    currentlyWorkingOnAt: project.currently_working_on_at || undefined,
+    currentlyWorkingOnEndedAt: project.currently_working_on_ended_at || undefined,
   };
 }
 

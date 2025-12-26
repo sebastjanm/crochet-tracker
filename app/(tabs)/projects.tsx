@@ -12,11 +12,12 @@ import {
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Plus, Clock, CheckCircle, Lightbulb, Volleyball, HelpCircle, PauseCircle, RotateCcw } from 'lucide-react-native';
+import { Plus, Clock, CheckCircle, Lightbulb, Volleyball, HelpCircle, PauseCircle, RotateCcw, Zap } from 'lucide-react-native';
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
 import { SearchableFilterBar } from '@/components/SearchableFilterBar';
 import { Avatar } from '@/components/Avatar';
+import { useToast } from '@/components/Toast';
 import { useProjects } from '@/hooks/projects-context';
 import { useLanguage } from '@/hooks/language-context';
 import { useAuth } from '@/hooks/auth-context';
@@ -30,15 +31,25 @@ const isSmallDevice = width < 375;
 const isTablet = width >= 768;
 
 export default function ProjectsScreen() {
-  const { projects, toDoCount, inProgressCount, onHoldCount, completedCount, froggedCount } = useProjects();
+  const {
+    projects,
+    toDoCount,
+    inProgressCount,
+    onHoldCount,
+    completedCount,
+    froggedCount,
+    currentlyWorkingOnProjects,
+    toggleCurrentlyWorkingOn,
+  } = useProjects();
   const { t } = useLanguage();
   const { user } = useAuth();
+  const { showToast } = useToast();
+
+  const userName = user?.name?.split(' ')[0] || t('profile.defaultName');
 
   const [filter, setFilter] = useState<ProjectStatus | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-
-  const userName = user?.name || 'User';
 
   const filteredProjects = projects
     .filter(project => filter === 'all' || project.status === filter)
@@ -56,6 +67,19 @@ export default function ProjectsScreen() {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 1000);
   }, []);
+
+  const handleLongPress = async (project: Project) => {
+    const success = await toggleCurrentlyWorkingOn(project.id);
+    if (!success) {
+      showToast(t('projects.maxActiveProjects'), 'warning');
+    } else {
+      const isNowActive = !project.isCurrentlyWorkingOn;
+      showToast(
+        isNowActive ? t('projects.addedToWorkingOn') : t('projects.removedFromWorkingOn'),
+        'success'
+      );
+    }
+  };
 
   const getStatusIcon = (status: ProjectStatus) => {
     switch (status) {
@@ -90,18 +114,21 @@ export default function ProjectsScreen() {
   const renderProject = ({ item }: { item: Project }) => {
     const defaultImageIndex = item.defaultImageIndex ?? 0;
     const displayImage = item.images[defaultImageIndex] || item.images[0] || 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop';
-    
+    const isActive = item.isCurrentlyWorkingOn === true;
+
     return (
       <TouchableOpacity
         onPress={() => router.push(`/project/${item.id}`)}
+        onLongPress={() => handleLongPress(item)}
+        delayLongPress={400}
         activeOpacity={0.8}
         style={styles.gridItem}
         accessible={true}
         accessibilityRole="button"
-        accessibilityLabel={`${item.title} project`}
-        accessibilityHint={`View details for ${item.title}`}
+        accessibilityLabel={`${item.title} project${isActive ? ', currently working on' : ''}`}
+        accessibilityHint={`Tap to view details. Long press to ${isActive ? 'remove from' : 'mark as'} currently working on`}
       >
-        <View style={styles.projectCard}>
+        <View style={[styles.projectCard, isActive && styles.projectCardActive]}>
           <Image
             source={getImageSource(displayImage)}
             style={styles.projectImage}
@@ -112,8 +139,50 @@ export default function ProjectsScreen() {
           <View style={[styles.statusIndicator, { backgroundColor: getStatusColor(item.status) }]}>
             {getStatusIcon(item.status)}
           </View>
+          {isActive && (
+            <View style={styles.activeIndicator}>
+              <Zap size={14} color={Colors.white} fill={Colors.white} />
+            </View>
+          )}
           <View style={styles.projectInfo}>
             <Text style={styles.projectTitle} numberOfLines={2}>
+              {item.title}
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderActiveProject = ({ item }: { item: Project }) => {
+    const defaultImageIndex = item.defaultImageIndex ?? 0;
+    const displayImage = item.images[defaultImageIndex] || item.images[0] || 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop';
+
+    return (
+      <TouchableOpacity
+        onPress={() => router.push(`/project/${item.id}`)}
+        onLongPress={() => handleLongPress(item)}
+        delayLongPress={400}
+        activeOpacity={0.8}
+        style={styles.activeProjectItem}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel={`${item.title}, currently working on`}
+        accessibilityHint="Tap to view details. Long press to remove from currently working on"
+      >
+        <View style={styles.activeProjectCard}>
+          <Image
+            source={getImageSource(displayImage)}
+            style={styles.activeProjectImage}
+            contentFit="cover"
+            transition={200}
+            cachePolicy="memory-disk"
+          />
+          <View style={styles.activeProjectBadge}>
+            <Zap size={12} color={Colors.white} fill={Colors.white} />
+          </View>
+          <View style={styles.activeProjectInfo}>
+            <Text style={styles.activeProjectTitle} numberOfLines={1}>
               {item.title}
             </Text>
           </View>
@@ -160,6 +229,24 @@ export default function ProjectsScreen() {
         </View>
       </SafeAreaView>
       
+      {/* Currently Working On Section */}
+      {currentlyWorkingOnProjects.length > 0 && (
+        <View style={styles.activeSection}>
+          <View style={styles.activeSectionHeader}>
+            <Zap size={18} color={Colors.deepTeal} />
+            <Text style={styles.activeSectionTitle}>{t('projects.currentlyWorkingOn')}</Text>
+          </View>
+          <FlatList
+            data={currentlyWorkingOnProjects}
+            renderItem={renderActiveProject}
+            keyExtractor={(item) => `active-${item.id}`}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.activeProjectsList}
+          />
+        </View>
+      )}
+
       <SearchableFilterBar
         filters={statusFilters.map(f => ({ id: f.key, label: f.label, count: f.count, icon: f.icon, color: f.color }))}
         selectedFilter={filter}
@@ -440,6 +527,106 @@ const styles = StyleSheet.create({
         shadowColor: Colors.charcoal,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+      default: {},
+    }),
+  },
+
+  // Currently Working On styles
+  activeSection: {
+    backgroundColor: Colors.headerBg,
+    paddingTop: 8,
+    paddingBottom: 12,
+  },
+  activeSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    marginBottom: 10,
+  },
+  activeSectionTitle: {
+    ...Typography.body,
+    color: Colors.deepTeal,
+    fontWeight: '600' as const,
+    fontSize: 15,
+  },
+  activeProjectsList: {
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  activeProjectItem: {
+    width: 120,
+  },
+  activeProjectCard: {
+    borderRadius: 10,
+    backgroundColor: Colors.white,
+    borderWidth: 2,
+    borderColor: Colors.deepTeal,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: Colors.deepTeal,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+      default: {},
+    }),
+  },
+  activeProjectImage: {
+    width: '100%',
+    height: 80,
+    backgroundColor: Colors.beige,
+  },
+  activeProjectBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.deepTeal,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeProjectInfo: {
+    padding: 8,
+  },
+  activeProjectTitle: {
+    ...Typography.caption,
+    color: Colors.charcoal,
+    fontWeight: '600' as const,
+    fontSize: 12,
+  },
+
+  // Active project card highlight in main grid
+  projectCardActive: {
+    borderWidth: 2,
+    borderColor: Colors.deepTeal,
+  },
+  activeIndicator: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.deepTeal,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: Colors.deepTeal,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
         shadowRadius: 4,
       },
       android: {

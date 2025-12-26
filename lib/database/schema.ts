@@ -53,6 +53,10 @@ export interface ProjectRow {
   synced_at: string | null;
   pending_sync: number;
   deleted: number; // 0 = false, 1 = true (soft delete for Legend-State)
+  // Currently Working On feature (V4)
+  currently_working_on: number; // 0 = false, 1 = true
+  currently_working_on_at: string | null;
+  currently_working_on_ended_at: string | null;
 }
 
 /**
@@ -82,13 +86,17 @@ export function mapRowToProject(row: ProjectRow): Project {
     completedDate: row.completed_date ? new Date(row.completed_date) : undefined,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
+    // Currently Working On
+    isCurrentlyWorkingOn: row.currently_working_on === 1,
+    currentlyWorkingOnAt: row.currently_working_on_at ?? undefined,
+    currentlyWorkingOnEndedAt: row.currently_working_on_ended_at ?? undefined,
   };
 }
 
 /**
  * Map Project type to SQLite row values for INSERT/UPDATE.
  */
-export function mapProjectToRow(project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>): Omit<ProjectRow, 'id' | 'created_at' | 'updated_at' | 'synced_at' | 'pending_sync' | 'deleted' | 'user_id'> {
+export function mapProjectToRow(project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>): Omit<ProjectRow, 'id' | 'created_at' | 'updated_at' | 'synced_at' | 'pending_sync' | 'deleted'> {
   return {
     title: project.title,
     description: project.description ?? null,
@@ -109,6 +117,10 @@ export function mapProjectToRow(project: Omit<Project, 'id' | 'createdAt' | 'upd
     inspiration_sources: stringifyJson(project.inspirationSources),
     start_date: project.startDate?.toISOString() ?? null,
     completed_date: project.completedDate?.toISOString() ?? null,
+    // Currently Working On
+    currently_working_on: project.isCurrentlyWorkingOn ? 1 : 0,
+    currently_working_on_at: project.currentlyWorkingOnAt ?? null,
+    currently_working_on_ended_at: project.currentlyWorkingOnEndedAt ?? null,
   };
 }
 

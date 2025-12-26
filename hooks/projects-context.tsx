@@ -120,8 +120,9 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
         id, title, description, status, project_type, images, default_image_index,
         pattern_pdf, pattern_url, pattern_images, inspiration_url, notes,
         yarn_used, yarn_used_ids, hook_used_ids, yarn_materials, work_progress,
-        inspiration_sources, start_date, completed_date, created_at, updated_at, pending_sync, user_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        inspiration_sources, start_date, completed_date, created_at, updated_at, pending_sync, user_id,
+        currently_working_on, currently_working_on_at, currently_working_on_ended_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         row.title,
@@ -147,6 +148,9 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
         timestamp,
         1, // pending_sync = true for new projects
         user?.id ?? null, // Associate with current user
+        row.currently_working_on,
+        row.currently_working_on_at,
+        row.currently_working_on_ended_at,
       ]
     );
 
@@ -238,7 +242,8 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
           default_image_index = ?, pattern_pdf = ?, pattern_url = ?, pattern_images = ?,
           inspiration_url = ?, notes = ?, yarn_used = ?, yarn_used_ids = ?, hook_used_ids = ?,
           yarn_materials = ?, work_progress = ?, inspiration_sources = ?, start_date = ?,
-          completed_date = ?, updated_at = ?, pending_sync = ?
+          completed_date = ?, updated_at = ?, pending_sync = ?,
+          currently_working_on = ?, currently_working_on_at = ?, currently_working_on_ended_at = ?
         WHERE id = ?`,
         [
           row.title,
@@ -262,6 +267,9 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
           row.completed_date,
           timestamp,
           1, // pending_sync = true
+          row.currently_working_on,
+          row.currently_working_on_at,
+          row.currently_working_on_ended_at,
           id,
         ]
       );
@@ -338,6 +346,61 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
   };
 
   /**
+   * Get projects marked as "Currently Working On".
+   * Maximum 3 projects can be active at once.
+   */
+  const currentlyWorkingOnProjects = projects.filter(
+    (p) => p.isCurrentlyWorkingOn === true
+  );
+
+  /**
+   * Toggle "Currently Working On" status for a project.
+   * Enforces maximum of 3 active projects.
+   *
+   * @param projectId - ID of the project to toggle
+   * @returns true if toggle was successful, false if limit reached
+   */
+  const toggleCurrentlyWorkingOn = async (projectId: string): Promise<boolean> => {
+    const project = projects.find((p) => p.id === projectId);
+    if (!project) {
+      console.error(`[Projects] Project ${projectId} not found`);
+      return false;
+    }
+
+    const isCurrentlyActive = project.isCurrentlyWorkingOn === true;
+    const activeCount = currentlyWorkingOnProjects.length;
+
+    // Check limit when trying to mark as active
+    if (!isCurrentlyActive && activeCount >= 3) {
+      console.warn('[Projects] Cannot mark more than 3 projects as Currently Working On');
+      return false;
+    }
+
+    const timestamp = new Date().toISOString();
+
+    // Build updates based on toggle direction
+    const updates: Partial<Project> = isCurrentlyActive
+      ? {
+          // Unmarking: set ended timestamp
+          isCurrentlyWorkingOn: false,
+          currentlyWorkingOnEndedAt: timestamp,
+        }
+      : {
+          // Marking: set started timestamp, clear ended
+          isCurrentlyWorkingOn: true,
+          currentlyWorkingOnAt: timestamp,
+          currentlyWorkingOnEndedAt: undefined,
+        };
+
+    await updateProject(projectId, updates);
+    console.log(
+      `[Projects] ${isCurrentlyActive ? 'Removed from' : 'Added to'} Currently Working On: ${project.title}`
+    );
+
+    return true;
+  };
+
+  /**
    * Replace a local image URI with a cloud URL after upload.
    * Called by the image sync queue when an upload completes.
    */
@@ -376,6 +439,10 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
     getProjectsByStatus,
     refreshProjects,
     replaceProjectImage,
+    // Currently Working On
+    currentlyWorkingOnProjects,
+    toggleCurrentlyWorkingOn,
+    // Status counts
     toDoCount: projects.filter((p) => p.status === 'to-do').length,
     inProgressCount: projects.filter((p) => p.status === 'in-progress').length,
     onHoldCount: projects.filter((p) => p.status === 'on-hold').length,

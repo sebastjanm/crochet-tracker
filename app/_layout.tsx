@@ -5,8 +5,9 @@ import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
 import { setButtonStyleAsync } from "expo-navigation-bar";
 import { SQLiteProvider, useSQLiteContext } from "expo-sqlite";
+import * as Updates from "expo-updates";
 import React, { useEffect, useRef, Suspense } from "react";
-import { StyleSheet, Platform, View, ActivityIndicator, AppState, AppStateStatus } from "react-native";
+import { StyleSheet, Platform, View, ActivityIndicator, AppState, AppStateStatus, Alert } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "@/hooks/auth-context";
@@ -43,6 +44,56 @@ function DatabaseLoadingFallback() {
       <ActivityIndicator size="large" color={Colors.deepTeal} />
     </View>
   );
+}
+
+/**
+ * Update Checker - Checks for OTA updates and prompts user to reload.
+ * Only runs in production builds (not in dev mode).
+ */
+function UpdateChecker({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    async function checkForUpdates() {
+      // Skip in development mode
+      if (__DEV__) {
+        console.log('[Updates] Skipping update check in dev mode');
+        return;
+      }
+
+      try {
+        console.log('[Updates] Checking for updates...');
+        const update = await Updates.checkForUpdateAsync();
+
+        if (update.isAvailable) {
+          console.log('[Updates] Update available, downloading...');
+          await Updates.fetchUpdateAsync();
+
+          console.log('[Updates] Update downloaded, prompting user...');
+          Alert.alert(
+            'Update Available',
+            'A new version has been downloaded. Restart now to apply the update?',
+            [
+              { text: 'Later', style: 'cancel' },
+              {
+                text: 'Restart',
+                onPress: async () => {
+                  await Updates.reloadAsync();
+                }
+              },
+            ]
+          );
+        } else {
+          console.log('[Updates] App is up to date');
+        }
+      } catch (error) {
+        console.error('[Updates] Error checking for updates:', error);
+        // Silent fail - don't interrupt user experience
+      }
+    }
+
+    checkForUpdates();
+  }, []);
+
+  return <>{children}</>;
 }
 
 /**
@@ -134,10 +185,11 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <StatusBar style="auto" />
-      <QueryClientProvider client={queryClient}>
-        <GestureHandlerRootView style={styles.container}>
-          <LanguageProvider>
-            <AuthProvider>
+      <UpdateChecker>
+        <QueryClientProvider client={queryClient}>
+          <GestureHandlerRootView style={styles.container}>
+            <LanguageProvider>
+              <AuthProvider>
               <Suspense fallback={<DatabaseLoadingFallback />}>
                 <SQLiteProvider
                   databaseName="artful.db"
@@ -187,9 +239,10 @@ export default function RootLayout() {
                 </SQLiteProvider>
               </Suspense>
             </AuthProvider>
-          </LanguageProvider>
-        </GestureHandlerRootView>
-      </QueryClientProvider>
+            </LanguageProvider>
+          </GestureHandlerRootView>
+        </QueryClientProvider>
+      </UpdateChecker>
     </SafeAreaProvider>
   );
 }

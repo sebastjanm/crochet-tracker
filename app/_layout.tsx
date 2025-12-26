@@ -15,7 +15,7 @@ import { ProjectsProvider, useProjects } from "@/hooks/projects-context";
 import { InventoryProvider, useInventory } from "@/hooks/inventory-context";
 import { LanguageProvider, useLanguage } from "@/hooks/language-context";
 import { migrateDatabase } from "@/lib/database/migrations";
-import { getSyncManager, cleanupSyncManager } from "@/lib/legend-state";
+import { getSyncManager, cleanupSyncManager, type ImageUploadCallbacks } from "@/lib/legend-state";
 import Colors from "@/constants/colors";
 
 SplashScreen.preventAutoHideAsync();
@@ -124,8 +124,8 @@ function UpdateChecker({ children }: { children: React.ReactNode }) {
  */
 function LegendStateSyncManager({ children }: { children: React.ReactNode }) {
   const { user, isPro } = useAuth();
-  const { refreshProjects } = useProjects();
-  const { refreshItems } = useInventory();
+  const { refreshProjects, replaceProjectImage } = useProjects();
+  const { refreshItems, replaceInventoryImage } = useInventory();
   const appState = useRef(AppState.currentState);
   const hasInitialSynced = useRef(false);
   const syncManagerRef = useRef<ReturnType<typeof getSyncManager>>(null);
@@ -133,6 +133,36 @@ function LegendStateSyncManager({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Initialize or cleanup sync manager based on Pro status
     if (isPro && user?.id) {
+      // Create image upload callbacks
+      const imageCallbacks: ImageUploadCallbacks = {
+        onImageUploaded: async (itemId, itemType, _imageIndex, newUrl, oldUri) => {
+          console.log(`[LegendStateSyncManager] Image uploaded: ${itemType}/${itemId}`);
+          console.log(`[LegendStateSyncManager] Replacing ${oldUri.slice(0, 50)}... with ${newUrl.slice(0, 50)}...`);
+
+          // DEBUG: Show alert on successful upload
+          Alert.alert(
+            '✅ Image Uploaded',
+            `${itemType}/${itemId}\n\nURL: ${newUrl.slice(0, 80)}...`,
+            [{ text: 'OK' }]
+          );
+
+          if (itemType === 'project') {
+            await replaceProjectImage(itemId, oldUri, newUrl);
+          } else if (itemType === 'inventory') {
+            await replaceInventoryImage(itemId, oldUri, newUrl);
+          }
+        },
+        onImageFailed: (itemId, itemType, imageIndex, error) => {
+          console.error(`[LegendStateSyncManager] Image upload failed: ${itemType}/${itemId}[${imageIndex}]`, error);
+          // DEBUG: Show alert on failed upload
+          Alert.alert(
+            '❌ Image Upload Failed',
+            `${itemType}/${itemId}[${imageIndex}]\n\nError: ${error}`,
+            [{ text: 'OK' }]
+          );
+        },
+      };
+
       // Get or create sync manager with callbacks for remote changes
       syncManagerRef.current = getSyncManager(user.id, isPro, {
         onProjectsChanged: async () => {
@@ -143,7 +173,7 @@ function LegendStateSyncManager({ children }: { children: React.ReactNode }) {
           console.log('[LegendStateSyncManager] Inventory changed from remote, refreshing...');
           await refreshItems();
         },
-      });
+      }, imageCallbacks);
 
       // Initialize sync manager if not already initialized
       if (syncManagerRef.current && !hasInitialSynced.current) {
@@ -173,7 +203,7 @@ function LegendStateSyncManager({ children }: { children: React.ReactNode }) {
     } else {
       // Cleanup sync manager when user logs out or is no longer Pro
       if (syncManagerRef.current) {
-        cleanupSyncManager();
+        void cleanupSyncManager();
         syncManagerRef.current = null;
         hasInitialSynced.current = false;
         console.log('[LegendStateSyncManager] Cleaned up sync manager (user logged out or not Pro)');
@@ -203,7 +233,7 @@ function LegendStateSyncManager({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.remove();
     };
-  }, [isPro, user?.id, refreshProjects, refreshItems]);
+  }, [isPro, user?.id, refreshProjects, refreshItems, replaceProjectImage, replaceInventoryImage]);
 
   return <>{children}</>;
 }

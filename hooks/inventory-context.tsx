@@ -15,7 +15,7 @@ import { InventoryItem } from '@/types';
 import { useImagePicker } from './useImagePicker';
 import { syncInventoryToProjects, removeInventoryFromProjects } from '@/lib/cross-context-sync';
 import { getSyncManager } from '@/lib/legend-state';
-import { mapLocalInventoryToCloud } from '@/lib/legend-state/type-mappers';
+import { mapLocalInventoryToCloud, replaceImageUri } from '@/lib/legend-state/type-mappers';
 import { useAuth } from '@/hooks/auth-context';
 import {
   InventoryItemRow,
@@ -468,6 +468,35 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     console.log('[Inventory] Refreshed from SQLite');
   };
 
+  /**
+   * Replace a local image URI with a cloud URL after upload.
+   * Called by the image sync queue when an upload completes.
+   */
+  const replaceInventoryImage = useCallback(async (
+    itemId: string,
+    oldUri: string,
+    newUrl: string
+  ): Promise<void> => {
+    const item = items.find((i) => i.id === itemId);
+    if (!item) {
+      console.warn(`[Inventory] replaceInventoryImage: Item ${itemId} not found`);
+      return;
+    }
+
+    const images = item.images || [];
+    const updatedImages = replaceImageUri(images, oldUri, newUrl);
+
+    // Check if any replacement was made
+    if (JSON.stringify(images) === JSON.stringify(updatedImages)) {
+      console.warn(`[Inventory] replaceInventoryImage: URI ${oldUri} not found in item ${itemId}`);
+      return;
+    }
+
+    // Update via existing updateItem to ensure SQLite and cloud sync
+    await updateItem(itemId, { images: updatedImages });
+    console.log(`[Inventory] Replaced image URI in item ${itemId}: ${oldUri} → ${newUrl}`);
+  }, [items, updateItem]);
+
   return {
     // State
     items,
@@ -505,6 +534,7 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
 
     // Cross-context sync
     refreshItems,
+    replaceInventoryImage,
 
     // Legacy (for backward compatibility)
     yarnCount: statistics.yarnCount,

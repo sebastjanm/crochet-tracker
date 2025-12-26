@@ -14,7 +14,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Project, ProjectStatus, ProjectYarn } from '@/types';
 import { syncProjectMaterials, removeProjectFromInventory } from '@/lib/cross-context-sync';
 import { getSyncManager } from '@/lib/legend-state';
-import { mapLocalProjectToCloud } from '@/lib/legend-state/type-mappers';
+import { mapLocalProjectToCloud, replaceImageUri } from '@/lib/legend-state/type-mappers';
 import { useAuth } from '@/hooks/auth-context';
 import {
   ProjectRow,
@@ -34,13 +34,33 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
    * Push project to cloud via Legend-State (Pro users only).
    */
   const pushToCloud = useCallback((project: Project) => {
+    const firstImg = project.images?.[0];
+    const firstImagePreview = typeof firstImg === 'string' ? firstImg.slice(0, 50) : 'non-string';
+    console.log('[Projects] pushToCloud called:', {
+      projectId: project.id,
+      isPro,
+      userId: user?.id,
+      hasImages: (project.images?.length || 0) > 0,
+      imageCount: project.images?.length || 0,
+      firstImage: firstImagePreview
+    });
+
     if (isPro && user?.id) {
       const syncManager = getSyncManager(user.id, isPro);
+      console.log('[Projects] SyncManager:', {
+        exists: !!syncManager,
+        isReady: syncManager?.isReady()
+      });
+
       if (syncManager?.isReady()) {
         const cloudProject = mapLocalProjectToCloud(project, user.id);
         syncManager.pushProject(cloudProject);
         console.log('[Projects] Pushed to cloud via Legend-State:', project.id);
+      } else {
+        console.warn('[Projects] SyncManager not ready, skipping cloud push');
       }
+    } else {
+      console.log('[Projects] Skipping cloud push - not Pro or no user');
     }
   }, [isPro, user?.id]);
 
@@ -317,6 +337,35 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
     console.log('[Projects] Refreshed from SQLite');
   };
 
+  /**
+   * Replace a local image URI with a cloud URL after upload.
+   * Called by the image sync queue when an upload completes.
+   */
+  const replaceProjectImage = useCallback(async (
+    projectId: string,
+    oldUri: string,
+    newUrl: string
+  ): Promise<void> => {
+    const project = projects.find((p) => p.id === projectId);
+    if (!project) {
+      console.warn(`[Projects] replaceProjectImage: Project ${projectId} not found`);
+      return;
+    }
+
+    const images = project.images || [];
+    const updatedImages = replaceImageUri(images, oldUri, newUrl);
+
+    // Check if any replacement was made
+    if (JSON.stringify(images) === JSON.stringify(updatedImages)) {
+      console.warn(`[Projects] replaceProjectImage: URI ${oldUri} not found in project ${projectId}`);
+      return;
+    }
+
+    // Update via existing updateProject to ensure SQLite and cloud sync
+    await updateProject(projectId, { images: updatedImages });
+    console.log(`[Projects] Replaced image URI in project ${projectId}: ${oldUri} → ${newUrl}`);
+  }, [projects, updateProject]);
+
   return {
     projects,
     isLoading,
@@ -326,6 +375,7 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
     getProjectById,
     getProjectsByStatus,
     refreshProjects,
+    replaceProjectImage,
     toDoCount: projects.filter((p) => p.status === 'to-do').length,
     inProgressCount: projects.filter((p) => p.status === 'in-progress').length,
     onHoldCount: projects.filter((p) => p.status === 'on-hold').length,

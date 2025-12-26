@@ -17,6 +17,11 @@
 import { supabase } from '@/lib/supabase/client';
 import type { Project, InventoryItem } from '@/lib/supabase/database.types';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import { imageSyncQueue, type ImageUploadCallbacks } from './image-sync-queue';
+import { getLocalImagesToUpload, filterLocalImages } from './type-mappers';
+
+// Re-export for external use
+export type { ImageUploadCallbacks };
 
 // ============================================================================
 // TYPES
@@ -48,10 +53,12 @@ export class SyncManager {
   private isInitialized = false;
   private projectsChannel: RealtimeChannel | null = null;
   private inventoryChannel: RealtimeChannel | null = null;
+  private imageCallbacks: ImageUploadCallbacks;
 
-  constructor(userId: string, callbacks: SyncCallbacks = {}) {
+  constructor(userId: string, callbacks: SyncCallbacks = {}, imageCallbacks: ImageUploadCallbacks = {}) {
     this.userId = userId;
     this.callbacks = callbacks;
+    this.imageCallbacks = imageCallbacks;
   }
 
   /**
@@ -112,6 +119,10 @@ export class SyncManager {
           console.log('[SyncManager] Inventory subscription status:', status);
         });
 
+      // Initialize image sync queue
+      await imageSyncQueue.initialize(this.userId, this.imageCallbacks);
+      console.log('[SyncManager] Image sync queue initialized');
+
       this.isInitialized = true;
       console.log('[SyncManager] Initialized successfully');
     } catch (error) {
@@ -122,6 +133,7 @@ export class SyncManager {
 
   /**
    * Push a project to Supabase (upsert).
+   * Queues local images for upload and syncs only cloud URLs.
    */
   async pushProject(project: Project): Promise<void> {
     if (!supabase || !this.isInitialized) {
@@ -130,9 +142,31 @@ export class SyncManager {
     }
 
     try {
+      // Queue local images for upload (non-blocking)
+      const images = project.images || [];
+      const localImages = getLocalImagesToUpload(images);
+
+      if (localImages.length > 0) {
+        console.log(`[SyncManager] Queueing ${localImages.length} local images for project ${project.id}`);
+        console.log(`[SyncManager] Local URIs:`, localImages.map(l => l.uri.slice(0, 50)));
+        await imageSyncQueue.enqueue(
+          localImages.map(({ uri, index }) => ({
+            localUri: uri,
+            bucket: 'project-images' as const,
+            itemId: project.id,
+            itemType: 'project' as const,
+            imageIndex: index,
+          }))
+        );
+      }
+
+      // Filter out local file:// URIs - only sync cloud URLs
+      const cloudImages = filterLocalImages(images);
+
       // Ensure user_id is set
       const projectWithUser = {
         ...project,
+        images: cloudImages, // Only cloud URLs
         user_id: this.userId,
         synced_at: new Date().toISOString(),
       };
@@ -146,7 +180,7 @@ export class SyncManager {
         throw error;
       }
 
-      console.log(`[SyncManager] Pushed project: ${project.id}`);
+      console.log(`[SyncManager] Pushed project: ${project.id} (${cloudImages.length} cloud images, ${localImages.length} queued)`);
     } catch (error) {
       console.error('[SyncManager] Push project failed:', error);
       throw error;
@@ -155,6 +189,7 @@ export class SyncManager {
 
   /**
    * Push an inventory item to Supabase (upsert).
+   * Queues local images for upload and syncs only cloud URLs.
    */
   async pushInventoryItem(item: InventoryItem): Promise<void> {
     if (!supabase || !this.isInitialized) {
@@ -163,9 +198,30 @@ export class SyncManager {
     }
 
     try {
+      // Queue local images for upload (non-blocking)
+      const images = item.images || [];
+      const localImages = getLocalImagesToUpload(images);
+
+      if (localImages.length > 0) {
+        console.log(`[SyncManager] Queueing ${localImages.length} local images for inventory ${item.id}`);
+        await imageSyncQueue.enqueue(
+          localImages.map(({ uri, index }) => ({
+            localUri: uri,
+            bucket: 'inventory-images' as const,
+            itemId: item.id,
+            itemType: 'inventory' as const,
+            imageIndex: index,
+          }))
+        );
+      }
+
+      // Filter out local file:// URIs - only sync cloud URLs
+      const cloudImages = filterLocalImages(images);
+
       // Ensure user_id is set
       const itemWithUser = {
         ...item,
+        images: cloudImages, // Only cloud URLs
         user_id: this.userId,
         synced_at: new Date().toISOString(),
       };
@@ -179,7 +235,7 @@ export class SyncManager {
         throw error;
       }
 
-      console.log(`[SyncManager] Pushed inventory item: ${item.id}`);
+      console.log(`[SyncManager] Pushed inventory item: ${item.id} (${cloudImages.length} cloud images, ${localImages.length} queued)`);
     } catch (error) {
       console.error('[SyncManager] Push inventory item failed:', error);
       throw error;
@@ -310,7 +366,7 @@ export class SyncManager {
   /**
    * Cleanup sync manager on logout.
    */
-  cleanup(): void {
+  async cleanup(): Promise<void> {
     console.log('[SyncManager] Cleaning up');
 
     if (this.projectsChannel && supabase) {
@@ -323,7 +379,24 @@ export class SyncManager {
       this.inventoryChannel = null;
     }
 
+    // Cleanup image sync queue
+    await imageSyncQueue.cleanup();
+
     this.isInitialized = false;
+  }
+
+  /**
+   * Get image upload queue status for UI display.
+   */
+  getImageQueueStatus() {
+    return imageSyncQueue.getStatus();
+  }
+
+  /**
+   * Retry all failed image uploads.
+   */
+  async retryFailedImageUploads(): Promise<void> {
+    await imageSyncQueue.retryFailed();
   }
 }
 
@@ -340,12 +413,13 @@ let currentSyncManager: SyncManager | null = null;
 export function getSyncManager(
   userId: string,
   isPro: boolean,
-  callbacks?: SyncCallbacks
+  callbacks?: SyncCallbacks,
+  imageCallbacks?: ImageUploadCallbacks
 ): SyncManager | null {
   if (!isPro || !supabase) {
     // Cleanup existing manager if user is no longer Pro
     if (currentSyncManager) {
-      currentSyncManager.cleanup();
+      void currentSyncManager.cleanup();
       currentSyncManager = null;
     }
     return null;
@@ -354,9 +428,9 @@ export function getSyncManager(
   // Create new manager if needed
   if (!currentSyncManager || (currentSyncManager as unknown as { userId: string }).userId !== userId) {
     if (currentSyncManager) {
-      currentSyncManager.cleanup();
+      void currentSyncManager.cleanup();
     }
-    currentSyncManager = new SyncManager(userId, callbacks);
+    currentSyncManager = new SyncManager(userId, callbacks, imageCallbacks);
   }
 
   return currentSyncManager;
@@ -365,9 +439,9 @@ export function getSyncManager(
 /**
  * Cleanup sync manager (call on logout).
  */
-export function cleanupSyncManager(): void {
+export async function cleanupSyncManager(): Promise<void> {
   if (currentSyncManager) {
-    currentSyncManager.cleanup();
+    await currentSyncManager.cleanup();
     currentSyncManager = null;
   }
 }

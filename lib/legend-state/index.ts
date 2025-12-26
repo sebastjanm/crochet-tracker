@@ -29,4 +29,8 @@ export {
   cleanupSyncManager,
   type SyncResult,
   type SyncCallbacks,
+  type ImageUploadCallbacks,
 } from './sync-manager';
+
+// Image sync queue - Persistent upload queue for images
+export { imageSyncQueue } from './image-sync-queue';

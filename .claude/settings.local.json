@@ -112,7 +112,11 @@
       "WebFetch(domain:supabase.com)",
       "Bash(eas update:*)",
       "Bash(eas update:list:*)",
-      "Bash(eas channel:list:*)"
+      "Bash(eas channel:list:*)",
+      "WebFetch(domain:docs.powersync.com)",
+      "WebFetch(domain:legendapp.com)",
+      "Bash(timeout 30 ~/.bun/bin/bunx expo start:*)",
+      "Bash(eas branch:list:*)"
     ],
     "deny": [],
     "ask": []

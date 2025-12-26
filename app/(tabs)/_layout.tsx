@@ -2,6 +2,7 @@ import { Tabs, router } from "expo-router";
 import { Volleyball, Box, User, Wrench } from "lucide-react-native";
 import React, { useEffect } from "react";
 import { Platform, View, StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/hooks/auth-context";
 import { useLanguage } from "@/hooks/language-context";
@@ -10,6 +11,7 @@ import { normalizeBorder } from "@/constants/pixelRatio";
 export default function TabLayout() {
   const { isAuthenticated, isLoading } = useAuth();
   const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -41,8 +43,8 @@ export default function TabLayout() {
           backgroundColor: 'transparent',
           borderTopWidth: 0,
           paddingTop: 10,
-          paddingBottom: Platform.OS === 'ios' ? 0 : 8,
-          height: Platform.OS === 'ios' ? 88 : 68,
+          paddingBottom: Platform.OS === 'ios' ? 0 : 8 + insets.bottom,
+          height: Platform.OS === 'ios' ? 88 : 68 + insets.bottom,
         },
         headerStyle: {
           backgroundColor: Colors.cream,

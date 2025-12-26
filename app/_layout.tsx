@@ -15,7 +15,7 @@ import { ProjectsProvider, useProjects } from "@/hooks/projects-context";
 import { InventoryProvider, useInventory } from "@/hooks/inventory-context";
 import { LanguageProvider, useLanguage } from "@/hooks/language-context";
 import { migrateDatabase } from "@/lib/database/migrations";
-import { getSyncManager, cleanupSyncManager, type ImageUploadCallbacks } from "@/lib/legend-state";
+import { imageSyncQueue, type ImageUploadCallbacks, clearStores } from "@/lib/legend-state";
 import { ToastProvider, useToast } from "@/components/Toast";
 import Colors from "@/constants/colors";
 
@@ -101,7 +101,21 @@ function UpdateChecker({ children }: { children: React.ReactNode }) {
 
 /**
  * Legend-State Sync Manager - Handles background sync for Pro users.
- * Uses Legend-State for production-grade offline-first sync with Supabase.
+ *
+ * ARCHITECTURE: SQLite + Legend-State for Cloud Sync
+ * ===================================================
+ * - SQLite = Source of truth for ALL users (offline-first guarantee)
+ * - Legend-State = Cloud sync layer for Pro users only
+ * - Image upload queue handles file uploads separately
+ *
+ * The contexts (projects-context, inventory-context) handle:
+ * - SQLite reads/writes (always)
+ * - Legend-State pushes to cloud (Pro users)
+ *
+ * This component handles:
+ * - Image upload queue initialization
+ * - App foreground refresh
+ * - Cleanup on logout
  *
  * @see https://supabase.com/blog/local-first-expo-legend-state
  */
@@ -112,16 +126,15 @@ function LegendStateSyncManager({ children }: { children: React.ReactNode }) {
   const { showToast } = useToast();
   const { t } = useLanguage();
   const appState = useRef(AppState.currentState);
-  const hasInitialSynced = useRef(false);
-  const syncManagerRef = useRef<ReturnType<typeof getSyncManager>>(null);
+  const hasInitialized = useRef(false);
 
   useEffect(() => {
-    // Initialize or cleanup sync manager based on Pro status
+    // Initialize or cleanup based on Pro status
     if (isPro && user?.id) {
       // Create image upload callbacks
       const imageCallbacks: ImageUploadCallbacks = {
         onImageUploaded: async (itemId, itemType, _imageIndex, newUrl, oldUri) => {
-          console.log(`[LegendStateSyncManager] Image uploaded: ${itemType}/${itemId}`);
+          console.log(`[SyncManager] Image uploaded: ${itemType}/${itemId}`);
           if (itemType === 'project') {
             await replaceProjectImage(itemId, oldUri, newUrl);
           } else if (itemType === 'inventory') {
@@ -129,43 +142,30 @@ function LegendStateSyncManager({ children }: { children: React.ReactNode }) {
           }
         },
         onImageFailed: (itemId, itemType, imageIndex, error) => {
-          console.error(`[LegendStateSyncManager] Image upload failed: ${itemType}/${itemId}[${imageIndex}]`, error);
+          console.error(`[SyncManager] Image upload failed: ${itemType}/${itemId}[${imageIndex}]`, error);
           showToast(t('profile.imageUploadFailed'), 'error');
         },
       };
 
-      // Get or create sync manager with callbacks for remote changes
-      syncManagerRef.current = getSyncManager(user.id, isPro, {
-        onProjectsChanged: async () => {
-          console.log('[LegendStateSyncManager] Projects changed from remote, refreshing...');
-          await refreshProjects();
-        },
-        onInventoryChanged: async () => {
-          console.log('[LegendStateSyncManager] Inventory changed from remote, refreshing...');
-          await refreshItems();
-        },
-      }, imageCallbacks);
+      // Initialize image sync queue (Pro users need image uploads)
+      if (!hasInitialized.current) {
+        hasInitialized.current = true;
+        console.log('[SyncManager] Initializing image sync queue for Pro user:', user.id);
 
-      // Initialize sync manager if not already initialized
-      if (syncManagerRef.current && !hasInitialSynced.current) {
-        hasInitialSynced.current = true;
-        console.log('[LegendStateSyncManager] Initializing Legend-State sync for Pro user:', user.id);
-
-        syncManagerRef.current.initialize()
+        imageSyncQueue.initialize(user.id, imageCallbacks)
           .then(() => {
-            console.log('[LegendStateSyncManager] Legend-State sync initialized successfully');
+            console.log('[SyncManager] Image sync queue initialized successfully');
           })
           .catch((error) => {
-            console.error('[LegendStateSyncManager] Initialization failed:', error);
+            console.error('[SyncManager] Image sync queue initialization failed:', error);
           });
       }
     } else {
-      // Cleanup sync manager when user logs out or is no longer Pro
-      if (syncManagerRef.current) {
-        void cleanupSyncManager();
-        syncManagerRef.current = null;
-        hasInitialSynced.current = false;
-        console.log('[LegendStateSyncManager] Cleaned up sync manager (user logged out or not Pro)');
+      // Cleanup when user logs out or is no longer Pro
+      if (hasInitialized.current) {
+        clearStores(user?.id);
+        hasInitialized.current = false;
+        console.log('[SyncManager] Cleaned up Legend-State stores (user logged out or not Pro)');
       }
     }
 
@@ -179,9 +179,9 @@ function LegendStateSyncManager({ children }: { children: React.ReactNode }) {
           isPro &&
           user?.id
         ) {
-          console.log('[LegendStateSyncManager] App foregrounded, Legend-State will auto-sync');
+          console.log('[SyncManager] App foregrounded, refreshing data');
           // Legend-State handles sync automatically via realtime subscriptions
-          // No manual sync needed - just refresh contexts to pick up any changes
+          // Refresh contexts to pick up any changes
           await refreshProjects();
           await refreshItems();
         }

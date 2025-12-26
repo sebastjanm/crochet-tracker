@@ -10,10 +10,10 @@
 
 import createContextHook from '@nkzw/create-context-hook';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Project, ProjectStatus, ProjectYarn } from '@/types';
 import { syncProjectMaterials, removeProjectFromInventory } from '@/lib/cross-context-sync';
-import { getSyncManager } from '@/lib/legend-state';
+import { getStores, updateProject as updateLegendProject, deleteProject as deleteLegendProject } from '@/lib/legend-state/config';
 import { mapLocalProjectToCloud, replaceImageUri } from '@/lib/legend-state/type-mappers';
 import { useAuth } from '@/hooks/auth-context';
 import {
@@ -30,37 +30,47 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Legend-State stores reference for Pro users
+  const storesRef = useRef<{ projects$: ReturnType<typeof getStores>['projects$'] } | null>(null);
+
+  // Initialize Legend-State stores for Pro users
+  useEffect(() => {
+    if (isPro && user?.id) {
+      const stores = getStores(user.id);
+      storesRef.current = { projects$: stores.projects$ };
+      console.log('[Projects] Legend-State stores initialized for Pro user');
+    } else {
+      storesRef.current = null;
+    }
+  }, [isPro, user?.id]);
+
   /**
    * Push project to cloud via Legend-State (Pro users only).
+   * SQLite remains the source of truth - this syncs to cloud.
    */
   const pushToCloud = useCallback((project: Project) => {
-    const firstImg = project.images?.[0];
-    const firstImagePreview = typeof firstImg === 'string' ? firstImg.slice(0, 50) : 'non-string';
-    console.log('[Projects] pushToCloud called:', {
-      projectId: project.id,
-      isPro,
-      userId: user?.id,
-      hasImages: (project.images?.length || 0) > 0,
-      imageCount: project.images?.length || 0,
-      firstImage: firstImagePreview
-    });
-
-    if (isPro && user?.id) {
-      const syncManager = getSyncManager(user.id, isPro);
-      console.log('[Projects] SyncManager:', {
-        exists: !!syncManager,
-        isReady: syncManager?.isReady()
-      });
-
-      if (syncManager?.isReady()) {
-        const cloudProject = mapLocalProjectToCloud(project, user.id);
-        syncManager.pushProject(cloudProject);
-        console.log('[Projects] Pushed to cloud via Legend-State:', project.id);
-      } else {
-        console.warn('[Projects] SyncManager not ready, skipping cloud push');
-      }
-    } else {
+    if (!isPro || !user?.id) {
       console.log('[Projects] Skipping cloud push - not Pro or no user');
+      return;
+    }
+
+    const projects$ = storesRef.current?.projects$;
+    if (!projects$) {
+      console.warn('[Projects] Legend-State stores not initialized');
+      return;
+    }
+
+    try {
+      // Convert local project to cloud format and push to Legend-State
+      const cloudProject = mapLocalProjectToCloud(project, user.id);
+
+      // Write to Legend-State observable (auto-syncs to Supabase)
+      projects$[project.id].assign(cloudProject);
+
+      console.log('[Projects] Pushed to cloud via Legend-State:', project.id);
+    } catch (error) {
+      console.error('[Projects] Failed to push to cloud:', error);
+      // SQLite still has the data - cloud sync will retry
     }
   }, [isPro, user?.id]);
 
@@ -307,11 +317,13 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
       console.log(`[Projects] Deleted project: ${id}`);
 
       // Soft delete in cloud via Legend-State (Pro users only)
-      if (isPro && user?.id) {
-        const syncManager = getSyncManager(user.id, isPro);
-        if (syncManager?.isReady()) {
-          syncManager.deleteProject(id);
+      if (isPro && user?.id && storesRef.current?.projects$) {
+        try {
+          deleteLegendProject(storesRef.current.projects$, id);
           console.log(`[Projects] Soft deleted in cloud via Legend-State: ${id}`);
+        } catch (error) {
+          console.error('[Projects] Failed to soft delete in cloud:', error);
+          // Local deletion succeeded - cloud sync will catch up
         }
       }
     } catch (error) {

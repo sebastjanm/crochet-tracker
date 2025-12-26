@@ -10,11 +10,11 @@
 
 import createContextHook from '@nkzw/create-context-hook';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { InventoryItem } from '@/types';
 import { useImagePicker } from './useImagePicker';
 import { syncInventoryToProjects, removeInventoryFromProjects } from '@/lib/cross-context-sync';
-import { getSyncManager } from '@/lib/legend-state';
+import { getStores, deleteInventoryItem as deleteLegendInventory } from '@/lib/legend-state/config';
 import { mapLocalInventoryToCloud, replaceImageUri } from '@/lib/legend-state/type-mappers';
 import { useAuth } from '@/hooks/auth-context';
 import {
@@ -35,17 +35,47 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'quantity'>('name');
   const { showImagePickerOptions, isPickingImage } = useImagePicker();
 
+  // Legend-State stores reference for Pro users
+  const storesRef = useRef<{ inventory$: ReturnType<typeof getStores>['inventory$'] } | null>(null);
+
+  // Initialize Legend-State stores for Pro users
+  useEffect(() => {
+    if (isPro && user?.id) {
+      const stores = getStores(user.id);
+      storesRef.current = { inventory$: stores.inventory$ };
+      console.log('[Inventory] Legend-State stores initialized for Pro user');
+    } else {
+      storesRef.current = null;
+    }
+  }, [isPro, user?.id]);
+
   /**
    * Push inventory item to cloud via Legend-State (Pro users only).
+   * SQLite remains the source of truth - this syncs to cloud.
    */
   const pushToCloud = useCallback((item: InventoryItem) => {
-    if (isPro && user?.id) {
-      const syncManager = getSyncManager(user.id, isPro);
-      if (syncManager?.isReady()) {
-        const cloudItem = mapLocalInventoryToCloud(item, user.id);
-        syncManager.pushInventoryItem(cloudItem);
-        console.log('[Inventory] Pushed to cloud via Legend-State:', item.id);
-      }
+    if (!isPro || !user?.id) {
+      console.log('[Inventory] Skipping cloud push - not Pro or no user');
+      return;
+    }
+
+    const inventory$ = storesRef.current?.inventory$;
+    if (!inventory$) {
+      console.warn('[Inventory] Legend-State stores not initialized');
+      return;
+    }
+
+    try {
+      // Convert local item to cloud format and push to Legend-State
+      const cloudItem = mapLocalInventoryToCloud(item, user.id);
+
+      // Write to Legend-State observable (auto-syncs to Supabase)
+      inventory$[item.id].assign(cloudItem);
+
+      console.log('[Inventory] Pushed to cloud via Legend-State:', item.id);
+    } catch (error) {
+      console.error('[Inventory] Failed to push to cloud:', error);
+      // SQLite still has the data - cloud sync will retry
     }
   }, [isPro, user?.id]);
 
@@ -336,11 +366,13 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
       console.log(`[Inventory] Deleted item: ${id}`);
 
       // Soft delete in cloud via Legend-State (Pro users only)
-      if (isPro && user?.id) {
-        const syncManager = getSyncManager(user.id, isPro);
-        if (syncManager?.isReady()) {
-          syncManager.deleteInventoryItem(id);
+      if (isPro && user?.id && storesRef.current?.inventory$) {
+        try {
+          deleteLegendInventory(storesRef.current.inventory$, id);
           console.log(`[Inventory] Soft deleted in cloud via Legend-State: ${id}`);
+        } catch (error) {
+          console.error('[Inventory] Failed to soft delete in cloud:', error);
+          // Local deletion succeeded - cloud sync will catch up
         }
       }
     } catch (error) {

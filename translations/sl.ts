@@ -18,13 +18,14 @@ export default {
   },
   yarnWeights: {
     Lace: 'Čipka',
+    'Light Fingering': 'Zelo tanka',
     Fingering: 'Tanka',
     Sport: 'Šport',
     DK: 'DK',
     Worsted: 'Srednja',
     Aran: 'Aran',
     Bulky: 'Debela',
-    SuperBulky: 'Zelo debela',
+    'Super Bulky': 'Zelo debela',
     Jumbo: 'Jumbo',
   },
   units: {

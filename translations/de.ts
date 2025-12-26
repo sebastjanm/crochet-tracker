@@ -18,13 +18,14 @@ export default {
   },
   yarnWeights: {
     Lace: 'Spitze',
+    'Light Fingering': 'Leicht Fingering',
     Fingering: 'Fingering',
     Sport: 'Sport',
     DK: 'DK',
     Worsted: 'Worsted',
     Aran: 'Aran',
     Bulky: 'Dick',
-    SuperBulky: 'Sehr dick',
+    'Super Bulky': 'Sehr dick',
     Jumbo: 'Jumbo',
   },
   units: {

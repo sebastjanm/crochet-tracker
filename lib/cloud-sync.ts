@@ -646,6 +646,18 @@ async function updateInventoryFromCloud(
  * Column names match between local and cloud.
  */
 function mapLocalProjectToCloud(row: ProjectRow & { user_id: string }): Record<string, unknown> {
+  // Filter out local file:// URIs from images - only sync remote URLs
+  // Local images need to be uploaded to Supabase Storage first (TODO)
+  const filterLocalImages = (imagesJson: string | null): string[] => {
+    if (!imagesJson) return [];
+    try {
+      const images = JSON.parse(imagesJson) as string[];
+      return images.filter(img => img.startsWith('http://') || img.startsWith('https://'));
+    } catch {
+      return [];
+    }
+  };
+
   return {
     id: row.id,
     user_id: row.user_id,
@@ -653,11 +665,11 @@ function mapLocalProjectToCloud(row: ProjectRow & { user_id: string }): Record<s
     description: row.description,
     status: row.status,
     project_type: row.project_type,
-    images: row.images,
+    images: filterLocalImages(row.images),
     default_image_index: row.default_image_index,
     pattern_pdf: row.pattern_pdf,
     pattern_url: row.pattern_url,
-    pattern_images: row.pattern_images,
+    pattern_images: filterLocalImages(row.pattern_images),
     inspiration_url: row.inspiration_url,
     notes: row.notes,
     yarn_used: row.yarn_used,
@@ -677,13 +689,24 @@ function mapLocalProjectToCloud(row: ProjectRow & { user_id: string }): Record<s
  * Map local InventoryItemRow to Supabase format.
  */
 function mapLocalInventoryToCloud(row: InventoryItemRow & { user_id: string }): Record<string, unknown> {
+  // Filter out local file:// URIs from images
+  const filterLocalImages = (imagesJson: string | null): string[] => {
+    if (!imagesJson) return [];
+    try {
+      const images = JSON.parse(imagesJson) as string[];
+      return images.filter(img => img.startsWith('http://') || img.startsWith('https://'));
+    } catch {
+      return [];
+    }
+  };
+
   return {
     id: row.id,
     user_id: row.user_id,
     category: row.category,
     name: row.name,
     description: row.description,
-    images: row.images,
+    images: filterLocalImages(row.images),
     quantity: row.quantity,
     unit: row.unit,
     yarn_details: row.yarn_details,

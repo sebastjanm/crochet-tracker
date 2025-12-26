@@ -81,6 +81,8 @@ export default {
     selected: 'ausgewählt',
     noResultsFound: 'Keine Ergebnisse gefunden',
     remove: 'Entfernen',
+    searchProjects: 'Projekte suchen...',
+    searchInventory: 'Inventar suchen...',
   },
   updates: {
     title: 'Update verfügbar',

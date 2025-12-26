@@ -81,6 +81,8 @@ export default {
     selected: 'выбрано',
     noResultsFound: 'Результаты не найдены',
     remove: 'Удалить',
+    searchProjects: 'Искать проекты...',
+    searchInventory: 'Искать в инвентаре...',
   },
   updates: {
     title: 'Доступно обновление',

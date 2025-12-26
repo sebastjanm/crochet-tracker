@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   RefreshControl,
   Platform,
-  ScrollView,
   Dimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
@@ -16,6 +15,7 @@ import { router } from 'expo-router';
 import { Plus, Clock, CheckCircle, Lightbulb, Volleyball, HelpCircle, PauseCircle, RotateCcw } from 'lucide-react-native';
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
+import { SearchableFilterBar } from '@/components/SearchableFilterBar';
 import { Avatar } from '@/components/Avatar';
 import { useProjects } from '@/hooks/projects-context';
 import { useLanguage } from '@/hooks/language-context';
@@ -35,14 +35,22 @@ export default function ProjectsScreen() {
   const { user } = useAuth();
 
   const [filter, setFilter] = useState<ProjectStatus | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
   const userName = user?.name || 'User';
 
-  const filteredProjects = projects.filter(project => {
-    if (filter === 'all') return true;
-    return project.status === filter;
-  });
+  const filteredProjects = projects
+    .filter(project => filter === 'all' || project.status === filter)
+    .filter(project => {
+      if (!searchQuery) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        project.title?.toLowerCase().includes(query) ||
+        project.description?.toLowerCase().includes(query) ||
+        project.notes?.toLowerCase().includes(query)
+      );
+    });
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -152,64 +160,28 @@ export default function ProjectsScreen() {
         </View>
       </SafeAreaView>
       
-      <View style={styles.filterWrapper}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.categoriesContainer}
-          contentContainerStyle={styles.categoriesContent}
-        >
-        {statusFilters.map((item) => (
-          <TouchableOpacity
-            key={item.key}
-            style={[
-              styles.categoryChip,
-              filter === item.key && [styles.categoryChipActive, { backgroundColor: item.color }]
-            ]}
-            onPress={() => setFilter(item.key as ProjectStatus | 'all')}
-            activeOpacity={0.75}
-            accessible={true}
-            accessibilityRole="radio"
-            accessibilityLabel={item.label}
-            accessibilityHint={`Show ${item.label.toLowerCase()} projects`}
-            accessibilityState={{
-              selected: filter === item.key,
-              checked: filter === item.key,
-            }}
-          >
-            {item.icon}
-            <Text style={[
-              styles.categoryLabel,
-              filter === item.key && styles.categoryLabelActive
-            ]}>
-              {item.label}
-            </Text>
-            <Text style={[
-              styles.categoryCount,
-              filter === item.key && [styles.categoryCountActive, { borderColor: item.color }]
-            ]}>
-              {item.count}
-            </Text>
-          </TouchableOpacity>
-        ))}
-        </ScrollView>
-      </View>
+      <SearchableFilterBar
+        filters={statusFilters.map(f => ({ id: f.key, label: f.label, count: f.count, icon: f.icon, color: f.color }))}
+        selectedFilter={filter}
+        onFilterChange={(id) => setFilter(id as ProjectStatus | 'all')}
+        searchPlaceholder={t('common.searchProjects')}
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+      />
 
       <View style={styles.container}>
       {filteredProjects.length === 0 ? (
         <EmptyState
           icon={<Volleyball size={64} color={Colors.warmGray} />}
-          title={filter === 'all' ? t('projects.noProjects') : t('projects.noProjectsInCategory')}
-          description={filter === 'all' ? t('projects.startFirstProject') : t('projects.tryDifferentFilter')}
+          title={filter === 'all' && !searchQuery ? t('projects.noProjects') : t('projects.noProjectsInCategory')}
+          description={filter === 'all' && !searchQuery ? t('projects.startFirstProject') : t('projects.tryDifferentFilter')}
           action={
-            filter === 'all' ? (
-              <Button
-                title={t('projects.addFirstProject')}
-                icon={<Plus size={20} color={Colors.white} />}
-                onPress={() => router.push('/add-project')}
-                size="large"
-              />
-            ) : undefined
+            <Button
+              title={filter === 'all' && !searchQuery ? t('projects.addFirstProject') : t('projects.addProject')}
+              icon={<Plus size={20} color={Colors.white} />}
+              onPress={() => router.push('/add-project')}
+              size="large"
+            />
           }
         />
       ) : (
@@ -304,84 +276,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.beige,
-  },
-  filterWrapper: {
-    backgroundColor: Colors.filterBar,
-    marginTop: 0,
-  },
-  categoriesContainer: {
-    maxHeight: 80,
-    backgroundColor: 'transparent',
-  },
-  categoriesContent: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  categoryChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(139, 154, 123, 0.08)',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 999,
-    marginRight: 12,
-    borderWidth: normalizeBorder(1),
-    borderColor: `rgba(139, 154, 123, ${normalizeBorderOpacity(0.2)})`,
-    gap: 8,
-    minHeight: 44,
-    ...Platform.select({
-      ...cardShadow,
-      default: {},
-    }),
-  },
-  categoryChipActive: {
-    backgroundColor: Colors.linen,
-    borderWidth: normalizeBorder(1),
-    borderColor: Colors.deepSage,
-    ...Platform.select({
-      ...cardShadow,
-      default: {},
-    }),
-  },
-  categoryLabel: {
-    ...Typography.body,
-    color: Colors.charcoal,
-    fontSize: 15,
-    lineHeight: 20,
-    fontWeight: '500' as const,
-    letterSpacing: -0.1,
-  },
-  categoryLabelActive: {
-    color: Colors.white,
-    fontWeight: '600' as const,
-  },
-  categoryCount: {
-    ...Typography.caption,
-    color: Colors.deepSage,
-    backgroundColor: 'rgba(139, 154, 123, 0.12)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-    fontSize: 13,
-    fontWeight: '500' as const,
-    minWidth: 28,
-    textAlign: 'center',
-    lineHeight: 18,
-    borderWidth: normalizeBorder(0),
-    height: 26,
-    overflow: 'visible',
-  },
-  categoryCountActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    color: Colors.white,
-    fontWeight: '600' as const,
-    borderWidth: normalizeBorder(0),
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    minWidth: 28,
-    height: 26,
-    overflow: 'visible',
   },
   stats: {
     flexDirection: 'row',

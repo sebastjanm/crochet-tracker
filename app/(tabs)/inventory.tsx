@@ -5,7 +5,6 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  ScrollView,
   Platform,
   Dimensions,
 } from 'react-native';
@@ -16,6 +15,7 @@ import { router } from 'expo-router';
 import { Plus, Package, Volleyball, Grid3x3, Wrench, HelpCircle } from 'lucide-react-native';
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
+import { SearchableFilterBar } from '@/components/SearchableFilterBar';
 import { useInventory } from '@/hooks/inventory-context';
 import { useLanguage } from '@/hooks/language-context';
 import Colors from '@/constants/colors';
@@ -31,10 +31,20 @@ export default function InventoryScreen() {
   const { items, yarnCount, hookCount } = useInventory();
   const { t } = useLanguage();
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'yarn' | 'hook' | 'other'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredItems = selectedCategory === 'all' 
-    ? items 
-    : items.filter(item => item.category === selectedCategory);
+  const filteredItems = items
+    .filter(item => selectedCategory === 'all' || item.category === selectedCategory)
+    .filter(item => {
+      if (!searchQuery) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        item.name?.toLowerCase().includes(query) ||
+        item.yarnDetails?.brand?.name?.toLowerCase().includes(query) ||
+        item.hookDetails?.brand?.toLowerCase().includes(query) ||
+        item.description?.toLowerCase().includes(query)
+      );
+    });
 
   const categories = [
     { id: 'all', label: t('inventory.all'), count: items.length, icon: <Grid3x3 size={18} color={selectedCategory === 'all' ? Colors.white : Colors.deepSage} />, color: Colors.deepSage },
@@ -117,68 +127,28 @@ export default function InventoryScreen() {
         </View>
       </SafeAreaView>
 
-      <View style={styles.filterWrapper}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.categoriesContainer}
-          contentContainerStyle={styles.categoriesContent}
-          nestedScrollEnabled={false}
-          scrollEventThrottle={16}
-        >
-        {categories.map(category => (
-          <TouchableOpacity
-            key={category.id}
-            style={[
-              styles.categoryChip,
-              selectedCategory === category.id && [styles.categoryChipActive, { backgroundColor: category.color }]
-            ]}
-            onPress={() => setSelectedCategory(category.id as any)}
-            activeOpacity={0.75}
-            accessible={true}
-            accessibilityRole="radio"
-            accessibilityLabel={category.label}
-            accessibilityHint={`Show ${category.label.toLowerCase()} items`}
-            accessibilityState={{
-              selected: selectedCategory === category.id,
-              checked: selectedCategory === category.id,
-            }}
-          >
-            <View style={styles.iconContainer}>
-              {category.icon}
-            </View>
-            <Text style={[
-              styles.categoryLabel,
-              selectedCategory === category.id && styles.categoryLabelActive,
-            ]}>
-              {category.label}
-            </Text>
-            <Text style={[
-              styles.categoryCount,
-              selectedCategory === category.id && [styles.categoryCountActive, { borderColor: category.color }]
-            ]}>
-              {category.count}
-            </Text>
-          </TouchableOpacity>
-        ))}
-        </ScrollView>
-      </View>
+      <SearchableFilterBar
+        filters={categories}
+        selectedFilter={selectedCategory}
+        onFilterChange={(id) => setSelectedCategory(id as 'all' | 'yarn' | 'hook' | 'other')}
+        searchPlaceholder={t('common.searchInventory')}
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+      />
 
       <View style={styles.container}>
       {filteredItems.length === 0 ? (
         <EmptyState
           icon={<Package size={64} color={Colors.warmGray} />}
-          title={selectedCategory === 'all' ? t('inventory.noItems') : t('inventory.noItemsInCategory')}
-          description={selectedCategory === 'all' ? t('inventory.addYourSupplies') : t('inventory.tryDifferentFilter')}
+          title={selectedCategory === 'all' && !searchQuery ? t('inventory.noItems') : t('inventory.noItemsInCategory')}
+          description={selectedCategory === 'all' && !searchQuery ? t('inventory.addYourSupplies') : t('inventory.tryDifferentFilter')}
           action={
-            selectedCategory === 'all' ? (
-              <Button
-                title={t('inventory.addFirstItem')}
-                icon={<Plus size={20} color={Colors.white} />}
-                onPress={() => router.push('/add-inventory')}
-                size="large"
-              />
-            ) : undefined
+            <Button
+              title={selectedCategory === 'all' && !searchQuery ? t('inventory.addFirstItem') : t('inventory.addItem')}
+              icon={<Plus size={20} color={Colors.white} />}
+              onPress={() => router.push('/add-inventory')}
+              size="large"
+            />
           }
         />
       ) : (
@@ -268,90 +238,6 @@ const styles = StyleSheet.create({
     minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  filterWrapper: {
-    backgroundColor: Colors.filterBar,
-    marginTop: 0,
-  },
-  categoriesContainer: {
-    maxHeight: 80,
-    backgroundColor: 'transparent',
-  },
-  categoriesContent: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  iconContainer: {
-    width: 18,
-    height: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  categoryChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(139, 154, 123, 0.08)',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 999,
-    marginRight: 12,
-    borderWidth: normalizeBorder(1),
-    borderColor: `rgba(139, 154, 123, ${normalizeBorderOpacity(0.2)})`,
-    gap: 8,
-    minHeight: 44,
-    ...Platform.select({
-      ...cardShadow,
-      default: {},
-    }),
-  },
-  categoryChipActive: {
-    backgroundColor: Colors.linen,
-    borderWidth: normalizeBorder(1),
-    borderColor: Colors.deepSage,
-    ...Platform.select({
-      ...cardShadow,
-      default: {},
-    }),
-  },
-  categoryLabel: {
-    ...Typography.body,
-    color: Colors.charcoal,
-    fontSize: 15,
-    lineHeight: 20,
-    fontWeight: '500' as const,
-    letterSpacing: -0.1,
-  },
-  categoryLabelActive: {
-    color: Colors.white,
-    fontWeight: '600' as const,
-  },
-  categoryCount: {
-    ...Typography.caption,
-    color: Colors.deepSage,
-    backgroundColor: 'rgba(139, 154, 123, 0.12)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-    fontSize: 13,
-    fontWeight: '500' as const,
-    minWidth: 28,
-    textAlign: 'center',
-    lineHeight: 18,
-    borderWidth: normalizeBorder(0),
-    height: 26,
-    overflow: 'visible',
-  },
-  categoryCountActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    color: Colors.white,
-    fontWeight: '600' as const,
-    borderWidth: normalizeBorder(0),
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    minWidth: 28,
-    height: 26,
-    overflow: 'visible',
   },
   list: {
     padding: 16,

@@ -81,6 +81,8 @@ export default {
     selected: 'izbrano',
     noResultsFound: 'Ni rezultatov',
     remove: 'Odstrani',
+    searchProjects: 'Išči projekte...',
+    searchInventory: 'Išči zaloge...',
   },
   updates: {
     title: 'Posodobitev na voljo',

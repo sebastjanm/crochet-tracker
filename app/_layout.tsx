@@ -64,6 +64,12 @@ function UpdateChecker({ children }: { children: React.ReactNode }) {
 
       try {
         console.log('[Updates] Checking for updates...');
+
+        // DEBUG: Show that update check is starting
+        const currentUpdateId = Updates.updateId;
+        const channel = Updates.channel;
+        const runtimeVersion = Updates.runtimeVersion;
+
         const update = await Updates.checkForUpdateAsync();
 
         if (update.isAvailable) {
@@ -86,10 +92,21 @@ function UpdateChecker({ children }: { children: React.ReactNode }) {
           );
         } else {
           console.log('[Updates] App is up to date');
+          // DEBUG: Show that no update was found
+          Alert.alert(
+            'Update Check',
+            `No update available.\n\nChannel: ${channel}\nRuntime: ${runtimeVersion}\nCurrent update: ${currentUpdateId || 'embedded'}`,
+            [{ text: 'OK' }]
+          );
         }
       } catch (error) {
         console.error('[Updates] Error checking for updates:', error);
-        // Silent fail - don't interrupt user experience
+        // DEBUG: Show error instead of silent fail
+        Alert.alert(
+          'Update Check Error',
+          String(error),
+          [{ text: 'OK' }]
+        );
       }
     }
 
@@ -140,16 +157,45 @@ function SyncManager({ children }: { children: React.ReactNode }) {
 
     // Initial sync on mount for Pro users
     if (isPro && user?.id) {
+      console.log('[SyncManager] Initial sync starting for Pro user:', user.id, 'role:', user.role);
       performSync(db, user.id)
         .then(async (result) => {
+          console.log('[SyncManager] Initial sync result:', result);
+
+          // DEBUG: Show sync result in alert (remove after debugging)
+          if (__DEV__ === false) {
+            Alert.alert(
+              'Sync Debug',
+              `Pulled: ${result.pulled.projects} projects, ${result.pulled.inventory} inventory\n` +
+              `Pushed: ${result.pushed.projects} projects, ${result.pushed.inventory} inventory\n` +
+              `Errors: ${result.errors.length > 0 ? result.errors.join(', ') : 'none'}`,
+              [{ text: 'OK' }]
+            );
+          }
+
           if (result.pulled.projects > 0 || result.pulled.inventory > 0) {
             await refreshProjects();
             await refreshItems();
+            console.log('[SyncManager] Refreshed contexts after pull');
           }
         })
         .catch((error) => {
           console.error('[SyncManager] Initial sync failed:', error);
+          // DEBUG: Show error in alert (remove after debugging)
+          if (__DEV__ === false) {
+            Alert.alert('Sync Error', String(error), [{ text: 'OK' }]);
+          }
         });
+    } else {
+      console.log('[SyncManager] Skipping sync - isPro:', isPro, 'userId:', user?.id, 'role:', user?.role);
+      // DEBUG: Show why sync was skipped (remove after debugging)
+      if (__DEV__ === false && user) {
+        Alert.alert(
+          'Sync Skipped',
+          `isPro: ${isPro}\nuserId: ${user?.id}\nrole: ${user?.role}`,
+          [{ text: 'OK' }]
+        );
+      }
     }
 
     return () => subscription.remove();

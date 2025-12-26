@@ -214,21 +214,38 @@ async function pushPendingChanges(
   let projectsPushed = 0;
   let inventoryPushed = 0;
 
+  console.log('[CloudSync] Push starting for userId:', userId);
+
+  // First, check ALL pending projects (regardless of user_id)
+  const allPending = await db.getAllAsync<{ id: string; user_id: string | null; pending_sync: number }>(
+    'SELECT id, user_id, pending_sync FROM projects WHERE pending_sync = 1'
+  );
+  console.log('[CloudSync] All pending projects:', allPending.map(p => ({
+    id: p.id,
+    user_id: p.user_id,
+    matches: p.user_id === userId
+  })));
+
   // Push projects
   const pendingProjects = await db.getAllAsync<ProjectRow & { user_id: string }>(
     'SELECT * FROM projects WHERE pending_sync = 1 AND user_id = ?',
     [userId]
   );
+  console.log('[CloudSync] Pending projects matching userId:', pendingProjects.length);
 
   for (const row of pendingProjects) {
     try {
       const cloudData = mapLocalProjectToCloud(row);
+      console.log('[CloudSync] Pushing project:', row.id, row.title);
 
       const { error } = await supabase!
         .from('projects')
         .upsert(cloudData, { onConflict: 'id' });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[CloudSync] Supabase upsert error:', error);
+        throw error;
+      }
 
       // Mark as synced
       await db.runAsync(
@@ -237,6 +254,7 @@ async function pushPendingChanges(
       );
 
       projectsPushed++;
+      console.log('[CloudSync] Successfully pushed project:', row.id);
     } catch (error) {
       console.error('[CloudSync] Failed to push project:', row.id, error);
       // Keep pending_sync = 1, will retry on next sync
@@ -294,6 +312,7 @@ async function pullCloudChanges(
 
   // Get last sync time for incremental sync
   const lastSync = await getLastSyncTime(db);
+  console.log('[CloudSync] Pull starting - lastSync:', lastSync, 'userId:', userId);
 
   // Pull projects - get updated OR newly created since last sync
   let projectsQuery = supabase!
@@ -303,10 +322,18 @@ async function pullCloudChanges(
 
   if (lastSync) {
     // Pull records that were updated OR created after last sync
+    console.log('[CloudSync] Applying incremental filter - OR(updated_at, created_at) > lastSync');
     projectsQuery = projectsQuery.or(`updated_at.gt.${lastSync},created_at.gt.${lastSync}`);
+  } else {
+    console.log('[CloudSync] First sync - pulling ALL projects for user');
   }
 
   const { data: cloudProjects, error: projectsError } = await projectsQuery;
+  console.log('[CloudSync] Projects query result:', {
+    count: cloudProjects?.length ?? 0,
+    error: projectsError?.message,
+    ids: cloudProjects?.map(p => p.id),
+  });
 
   if (projectsError) {
     console.error('[CloudSync] Failed to pull projects:', projectsError);

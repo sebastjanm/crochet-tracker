@@ -10,9 +10,31 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { SQLiteDatabase } from 'expo-sqlite';
-import { needsAsyncStorageMigration, markAsyncStorageMigrationComplete } from './migrations';
 import { mapProjectToRow, mapInventoryItemToRow, generateId, now } from './schema';
 import type { Project, InventoryItem, ProjectYarn } from '@/types';
+
+/**
+ * Check if AsyncStorage data needs to be migrated.
+ * Returns true if migration has not been performed yet.
+ */
+async function needsAsyncStorageMigration(db: SQLiteDatabase): Promise<boolean> {
+  const result = await db.getFirstAsync<{ value: string }>(
+    "SELECT value FROM sync_metadata WHERE key = 'asyncstorage_migrated'"
+  );
+  return result?.value !== 'true';
+}
+
+/**
+ * Mark AsyncStorage migration as complete.
+ */
+async function markAsyncStorageMigrationComplete(db: SQLiteDatabase): Promise<void> {
+  const nowTime = new Date().toISOString();
+  await db.runAsync(
+    `INSERT OR REPLACE INTO sync_metadata (key, value, updated_at) VALUES (?, ?, ?)`,
+    ['asyncstorage_migrated', 'true', nowTime]
+  );
+  console.log('[SQLite] AsyncStorage migration marked as complete.');
+}
 
 /**
  * Migrate data from AsyncStorage to SQLite.

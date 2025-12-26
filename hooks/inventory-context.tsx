@@ -3,6 +3,7 @@
  *
  * Provides inventory item CRUD operations with offline-first SQLite persistence.
  * Uses useSQLiteContext from expo-sqlite for database access.
+ * Pro users get automatic cloud sync via Supabase.
  *
  * @see https://docs.expo.dev/versions/latest/sdk/sqlite/
  */
@@ -12,7 +13,10 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { InventoryItem } from '@/types';
 import { useImagePicker } from './useImagePicker';
-import { syncInventoryToProjects, removeInventoryFromProjects } from '@/lib/sync';
+import { syncInventoryToProjects, removeInventoryFromProjects } from '@/lib/cross-context-sync';
+import { debouncedSync } from '@/lib/cloud-sync';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
+import { useAuth } from '@/hooks/auth-context';
 import {
   InventoryItemRow,
   mapRowToInventoryItem,
@@ -23,12 +27,22 @@ import {
 
 export const [InventoryProvider, useInventory] = createContextHook(() => {
   const db = useSQLiteContext();
+  const { user, isPro } = useAuth();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<InventoryItem['category'] | 'all'>('all');
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'quantity'>('name');
   const { showImagePickerOptions, isPickingImage } = useImagePicker();
+
+  /**
+   * Trigger cloud sync for Pro users (debounced).
+   */
+  const triggerSync = useCallback(() => {
+    if (isPro && user?.id) {
+      debouncedSync(db, user.id);
+    }
+  }, [db, isPro, user?.id]);
 
   /**
    * Load all inventory items from SQLite database.
@@ -92,8 +106,8 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
       `INSERT INTO inventory_items (
         id, category, name, description, images, quantity, unit,
         yarn_details, hook_details, other_details, location, tags,
-        used_in_projects, notes, barcode, date_added, last_updated, pending_sync
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        used_in_projects, notes, barcode, date_added, last_updated, pending_sync, user_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         row.category,
@@ -113,6 +127,7 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
         timestamp,
         timestamp,
         1, // pending_sync = true
+        user?.id ?? null, // Associate with current user
       ]
     );
 
@@ -125,6 +140,10 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
 
     setItems((prev) => [newItem, ...prev]);
     console.log(`[Inventory] Added item: ${newItem.name}`);
+
+    // Trigger cloud sync for Pro users
+    triggerSync();
+
     return newItem;
   };
 
@@ -228,6 +247,9 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
       );
 
       console.log(`[Inventory] Updated item: ${id}`);
+
+      // Trigger cloud sync for Pro users
+      triggerSync();
     } catch (error) {
       console.error(`[Inventory] Failed to update item ${id}:`, error);
       setItems((prev) => prev.map((item) => (item.id === id ? existingItem : item)));
@@ -307,6 +329,17 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     try {
       await db.runAsync('DELETE FROM inventory_items WHERE id = ?', [id]);
       console.log(`[Inventory] Deleted item: ${id}`);
+
+      // Delete from cloud for Pro users
+      if (isPro && isSupabaseConfigured() && supabase) {
+        try {
+          await supabase.from('inventory_items').delete().eq('id', id);
+          console.log(`[Inventory] Deleted from cloud: ${id}`);
+        } catch (cloudError) {
+          console.error('[Inventory] Failed to delete from cloud:', cloudError);
+          // Don't throw - local delete succeeded
+        }
+      }
     } catch (error) {
       console.error(`[Inventory] Failed to delete item ${id}:`, error);
       await loadInventory();

@@ -3,6 +3,7 @@
  *
  * Provides project CRUD operations with offline-first SQLite persistence.
  * Uses useSQLiteContext from expo-sqlite for database access.
+ * Pro users get automatic cloud sync via Supabase.
  *
  * @see https://docs.expo.dev/versions/latest/sdk/sqlite/
  */
@@ -11,7 +12,10 @@ import createContextHook from '@nkzw/create-context-hook';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useState, useEffect, useCallback } from 'react';
 import { Project, ProjectStatus, ProjectYarn } from '@/types';
-import { syncProjectMaterials, removeProjectFromInventory } from '@/lib/sync';
+import { syncProjectMaterials, removeProjectFromInventory } from '@/lib/cross-context-sync';
+import { debouncedSync } from '@/lib/cloud-sync';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
+import { useAuth } from '@/hooks/auth-context';
 import {
   ProjectRow,
   mapRowToProject,
@@ -22,8 +26,18 @@ import {
 
 export const [ProjectsProvider, useProjects] = createContextHook(() => {
   const db = useSQLiteContext();
+  const { user, isPro } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  /**
+   * Trigger cloud sync for Pro users (debounced).
+   */
+  const triggerSync = useCallback(() => {
+    if (isPro && user?.id) {
+      debouncedSync(db, user.id);
+    }
+  }, [db, isPro, user?.id]);
 
   /**
    * Load all projects from SQLite database.
@@ -81,8 +95,8 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
         id, title, description, status, project_type, images, default_image_index,
         pattern_pdf, pattern_url, pattern_images, inspiration_url, notes,
         yarn_used, yarn_used_ids, hook_used_ids, yarn_materials, work_progress,
-        inspiration_sources, start_date, completed_date, created_at, updated_at, pending_sync
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        inspiration_sources, start_date, completed_date, created_at, updated_at, pending_sync, user_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         row.title,
@@ -107,6 +121,7 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
         timestamp,
         timestamp,
         1, // pending_sync = true for new projects
+        user?.id ?? null, // Associate with current user
       ]
     );
 
@@ -119,6 +134,10 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
 
     setProjects((prev) => [newProject, ...prev]);
     console.log(`[Projects] Added project: ${newProject.title}`);
+
+    // Trigger cloud sync for Pro users
+    triggerSync();
+
     return newProject;
   };
 
@@ -223,6 +242,9 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
       );
 
       console.log(`[Projects] Updated project: ${id}`);
+
+      // Trigger cloud sync for Pro users
+      triggerSync();
     } catch (error) {
       // If save fails, revert the state
       console.error(`[Projects] Failed to update project ${id}:`, error);
@@ -250,6 +272,17 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
     try {
       await db.runAsync('DELETE FROM projects WHERE id = ?', [id]);
       console.log(`[Projects] Deleted project: ${id}`);
+
+      // Delete from cloud for Pro users
+      if (isPro && isSupabaseConfigured() && supabase) {
+        try {
+          await supabase.from('projects').delete().eq('id', id);
+          console.log(`[Projects] Deleted from cloud: ${id}`);
+        } catch (cloudError) {
+          console.error('[Projects] Failed to delete from cloud:', cloudError);
+          // Don't throw - local delete succeeded
+        }
+      }
     } catch (error) {
       console.error(`[Projects] Failed to delete project ${id}:`, error);
       // Reload to restore state

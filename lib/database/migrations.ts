@@ -30,11 +30,10 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
     currentVersion = 1;
   }
 
-  // Future migrations:
-  // if (currentVersion < 2) {
-  //   await migrateToV2(db);
-  //   currentVersion = 2;
-  // }
+  if (currentVersion < 2) {
+    await migrateToV2(db);
+    currentVersion = 2;
+  }
 
   // Enable WAL mode for better concurrent read/write performance
   await db.execAsync('PRAGMA journal_mode = WAL');
@@ -128,5 +127,52 @@ async function migrateToV1(db: SQLiteDatabase): Promise<void> {
   `);
 
   console.log('[SQLite] Migration to v1 complete.');
+}
+
+/**
+ * V2: Add user_id column for cloud sync support
+ * - Adds user_id to projects and inventory_items
+ * - Creates indexes for user_id queries
+ * - Orphaned records (user_id = NULL) will be claimed on first sync
+ */
+async function migrateToV2(db: SQLiteDatabase): Promise<void> {
+  console.log('[SQLite] Running migration to v2...');
+
+  // SQLite doesn't support IF NOT EXISTS for ALTER TABLE,
+  // so we need to check if columns exist first
+  const projectsCols = await db.getAllAsync<{ name: string }>(
+    "PRAGMA table_info(projects)"
+  );
+  const inventoryCols = await db.getAllAsync<{ name: string }>(
+    "PRAGMA table_info(inventory_items)"
+  );
+
+  const projectsHasUserId = projectsCols.some(col => col.name === 'user_id');
+  const inventoryHasUserId = inventoryCols.some(col => col.name === 'user_id');
+
+  // Add user_id column to projects if not exists
+  if (!projectsHasUserId) {
+    await db.execAsync('ALTER TABLE projects ADD COLUMN user_id TEXT');
+    console.log('[SQLite] Added user_id column to projects');
+  }
+
+  // Add user_id column to inventory_items if not exists
+  if (!inventoryHasUserId) {
+    await db.execAsync('ALTER TABLE inventory_items ADD COLUMN user_id TEXT');
+    console.log('[SQLite] Added user_id column to inventory_items');
+  }
+
+  // Create indexes for user_id queries (for efficient sync filtering)
+  await db.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_projects_user_id ON projects(user_id);
+    CREATE INDEX IF NOT EXISTS idx_inventory_user_id ON inventory_items(user_id);
+    CREATE INDEX IF NOT EXISTS idx_projects_user_sync ON projects(user_id, pending_sync);
+    CREATE INDEX IF NOT EXISTS idx_inventory_user_sync ON inventory_items(user_id, pending_sync);
+
+    -- Set schema version
+    PRAGMA user_version = 2;
+  `);
+
+  console.log('[SQLite] Migration to v2 complete.');
 }
 

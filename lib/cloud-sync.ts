@@ -256,9 +256,12 @@ async function pushPendingChanges(
       const cloudData = mapLocalProjectToCloud(row);
       console.log('[CloudSync] Pushing project:', row.id, row.title);
 
-      const { error } = await supabase!
+      const { error, data, status } = await supabase!
         .from('projects')
-        .upsert(cloudData, { onConflict: 'id' });
+        .upsert(cloudData, { onConflict: 'id' })
+        .select();
+
+      debug.push(`Upsert: ${status} ${error?.message || 'OK'}`);
 
       if (error) {
         console.error('[CloudSync] Supabase upsert error:', error);
@@ -272,8 +275,11 @@ async function pushPendingChanges(
       );
 
       projectsPushed++;
+      debug.push(`Pushed: ${row.id.substring(0, 8)}`);
       console.log('[CloudSync] Successfully pushed project:', row.id);
     } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      debug.push(`Push fail: ${msg}`);
       console.error('[CloudSync] Failed to push project:', row.id, error);
       // Keep pending_sync = 1, will retry on next sync
     }
@@ -368,7 +374,7 @@ async function pullCloudChanges(
     console.error('[CloudSync] Failed to pull projects:', projectsError);
   } else if (cloudProjects) {
     for (const cloudRow of cloudProjects) {
-      const merged = await mergeCloudProject(db, cloudRow);
+      const merged = await mergeCloudProject(db, cloudRow, debug);
       if (merged) projectsPulled++;
     }
   }
@@ -412,7 +418,8 @@ async function pullCloudChanges(
  */
 async function mergeCloudProject(
   db: SQLiteDatabase,
-  cloudRow: Record<string, unknown>
+  cloudRow: Record<string, unknown>,
+  debug: string[]
 ): Promise<boolean> {
   const cloudId = cloudRow.id as string;
   const cloudUpdatedAt = new Date(cloudRow.updated_at as string).getTime();
@@ -425,6 +432,7 @@ async function mergeCloudProject(
   if (!localRow) {
     // New from cloud - insert locally
     await insertProjectFromCloud(db, cloudRow);
+    debug.push(`Insert: ${cloudId.substring(0, 8)}`);
     return true;
   }
 
@@ -433,10 +441,12 @@ async function mergeCloudProject(
   if (cloudUpdatedAt > localUpdatedAt) {
     // Cloud is newer - update local
     await updateProjectFromCloud(db, cloudRow);
+    debug.push(`Update: cloud newer`);
     return true;
   }
 
   // Local is newer or equal - keep local (will be pushed on next sync if pending)
+  debug.push(`Skip: local newer (${localUpdatedAt} > ${cloudUpdatedAt})`);
   return false;
 }
 

@@ -1028,4 +1028,21 @@ export default {
   materials: {
     longPressForOptions: 'Long press to see options',
   },
+  about: {
+    title: 'About',
+    appName: 'Artful Space',
+    version: 'Version',
+    build: 'Build',
+    runtimeVersion: 'Runtime',
+    updateId: 'Update ID',
+    channel: 'Channel',
+    lastUpdated: 'Last Updated',
+    status: 'Status',
+    upToDate: 'Up to date',
+    updatePending: 'Update pending - restart to apply',
+    checkForUpdates: 'Check for Updates',
+    noUpdateAvailable: 'You are running the latest version',
+    updateAvailable: 'Update available!',
+    embedded: 'Embedded build',
+  },
 };

@@ -351,7 +351,7 @@ export default function ProfileScreen() {
     {
       icon: <HelpCircle size={20} color={Colors.charcoal} />,
       label: t('profile.about'),
-      onPress: () => Alert.alert(t('profile.about'), `${t('profile.version')}: 1.0.0`),
+      onPress: () => router.push('/about' as any),
     },
   ];
 

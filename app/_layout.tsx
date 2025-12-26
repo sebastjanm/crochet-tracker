@@ -252,6 +252,7 @@ export default function RootLayout() {
                           <Stack.Screen name="(tabs)" />
                           <Stack.Screen name="help" />
                           <Stack.Screen name="legal" />
+                          <Stack.Screen name="about" />
                           <Stack.Screen name="project/[id]" />
                           <Stack.Screen name="video-player" />
 

@@ -1027,4 +1027,21 @@ export default {
   materials: {
     longPressForOptions: 'Dolgi pritisk za možnosti',
   },
+  about: {
+    title: 'O aplikaciji',
+    appName: 'Artful Space',
+    version: 'Različica',
+    build: 'Gradnja',
+    runtimeVersion: 'Izvajalna različica',
+    updateId: 'ID posodobitve',
+    channel: 'Kanal',
+    lastUpdated: 'Nazadnje posodobljeno',
+    status: 'Status',
+    upToDate: 'Posodobljeno',
+    updatePending: 'Posodobitev čaka - potreben ponovni zagon',
+    checkForUpdates: 'Preveri posodobitve',
+    noUpdateAvailable: 'Uporabljate najnovejšo različico',
+    updateAvailable: 'Posodobitev na voljo!',
+    embedded: 'Vgrajena različica',
+  },
 };

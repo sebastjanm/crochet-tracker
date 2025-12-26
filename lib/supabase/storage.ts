@@ -2,12 +2,13 @@
  * Supabase Storage Upload Utility
  *
  * Handles image uploads to Supabase Storage buckets.
- * Uses expo-file-system File class which implements Blob interface.
+ * Uses expo-file-system to read files and convert to ArrayBuffer for upload.
  *
  * @see https://docs.expo.dev/versions/latest/sdk/filesystem/
  */
 
-import { File } from 'expo-file-system';
+import { getInfoAsync, readAsStringAsync } from 'expo-file-system';
+import { decode } from 'base64-arraybuffer';
 import { supabase, isSupabaseConfigured } from './client';
 
 export type StorageBucket = 'project-images' | 'inventory-images' | 'avatars' | 'pattern-pdfs';
@@ -108,16 +109,32 @@ export async function uploadImage(
   }
 
   try {
-    // Create File from local URI (implements Blob interface)
-    const file = new File(localUri);
-
     // Check file exists
-    if (!file.exists) {
+    const fileInfo = await getInfoAsync(localUri);
+    if (!fileInfo.exists) {
       return {
         success: false,
         error: `File does not exist: ${localUri}`,
       };
     }
+
+    console.log(`[Storage] File info:`, {
+      uri: localUri.slice(0, 50),
+      size: 'size' in fileInfo ? fileInfo.size : 'unknown',
+      exists: fileInfo.exists
+    });
+
+    // Read file as base64
+    const base64 = await readAsStringAsync(localUri, {
+      encoding: 'base64',
+    });
+
+    console.log(`[Storage] Read base64, length: ${base64.length}`);
+
+    // Convert base64 to ArrayBuffer
+    const arrayBuffer = decode(base64);
+
+    console.log(`[Storage] ArrayBuffer size: ${arrayBuffer.byteLength}`);
 
     // Generate unique storage path: {userId}/{itemId}/{timestamp}.{ext}
     const extension = localUri.split('.').pop()?.toLowerCase() || 'jpg';
@@ -131,7 +148,7 @@ export async function uploadImage(
     // Upload to Supabase Storage
     const { data, error } = await supabase!.storage
       .from(bucket)
-      .upload(fileName, file, {
+      .upload(fileName, arrayBuffer, {
         contentType,
         upsert: options.upsert ?? false,
       });

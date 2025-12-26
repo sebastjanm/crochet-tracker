@@ -699,6 +699,18 @@ export default {
     syncErrors: 'Napake',
     projects: 'projektov',
     inventory: 'zaloga',
+    // Image Sync
+    syncImages: 'Sinhroniziraj slike',
+    syncingImages: 'Sinhroniziram slike...',
+    syncImagesDescription: 'Naloži lokalne fotografije v oblak',
+    syncImagesHint: 'Naloži vse čakajoče lokalne slike v Supabase',
+    syncNotReady: 'Sinhronizacija ni pripravljena. Poskusi znova.',
+    imagesSynced: 'Slike sinhronizirane',
+    queued: 'v čakalni vrsti',
+    cleaned: 'počiščeno',
+    allImagesUploaded: 'Vse slike že naložene',
+    noImagesToSync: 'Ni slik za sinhronizacijo',
+    imageUploadFailed: 'Nalaganje slike ni uspelo',
   },
   accessibility: {
     projectImage: 'Slika projekta',

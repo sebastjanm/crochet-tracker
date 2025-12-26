@@ -364,6 +364,158 @@ export class SyncManager {
   }
 
   /**
+   * Bulk queue all pending images from existing projects and inventory.
+   * Call this to upload images that were created before sync was enabled.
+   *
+   * @param projects - All local projects (from SQLite)
+   * @param inventoryItems - All local inventory items (from SQLite)
+   * @returns Count of queued vs already uploaded images
+   */
+  async bulkQueuePendingImages(
+    projects: Array<{ id: string; images?: (string | unknown)[] }>,
+    inventoryItems: Array<{ id: string; images?: (string | unknown)[] }>
+  ): Promise<{ queued: number; alreadyCloud: number; totalScanned: number }> {
+    if (!this.isInitialized) {
+      console.warn('[SyncManager] Not initialized, cannot bulk queue images');
+      return { queued: 0, alreadyCloud: 0, totalScanned: 0 };
+    }
+
+    let queued = 0;
+    let alreadyCloud = 0;
+    let totalScanned = 0;
+
+    console.log(`[SyncManager] Bulk scanning ${projects.length} projects and ${inventoryItems.length} inventory items`);
+
+    // Process projects
+    for (const project of projects) {
+      const images = project.images || [];
+      totalScanned += images.length;
+      const localImages = getLocalImagesToUpload(images);
+
+      if (localImages.length > 0) {
+        await imageSyncQueue.enqueue(
+          localImages.map(({ uri, index }) => ({
+            localUri: uri,
+            bucket: 'project-images' as const,
+            itemId: project.id,
+            itemType: 'project' as const,
+            imageIndex: index,
+          }))
+        );
+        queued += localImages.length;
+      }
+      alreadyCloud += images.length - localImages.length;
+    }
+
+    // Process inventory
+    for (const item of inventoryItems) {
+      const images = item.images || [];
+      totalScanned += images.length;
+      const localImages = getLocalImagesToUpload(images);
+
+      if (localImages.length > 0) {
+        await imageSyncQueue.enqueue(
+          localImages.map(({ uri, index }) => ({
+            localUri: uri,
+            bucket: 'inventory-images' as const,
+            itemId: item.id,
+            itemType: 'inventory' as const,
+            imageIndex: index,
+          }))
+        );
+        queued += localImages.length;
+      }
+      alreadyCloud += images.length - localImages.length;
+    }
+
+    console.log(`[SyncManager] Bulk queue complete: ${queued} queued, ${alreadyCloud} already cloud, ${totalScanned} total`);
+    return { queued, alreadyCloud, totalScanned };
+  }
+
+  /**
+   * Find 0-byte images in Supabase Storage that need re-uploading.
+   * Returns list of files with size === 0.
+   */
+  async findZeroByteImages(): Promise<Array<{
+    bucket: 'project-images' | 'inventory-images';
+    path: string;
+    name: string;
+  }>> {
+    if (!supabase) return [];
+
+    const zeroByteFiles: Array<{
+      bucket: 'project-images' | 'inventory-images';
+      path: string;
+      name: string;
+    }> = [];
+
+    const buckets: Array<'project-images' | 'inventory-images'> = ['project-images', 'inventory-images'];
+
+    for (const bucket of buckets) {
+      try {
+        // List all folders for this user
+        const { data: folders, error: folderError } = await supabase.storage
+          .from(bucket)
+          .list(this.userId, { limit: 1000 });
+
+        if (folderError) {
+          console.error(`[SyncManager] Error listing ${bucket}:`, folderError);
+          continue;
+        }
+
+        // For each folder (itemId), list files
+        for (const folder of folders || []) {
+          if (folder.id === null) {
+            // This is a subfolder, list its contents
+            const { data: files, error: fileError } = await supabase.storage
+              .from(bucket)
+              .list(`${this.userId}/${folder.name}`, { limit: 1000 });
+
+            if (fileError) continue;
+
+            for (const file of files || []) {
+              // Check if file is 0 bytes
+              const metadata = file.metadata as { size?: number } | null;
+              if (metadata?.size === 0) {
+                zeroByteFiles.push({
+                  bucket,
+                  path: `${this.userId}/${folder.name}/${file.name}`,
+                  name: file.name,
+                });
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error(`[SyncManager] Error scanning ${bucket}:`, error);
+      }
+    }
+
+    console.log(`[SyncManager] Found ${zeroByteFiles.length} zero-byte files`);
+    return zeroByteFiles;
+  }
+
+  /**
+   * Delete a file from Supabase Storage.
+   */
+  async deleteStorageFile(bucket: 'project-images' | 'inventory-images', path: string): Promise<boolean> {
+    if (!supabase) return false;
+
+    try {
+      const { error } = await supabase.storage.from(bucket).remove([path]);
+      if (error) {
+        console.error(`[SyncManager] Failed to delete ${path}:`, error);
+        return false;
+      }
+      console.log(`[SyncManager] Deleted ${bucket}/${path}`);
+      return true;
+    } catch (error) {
+      console.error(`[SyncManager] Error deleting file:`, error);
+      return false;
+    }
+  }
+
+  /**
    * Cleanup sync manager on logout.
    */
   async cleanup(): Promise<void> {

@@ -16,6 +16,7 @@ import { InventoryProvider, useInventory } from "@/hooks/inventory-context";
 import { LanguageProvider, useLanguage } from "@/hooks/language-context";
 import { migrateDatabase } from "@/lib/database/migrations";
 import { getSyncManager, cleanupSyncManager, type ImageUploadCallbacks } from "@/lib/legend-state";
+import { ToastProvider, useToast } from "@/components/Toast";
 import Colors from "@/constants/colors";
 
 SplashScreen.preventAutoHideAsync();
@@ -64,12 +65,6 @@ function UpdateChecker({ children }: { children: React.ReactNode }) {
 
       try {
         console.log('[Updates] Checking for updates...');
-
-        // DEBUG: Show that update check is starting
-        const currentUpdateId = Updates.updateId;
-        const channel = Updates.channel;
-        const runtimeVersion = Updates.runtimeVersion;
-
         const update = await Updates.checkForUpdateAsync();
 
         if (update.isAvailable) {
@@ -92,21 +87,9 @@ function UpdateChecker({ children }: { children: React.ReactNode }) {
           );
         } else {
           console.log('[Updates] App is up to date');
-          // DEBUG: Show that no update was found
-          Alert.alert(
-            'Update Check',
-            `No update available.\n\nChannel: ${channel}\nRuntime: ${runtimeVersion}\nCurrent update: ${currentUpdateId || 'embedded'}`,
-            [{ text: 'OK' }]
-          );
         }
       } catch (error) {
         console.error('[Updates] Error checking for updates:', error);
-        // DEBUG: Show error instead of silent fail
-        Alert.alert(
-          'Update Check Error',
-          String(error),
-          [{ text: 'OK' }]
-        );
       }
     }
 
@@ -126,6 +109,8 @@ function LegendStateSyncManager({ children }: { children: React.ReactNode }) {
   const { user, isPro } = useAuth();
   const { refreshProjects, replaceProjectImage } = useProjects();
   const { refreshItems, replaceInventoryImage } = useInventory();
+  const { showToast } = useToast();
+  const { t } = useLanguage();
   const appState = useRef(AppState.currentState);
   const hasInitialSynced = useRef(false);
   const syncManagerRef = useRef<ReturnType<typeof getSyncManager>>(null);
@@ -137,15 +122,6 @@ function LegendStateSyncManager({ children }: { children: React.ReactNode }) {
       const imageCallbacks: ImageUploadCallbacks = {
         onImageUploaded: async (itemId, itemType, _imageIndex, newUrl, oldUri) => {
           console.log(`[LegendStateSyncManager] Image uploaded: ${itemType}/${itemId}`);
-          console.log(`[LegendStateSyncManager] Replacing ${oldUri.slice(0, 50)}... with ${newUrl.slice(0, 50)}...`);
-
-          // DEBUG: Show alert on successful upload
-          Alert.alert(
-            '✅ Image Uploaded',
-            `${itemType}/${itemId}\n\nURL: ${newUrl.slice(0, 80)}...`,
-            [{ text: 'OK' }]
-          );
-
           if (itemType === 'project') {
             await replaceProjectImage(itemId, oldUri, newUrl);
           } else if (itemType === 'inventory') {
@@ -154,12 +130,7 @@ function LegendStateSyncManager({ children }: { children: React.ReactNode }) {
         },
         onImageFailed: (itemId, itemType, imageIndex, error) => {
           console.error(`[LegendStateSyncManager] Image upload failed: ${itemType}/${itemId}[${imageIndex}]`, error);
-          // DEBUG: Show alert on failed upload
-          Alert.alert(
-            '❌ Image Upload Failed',
-            `${itemType}/${itemId}[${imageIndex}]\n\nError: ${error}`,
-            [{ text: 'OK' }]
-          );
+          showToast(t('profile.imageUploadFailed'), 'error');
         },
       };
 
@@ -183,21 +154,9 @@ function LegendStateSyncManager({ children }: { children: React.ReactNode }) {
         syncManagerRef.current.initialize()
           .then(() => {
             console.log('[LegendStateSyncManager] Legend-State sync initialized successfully');
-
-            // DEBUG: Show initialization success (remove after debugging)
-            if (__DEV__ === false) {
-              Alert.alert(
-                'Sync Initialized',
-                'Legend-State offline-first sync is now active.\nChanges will sync automatically.',
-                [{ text: 'OK' }]
-              );
-            }
           })
           .catch((error) => {
             console.error('[LegendStateSyncManager] Initialization failed:', error);
-            if (__DEV__ === false) {
-              Alert.alert('Sync Error', String(error), [{ text: 'OK' }]);
-            }
           });
       }
     } else {
@@ -233,7 +192,7 @@ function LegendStateSyncManager({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.remove();
     };
-  }, [isPro, user?.id, refreshProjects, refreshItems, replaceProjectImage, replaceInventoryImage]);
+  }, [isPro, user?.id, refreshProjects, refreshItems, replaceProjectImage, replaceInventoryImage, showToast, t]);
 
   return <>{children}</>;
 }
@@ -280,8 +239,9 @@ export default function RootLayout() {
                 >
                   <ProjectsProvider>
                     <InventoryProvider>
-                      <LegendStateSyncManager>
-                        <Stack
+                      <ToastProvider>
+                        <LegendStateSyncManager>
+                          <Stack
                           screenOptions={{
                             headerShown: false,
                           }}
@@ -315,8 +275,9 @@ export default function RootLayout() {
                             name="edit-project/[id]"
                             options={{ presentation: 'modal' }}
                           />
-                        </Stack>
-                      </LegendStateSyncManager>
+                          </Stack>
+                        </LegendStateSyncManager>
+                      </ToastProvider>
                     </InventoryProvider>
                   </ProjectsProvider>
                 </SQLiteProvider>

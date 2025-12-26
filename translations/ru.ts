@@ -686,6 +686,18 @@ export default {
     syncErrors: 'Ошибки',
     projects: 'проектов',
     inventory: 'инвентарь',
+    // Image Sync
+    syncImages: 'Синхронизация изображений',
+    syncingImages: 'Синхронизация изображений...',
+    syncImagesDescription: 'Загрузить локальные фотографии в облако',
+    syncImagesHint: 'Загрузить все ожидающие локальные изображения в Supabase',
+    syncNotReady: 'Синхронизация не готова. Попробуйте снова.',
+    imagesSynced: 'Изображения синхронизированы',
+    queued: 'в очереди',
+    cleaned: 'очищено',
+    allImagesUploaded: 'Все изображения уже загружены',
+    noImagesToSync: 'Нет изображений для синхронизации',
+    imageUploadFailed: 'Ошибка загрузки изображения',
   },
   accessibility: {
     projectImage: 'Изображение проекта',

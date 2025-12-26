@@ -686,6 +686,18 @@ export default {
     syncErrors: 'Fehler',
     projects: 'Projekte',
     inventory: 'Inventar',
+    // Image Sync
+    syncImages: 'Bilder synchronisieren',
+    syncingImages: 'Synchronisiere Bilder...',
+    syncImagesDescription: 'Lokale Fotos in die Cloud hochladen',
+    syncImagesHint: 'Alle ausstehenden lokalen Bilder zu Supabase hochladen',
+    syncNotReady: 'Synchronisierung nicht bereit. Bitte versuche es erneut.',
+    imagesSynced: 'Bilder synchronisiert',
+    queued: 'in Warteschlange',
+    cleaned: 'bereinigt',
+    allImagesUploaded: 'Alle Bilder bereits hochgeladen',
+    noImagesToSync: 'Keine Bilder zum Synchronisieren',
+    imageUploadFailed: 'Bild-Upload fehlgeschlagen',
   },
   accessibility: {
     projectImage: 'Projektbild',

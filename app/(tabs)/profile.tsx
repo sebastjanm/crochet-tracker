@@ -37,6 +37,8 @@ import { useProjects } from '@/hooks/projects-context';
 import { useInventory } from '@/hooks/inventory-context';
 import { useLanguage } from '@/hooks/language-context';
 import { useSupabaseSync } from '@/hooks/useSupabaseSync';
+import { getSyncManager } from '@/lib/legend-state';
+import { useToast } from '@/components/Toast';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, cardShadow } from '@/constants/pixelRatio';
@@ -64,6 +66,8 @@ export default function ProfileScreen() {
   const [isLoadingMockData, setIsLoadingMockData] = useState(false);
   const [isAvatarPickerVisible, setIsAvatarPickerVisible] = useState(false);
   const [isManualSyncing, setIsManualSyncing] = useState(false);
+  const [isSyncingImages, setIsSyncingImages] = useState(false);
+  const { showToast } = useToast();
 
   const handleSync = async () => {
     const result = await sync();
@@ -113,6 +117,66 @@ export default function ProfileScreen() {
       );
     } finally {
       setIsManualSyncing(false);
+    }
+  };
+
+  /**
+   * Sync all local images to cloud storage.
+   * Scans projects and inventory for file:// URIs and queues them for upload.
+   */
+  const handleSyncImages = async () => {
+    if (!user?.id || !isPro) return;
+
+    setIsSyncingImages(true);
+    try {
+      const syncManager = getSyncManager(user.id, isPro);
+      if (!syncManager?.isReady()) {
+        showToast(t('profile.syncNotReady'), 'error');
+        return;
+      }
+
+      // Bulk queue all pending images
+      const result = await syncManager.bulkQueuePendingImages(
+        projects.map(p => ({ id: p.id, images: p.images })),
+        items.map(i => ({ id: i.id, images: i.images }))
+      );
+
+      // Check for 0-byte images in Supabase
+      const zeroByteFiles = await syncManager.findZeroByteImages();
+
+      // Delete 0-byte files (they'll be re-uploaded if local file exists)
+      let deletedCount = 0;
+      for (const file of zeroByteFiles) {
+        const deleted = await syncManager.deleteStorageFile(file.bucket, file.path);
+        if (deleted) deletedCount++;
+      }
+
+      // Show results
+      if (result.queued > 0 || deletedCount > 0) {
+        showToast(
+          `${t('profile.imagesSynced')}: ${result.queued} ${t('profile.queued')}` +
+          (deletedCount > 0 ? `, ${deletedCount} ${t('profile.cleaned')}` : ''),
+          'success',
+          4000
+        );
+      } else if (result.alreadyCloud > 0) {
+        showToast(
+          `${t('profile.allImagesUploaded')} (${result.alreadyCloud})`,
+          'info'
+        );
+      } else {
+        showToast(t('profile.noImagesToSync'), 'info');
+      }
+
+      console.log('[Profile] Image sync result:', result, `Deleted ${deletedCount} zero-byte files`);
+    } catch (error) {
+      console.error('[Profile] Image sync error:', error);
+      showToast(
+        error instanceof Error ? error.message : t('profile.syncFailed'),
+        'error'
+      );
+    } finally {
+      setIsSyncingImages(false);
     }
   };
 
@@ -411,6 +475,39 @@ export default function ProfileScreen() {
                   size={20}
                   color={isManualSyncing ? Colors.warmGray : Colors.deepTeal}
                   style={isManualSyncing ? { opacity: 0.5 } : undefined}
+                />
+              </TouchableOpacity>
+
+              <View style={styles.menuDivider} />
+
+              {/* Sync Images Button */}
+              <TouchableOpacity
+                style={styles.syncButton}
+                onPress={handleSyncImages}
+                disabled={isSyncingImages}
+                activeOpacity={0.7}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={t('profile.syncImages')}
+                accessibilityHint={t('profile.syncImagesHint')}
+              >
+                {isSyncingImages ? (
+                  <ActivityIndicator size="small" color={Colors.sage} />
+                ) : (
+                  <RefreshCw size={24} color={Colors.sage} />
+                )}
+                <View style={styles.syncButtonText}>
+                  <Text style={styles.syncButtonLabel}>
+                    {isSyncingImages ? t('profile.syncingImages') : t('profile.syncImages')}
+                  </Text>
+                  <Text style={styles.syncButtonDescription}>
+                    {t('profile.syncImagesDescription')}
+                  </Text>
+                </View>
+                <ChevronRight
+                  size={20}
+                  color={isSyncingImages ? Colors.warmGray : Colors.sage}
+                  style={isSyncingImages ? { opacity: 0.5 } : undefined}
                 />
               </TouchableOpacity>
             </Card>

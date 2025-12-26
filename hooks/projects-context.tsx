@@ -13,8 +13,8 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { useState, useEffect, useCallback } from 'react';
 import { Project, ProjectStatus, ProjectYarn } from '@/types';
 import { syncProjectMaterials, removeProjectFromInventory } from '@/lib/cross-context-sync';
-import { debouncedSync } from '@/lib/cloud-sync';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
+import { getSyncManager } from '@/lib/legend-state';
+import { mapLocalProjectToCloud } from '@/lib/legend-state/type-mappers';
 import { useAuth } from '@/hooks/auth-context';
 import {
   ProjectRow,
@@ -31,13 +31,18 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
   const [isLoading, setIsLoading] = useState(true);
 
   /**
-   * Trigger cloud sync for Pro users (debounced).
+   * Push project to cloud via Legend-State (Pro users only).
    */
-  const triggerSync = useCallback(() => {
+  const pushToCloud = useCallback((project: Project) => {
     if (isPro && user?.id) {
-      debouncedSync(db, user.id);
+      const syncManager = getSyncManager(user.id, isPro);
+      if (syncManager?.isReady()) {
+        const cloudProject = mapLocalProjectToCloud(project, user.id);
+        syncManager.pushProject(cloudProject);
+        console.log('[Projects] Pushed to cloud via Legend-State:', project.id);
+      }
     }
-  }, [db, isPro, user?.id]);
+  }, [isPro, user?.id]);
 
   /**
    * Load all projects from SQLite database.
@@ -135,8 +140,8 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
     setProjects((prev) => [newProject, ...prev]);
     console.log(`[Projects] Added project: ${newProject.title}`);
 
-    // Trigger cloud sync for Pro users
-    triggerSync();
+    // Push to cloud via Legend-State (Pro users only)
+    pushToCloud(newProject);
 
     return newProject;
   };
@@ -243,8 +248,8 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
 
       console.log(`[Projects] Updated project: ${id}`);
 
-      // Trigger cloud sync for Pro users
-      triggerSync();
+      // Push to cloud via Legend-State (Pro users only)
+      pushToCloud(updatedProject);
     } catch (error) {
       // If save fails, revert the state
       console.error(`[Projects] Failed to update project ${id}:`, error);
@@ -273,14 +278,12 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
       await db.runAsync('DELETE FROM projects WHERE id = ?', [id]);
       console.log(`[Projects] Deleted project: ${id}`);
 
-      // Delete from cloud for Pro users
-      if (isPro && isSupabaseConfigured() && supabase) {
-        try {
-          await supabase.from('projects').delete().eq('id', id);
-          console.log(`[Projects] Deleted from cloud: ${id}`);
-        } catch (cloudError) {
-          console.error('[Projects] Failed to delete from cloud:', cloudError);
-          // Don't throw - local delete succeeded
+      // Soft delete in cloud via Legend-State (Pro users only)
+      if (isPro && user?.id) {
+        const syncManager = getSyncManager(user.id, isPro);
+        if (syncManager?.isReady()) {
+          syncManager.deleteProject(id);
+          console.log(`[Projects] Soft deleted in cloud via Legend-State: ${id}`);
         }
       }
     } catch (error) {

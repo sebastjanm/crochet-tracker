@@ -1,14 +1,15 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { Database } from './database.types';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
 // Only create client if environment variables are set
 // This allows the app to run without Supabase configured
-export const supabase =
+export const supabase: SupabaseClient<Database> | null =
   supabaseUrl && supabaseAnonKey
-    ? createClient(supabaseUrl, supabaseAnonKey, {
+    ? createClient<Database>(supabaseUrl, supabaseAnonKey, {
         auth: {
           storage: AsyncStorage,
           autoRefreshToken: true,

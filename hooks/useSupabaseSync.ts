@@ -3,6 +3,10 @@
  *
  * Provides sync functionality between local SQLite and Supabase cloud.
  * For Pro users only - free users use local-only storage.
+ * Uses Legend-State SyncManager for production-grade offline-first sync.
+ *
+ * @see https://docs.expo.dev/guides/local-first/#legend-state
+ * @see https://supabase.com/blog/local-first-expo-legend-state
  *
  * @example
  * ```tsx
@@ -22,9 +26,10 @@
  * ```
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
-import { fullSync, type SyncResult } from '@/lib/sync/supabase-sync';
+import { getSyncManager, type SyncResult } from '@/lib/legend-state';
+import { mapLocalProjectToCloud, mapLocalInventoryToCloud } from '@/lib/legend-state';
 import { useAuth } from '@/hooks/auth-context';
 import { useProjects } from '@/hooks/projects-context';
 import { useInventory } from '@/hooks/inventory-context';
@@ -57,9 +62,10 @@ export interface UseSupabaseSyncReturn extends SyncState {
 
 export function useSupabaseSync(): UseSupabaseSyncReturn {
   const { user, isPro } = useAuth();
-  const { projects } = useProjects();
-  const { items } = useInventory();
+  const { projects, refreshProjects } = useProjects();
+  const { items, refreshItems } = useInventory();
   const { isConnected } = useNetworkState();
+  const syncManagerRef = useRef<ReturnType<typeof getSyncManager>>(null);
 
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
@@ -68,9 +74,23 @@ export function useSupabaseSync(): UseSupabaseSyncReturn {
 
   // Check if sync is enabled (Supabase configured + Pro user + online)
   const isSupabaseReady = isSupabaseConfigured();
-  // TODO: Restore `&& isPro` for production
-  const isEnabled = isSupabaseReady;
+  const isEnabled = isSupabaseReady && isPro;
   const isOnline = isConnected ?? false;
+
+  // Initialize sync manager for Pro users
+  useEffect(() => {
+    if (isEnabled && user?.id) {
+      syncManagerRef.current = getSyncManager(user.id, isPro, {
+        onProjectsChanged: refreshProjects,
+        onInventoryChanged: refreshItems,
+      });
+
+      // Initialize realtime subscriptions
+      syncManagerRef.current?.initialize().catch((err) => {
+        console.warn('[Sync] Failed to initialize sync manager:', err);
+      });
+    }
+  }, [isEnabled, user?.id, isPro, refreshProjects, refreshItems]);
 
   // Load last synced timestamp on mount
   useEffect(() => {
@@ -110,18 +130,62 @@ export function useSupabaseSync(): UseSupabaseSyncReturn {
       return null;
     }
 
+    const syncManager = syncManagerRef.current;
+    if (!syncManager) {
+      console.log('[Sync] Sync manager not initialized');
+      setError(new Error('Sync not initialized'));
+      return null;
+    }
+
     setIsSyncing(true);
     setError(null);
+
+    const result: SyncResult = {
+      success: true,
+      pullCount: 0,
+      pushCount: 0,
+      errors: [],
+    };
 
     try {
       console.log('[Sync] Starting full sync...');
 
-      const result = await fullSync(
-        projects,
-        items,
-        user.id,
-        lastSyncedAt ?? undefined
-      );
+      // Ensure manager is initialized
+      if (!syncManager.isReady()) {
+        await syncManager.initialize();
+      }
+
+      // Push all local projects to cloud
+      for (const project of projects) {
+        try {
+          const cloudProject = mapLocalProjectToCloud(project, user.id);
+          await syncManager.pushProject(cloudProject);
+          result.pushCount++;
+        } catch (err) {
+          const errMsg = err instanceof Error ? err.message : String(err);
+          result.errors.push(`Project ${project.id}: ${errMsg}`);
+        }
+      }
+
+      // Push all local inventory items to cloud
+      for (const item of items) {
+        try {
+          const cloudItem = mapLocalInventoryToCloud(item, user.id);
+          await syncManager.pushInventoryItem(cloudItem);
+          result.pushCount++;
+        } catch (err) {
+          const errMsg = err instanceof Error ? err.message : String(err);
+          result.errors.push(`Inventory ${item.id}: ${errMsg}`);
+        }
+      }
+
+      // Pull from cloud and refresh local state
+      const cloudProjects = await syncManager.pullProjects();
+      const cloudInventory = await syncManager.pullInventoryItems();
+      result.pullCount = cloudProjects.length + cloudInventory.length;
+
+      // Refresh local state to pick up any cloud changes
+      await Promise.all([refreshProjects(), refreshItems()]);
 
       const now = new Date();
       setLastSyncedAt(now);
@@ -130,9 +194,11 @@ export function useSupabaseSync(): UseSupabaseSyncReturn {
       // Persist last synced timestamp
       await Storage.setItem(LAST_SYNCED_KEY, now.toISOString());
 
+      result.success = result.errors.length === 0;
+
       if (result.success) {
         console.log(
-          `[Sync] Completed: pushed ${result.pushed}, pulled ${result.pulled}`
+          `[Sync] Completed: pushed ${result.pushCount}, pulled ${result.pullCount}`
         );
       } else {
         console.warn('[Sync] Completed with errors:', result.errors);
@@ -144,11 +210,13 @@ export function useSupabaseSync(): UseSupabaseSyncReturn {
       const syncError = err instanceof Error ? err : new Error(String(err));
       console.error('[Sync] Failed:', syncError);
       setError(syncError);
-      return null;
+      result.success = false;
+      result.errors.push(syncError.message);
+      return result;
     } finally {
       setIsSyncing(false);
     }
-  }, [isEnabled, isOnline, user?.id, isSyncing, projects, items, lastSyncedAt]);
+  }, [isEnabled, isOnline, user?.id, isSyncing, projects, items, refreshProjects, refreshItems]);
 
   const clearError = useCallback(() => {
     setError(null);

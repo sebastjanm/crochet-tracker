@@ -79,7 +79,7 @@ export async function migrateDataToSupabase(): Promise<MigrationResult> {
 
           const { error } = await supabase
             .from('projects')
-            .upsert(supabaseProject);
+            .upsert(supabaseProject as never);
 
           if (error) {
             result.errors.push(`Failed to migrate project "${project.title}": ${error.message}`);
@@ -130,7 +130,7 @@ export async function migrateDataToSupabase(): Promise<MigrationResult> {
 
           const { error } = await supabase
             .from('inventory_items')
-            .upsert(supabaseItem);
+            .upsert(supabaseItem as never);
 
           if (error) {
             result.errors.push(`Failed to migrate inventory "${itemName}": ${error.message}`);

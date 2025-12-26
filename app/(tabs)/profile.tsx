@@ -11,7 +11,6 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useSQLiteContext } from 'expo-sqlite';
 import { router } from 'expo-router';
 import {
   LogOut,
@@ -38,7 +37,6 @@ import { useProjects } from '@/hooks/projects-context';
 import { useInventory } from '@/hooks/inventory-context';
 import { useLanguage } from '@/hooks/language-context';
 import { useSupabaseSync } from '@/hooks/useSupabaseSync';
-import { performSync } from '@/lib/cloud-sync';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, cardShadow } from '@/constants/pixelRatio';
@@ -50,7 +48,6 @@ const isSmallDevice = width < 375;
 const isTablet = width >= 768;
 
 export default function ProfileScreen() {
-  const db = useSQLiteContext();
   const { user, logout, updateUser, refreshUser, isPro } = useAuth();
   const { projects, completedCount, inProgressCount, refreshProjects } = useProjects();
   const { items, refreshItems } = useInventory();
@@ -73,7 +70,7 @@ export default function ProfileScreen() {
     if (result?.success) {
       Alert.alert(
         'Sync Complete',
-        `Pushed ${result.pushed} items, pulled ${result.pulled} items`,
+        `Pushed ${result.pushCount} items, pulled ${result.pullCount} items`,
         [{ text: 'OK' }]
       );
     } else if (syncError) {
@@ -84,28 +81,30 @@ export default function ProfileScreen() {
   };
 
   /**
-   * Manual sync for Pro users - uses performSync directly
+   * Manual sync for Pro users - uses Legend-State SyncManager
    */
   const handleManualSync = async () => {
     if (!user?.id || !isPro) return;
 
     setIsManualSyncing(true);
     try {
-      const result = await performSync(db, user.id);
+      const result = await sync();
 
-      // Refresh local state if data was pulled
-      if (result.pulled.projects > 0 || result.pulled.inventory > 0) {
-        await refreshProjects();
-        await refreshItems();
+      if (result) {
+        Alert.alert(
+          t('profile.syncComplete'),
+          `${t('profile.syncPushed')}: ${result.pushCount} ${t('profile.items')}\n` +
+          `${t('profile.syncPulled')}: ${result.pullCount} ${t('profile.items')}` +
+          (result.errors.length > 0 ? `\n\n${t('profile.syncErrors')}: ${result.errors.join(', ')}` : ''),
+          [{ text: 'OK' }]
+        );
+      } else if (syncError) {
+        Alert.alert(
+          t('profile.syncFailed'),
+          syncError.message,
+          [{ text: 'OK', onPress: clearError }]
+        );
       }
-
-      Alert.alert(
-        t('profile.syncComplete'),
-        `${t('profile.syncPushed')}: ${result.pushed.projects} ${t('profile.projects')}, ${result.pushed.inventory} ${t('profile.inventory')}\n` +
-        `${t('profile.syncPulled')}: ${result.pulled.projects} ${t('profile.projects')}, ${result.pulled.inventory} ${t('profile.inventory')}` +
-        (result.errors.length > 0 ? `\n\n${t('profile.syncErrors')}: ${result.errors.join(', ')}` : ''),
-        [{ text: 'OK' }]
-      );
     } catch (error) {
       Alert.alert(
         t('profile.syncFailed'),

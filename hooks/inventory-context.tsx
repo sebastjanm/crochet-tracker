@@ -14,8 +14,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { InventoryItem } from '@/types';
 import { useImagePicker } from './useImagePicker';
 import { syncInventoryToProjects, removeInventoryFromProjects } from '@/lib/cross-context-sync';
-import { debouncedSync } from '@/lib/cloud-sync';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
+import { getSyncManager } from '@/lib/legend-state';
+import { mapLocalInventoryToCloud } from '@/lib/legend-state/type-mappers';
 import { useAuth } from '@/hooks/auth-context';
 import {
   InventoryItemRow,
@@ -36,13 +36,18 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
   const { showImagePickerOptions, isPickingImage } = useImagePicker();
 
   /**
-   * Trigger cloud sync for Pro users (debounced).
+   * Push inventory item to cloud via Legend-State (Pro users only).
    */
-  const triggerSync = useCallback(() => {
+  const pushToCloud = useCallback((item: InventoryItem) => {
     if (isPro && user?.id) {
-      debouncedSync(db, user.id);
+      const syncManager = getSyncManager(user.id, isPro);
+      if (syncManager?.isReady()) {
+        const cloudItem = mapLocalInventoryToCloud(item, user.id);
+        syncManager.pushInventoryItem(cloudItem);
+        console.log('[Inventory] Pushed to cloud via Legend-State:', item.id);
+      }
     }
-  }, [db, isPro, user?.id]);
+  }, [isPro, user?.id]);
 
   /**
    * Load all inventory items from SQLite database.
@@ -141,8 +146,8 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     setItems((prev) => [newItem, ...prev]);
     console.log(`[Inventory] Added item: ${newItem.name}`);
 
-    // Trigger cloud sync for Pro users
-    triggerSync();
+    // Push to cloud via Legend-State (Pro users only)
+    pushToCloud(newItem);
 
     return newItem;
   };
@@ -248,8 +253,8 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
 
       console.log(`[Inventory] Updated item: ${id}`);
 
-      // Trigger cloud sync for Pro users
-      triggerSync();
+      // Push to cloud via Legend-State (Pro users only)
+      pushToCloud(updatedItem);
     } catch (error) {
       console.error(`[Inventory] Failed to update item ${id}:`, error);
       setItems((prev) => prev.map((item) => (item.id === id ? existingItem : item)));
@@ -330,14 +335,12 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
       await db.runAsync('DELETE FROM inventory_items WHERE id = ?', [id]);
       console.log(`[Inventory] Deleted item: ${id}`);
 
-      // Delete from cloud for Pro users
-      if (isPro && isSupabaseConfigured() && supabase) {
-        try {
-          await supabase.from('inventory_items').delete().eq('id', id);
-          console.log(`[Inventory] Deleted from cloud: ${id}`);
-        } catch (cloudError) {
-          console.error('[Inventory] Failed to delete from cloud:', cloudError);
-          // Don't throw - local delete succeeded
+      // Soft delete in cloud via Legend-State (Pro users only)
+      if (isPro && user?.id) {
+        const syncManager = getSyncManager(user.id, isPro);
+        if (syncManager?.isReady()) {
+          syncManager.deleteInventoryItem(id);
+          console.log(`[Inventory] Soft deleted in cloud via Legend-State: ${id}`);
         }
       }
     } catch (error) {

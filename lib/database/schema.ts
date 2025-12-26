@@ -52,6 +52,7 @@ export interface ProjectRow {
   updated_at: string;
   synced_at: string | null;
   pending_sync: number;
+  deleted: number; // 0 = false, 1 = true (soft delete for Legend-State)
 }
 
 /**
@@ -87,7 +88,7 @@ export function mapRowToProject(row: ProjectRow): Project {
 /**
  * Map Project type to SQLite row values for INSERT/UPDATE.
  */
-export function mapProjectToRow(project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>): Omit<ProjectRow, 'id' | 'created_at' | 'updated_at' | 'synced_at' | 'pending_sync'> {
+export function mapProjectToRow(project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>): Omit<ProjectRow, 'id' | 'created_at' | 'updated_at' | 'synced_at' | 'pending_sync' | 'deleted' | 'user_id'> {
   return {
     title: project.title,
     description: project.description ?? null,
@@ -138,6 +139,7 @@ export interface InventoryItemRow {
   last_updated: string;
   synced_at: string | null;
   pending_sync: number;
+  deleted: number; // 0 = false, 1 = true (soft delete for Legend-State)
 }
 
 /**
@@ -170,7 +172,7 @@ export function mapRowToInventoryItem(row: InventoryItemRow): InventoryItem {
  */
 export function mapInventoryItemToRow(
   item: Omit<InventoryItem, 'id' | 'dateAdded' | 'lastUpdated'>
-): Omit<InventoryItemRow, 'id' | 'date_added' | 'last_updated' | 'synced_at' | 'pending_sync'> {
+): Omit<InventoryItemRow, 'id' | 'date_added' | 'last_updated' | 'synced_at' | 'pending_sync' | 'deleted' | 'user_id'> {
   return {
     category: item.category,
     name: item.name,

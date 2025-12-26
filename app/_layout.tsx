@@ -15,7 +15,7 @@ import { ProjectsProvider, useProjects } from "@/hooks/projects-context";
 import { InventoryProvider, useInventory } from "@/hooks/inventory-context";
 import { LanguageProvider, useLanguage } from "@/hooks/language-context";
 import { migrateDatabase } from "@/lib/database/migrations";
-import { performSync } from "@/lib/cloud-sync";
+import { getSyncManager, cleanupSyncManager } from "@/lib/legend-state";
 import Colors from "@/constants/colors";
 
 SplashScreen.preventAutoHideAsync();
@@ -117,89 +117,93 @@ function UpdateChecker({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Cloud Sync Manager - Handles background sync for Pro users.
- * Syncs data when app comes to foreground.
+ * Legend-State Sync Manager - Handles background sync for Pro users.
+ * Uses Legend-State for production-grade offline-first sync with Supabase.
+ *
+ * @see https://supabase.com/blog/local-first-expo-legend-state
  */
-function SyncManager({ children }: { children: React.ReactNode }) {
-  const db = useSQLiteContext();
+function LegendStateSyncManager({ children }: { children: React.ReactNode }) {
   const { user, isPro } = useAuth();
   const { refreshProjects } = useProjects();
   const { refreshItems } = useInventory();
   const appState = useRef(AppState.currentState);
+  const hasInitialSynced = useRef(false);
+  const syncManagerRef = useRef<ReturnType<typeof getSyncManager>>(null);
 
   useEffect(() => {
+    // Initialize or cleanup sync manager based on Pro status
+    if (isPro && user?.id) {
+      // Get or create sync manager with callbacks for remote changes
+      syncManagerRef.current = getSyncManager(user.id, isPro, {
+        onProjectsChanged: async () => {
+          console.log('[LegendStateSyncManager] Projects changed from remote, refreshing...');
+          await refreshProjects();
+        },
+        onInventoryChanged: async () => {
+          console.log('[LegendStateSyncManager] Inventory changed from remote, refreshing...');
+          await refreshItems();
+        },
+      });
+
+      // Initialize sync manager if not already initialized
+      if (syncManagerRef.current && !hasInitialSynced.current) {
+        hasInitialSynced.current = true;
+        console.log('[LegendStateSyncManager] Initializing Legend-State sync for Pro user:', user.id);
+
+        syncManagerRef.current.initialize()
+          .then(() => {
+            console.log('[LegendStateSyncManager] Legend-State sync initialized successfully');
+
+            // DEBUG: Show initialization success (remove after debugging)
+            if (__DEV__ === false) {
+              Alert.alert(
+                'Sync Initialized',
+                'Legend-State offline-first sync is now active.\nChanges will sync automatically.',
+                [{ text: 'OK' }]
+              );
+            }
+          })
+          .catch((error) => {
+            console.error('[LegendStateSyncManager] Initialization failed:', error);
+            if (__DEV__ === false) {
+              Alert.alert('Sync Error', String(error), [{ text: 'OK' }]);
+            }
+          });
+      }
+    } else {
+      // Cleanup sync manager when user logs out or is no longer Pro
+      if (syncManagerRef.current) {
+        cleanupSyncManager();
+        syncManagerRef.current = null;
+        hasInitialSynced.current = false;
+        console.log('[LegendStateSyncManager] Cleaned up sync manager (user logged out or not Pro)');
+      }
+    }
+
+    // App state listener for foreground detection
     const subscription = AppState.addEventListener(
       'change',
       async (nextAppState: AppStateStatus) => {
-        // Only sync when app comes to foreground and user is Pro
         if (
           appState.current.match(/inactive|background/) &&
           nextAppState === 'active' &&
           isPro &&
           user?.id
         ) {
-          console.log('[SyncManager] App foregrounded, syncing for Pro user...');
-          try {
-            const result = await performSync(db, user.id);
-            if (result.pulled.projects > 0 || result.pulled.inventory > 0) {
-              // Refresh local state if new data was pulled from cloud
-              await refreshProjects();
-              await refreshItems();
-              console.log('[SyncManager] Refreshed local state after cloud sync');
-            }
-          } catch (error) {
-            console.error('[SyncManager] Foreground sync failed:', error);
-          }
+          console.log('[LegendStateSyncManager] App foregrounded, Legend-State will auto-sync');
+          // Legend-State handles sync automatically via realtime subscriptions
+          // No manual sync needed - just refresh contexts to pick up any changes
+          await refreshProjects();
+          await refreshItems();
         }
         appState.current = nextAppState;
       }
     );
 
-    // Initial sync on mount for Pro users
-    if (isPro && user?.id) {
-      console.log('[SyncManager] Initial sync starting for Pro user:', user.id, 'role:', user.role);
-      performSync(db, user.id)
-        .then(async (result) => {
-          console.log('[SyncManager] Initial sync result:', result);
-
-          // DEBUG: Show sync result in alert (remove after debugging)
-          if (__DEV__ === false) {
-            Alert.alert(
-              'Sync Debug',
-              `Pulled: ${result.pulled.projects} projects, ${result.pulled.inventory} inventory\n` +
-              `Pushed: ${result.pushed.projects} projects, ${result.pushed.inventory} inventory\n` +
-              `Errors: ${result.errors.length > 0 ? result.errors.join(', ') : 'none'}`,
-              [{ text: 'OK' }]
-            );
-          }
-
-          if (result.pulled.projects > 0 || result.pulled.inventory > 0) {
-            await refreshProjects();
-            await refreshItems();
-            console.log('[SyncManager] Refreshed contexts after pull');
-          }
-        })
-        .catch((error) => {
-          console.error('[SyncManager] Initial sync failed:', error);
-          // DEBUG: Show error in alert (remove after debugging)
-          if (__DEV__ === false) {
-            Alert.alert('Sync Error', String(error), [{ text: 'OK' }]);
-          }
-        });
-    } else {
-      console.log('[SyncManager] Skipping sync - isPro:', isPro, 'userId:', user?.id, 'role:', user?.role);
-      // DEBUG: Show why sync was skipped (remove after debugging)
-      if (__DEV__ === false && user) {
-        Alert.alert(
-          'Sync Skipped',
-          `isPro: ${isPro}\nuserId: ${user?.id}\nrole: ${user?.role}`,
-          [{ text: 'OK' }]
-        );
-      }
-    }
-
-    return () => subscription.remove();
-  }, [db, isPro, user?.id, refreshProjects, refreshItems]);
+    return () => {
+      subscription.remove();
+    };
+  }, [isPro, user?.id, refreshProjects, refreshItems]);
 
   return <>{children}</>;
 }
@@ -246,7 +250,7 @@ export default function RootLayout() {
                 >
                   <ProjectsProvider>
                     <InventoryProvider>
-                      <SyncManager>
+                      <LegendStateSyncManager>
                         <Stack
                           screenOptions={{
                             headerShown: false,
@@ -282,7 +286,7 @@ export default function RootLayout() {
                             options={{ presentation: 'modal' }}
                           />
                         </Stack>
-                      </SyncManager>
+                      </LegendStateSyncManager>
                     </InventoryProvider>
                   </ProjectsProvider>
                 </SQLiteProvider>

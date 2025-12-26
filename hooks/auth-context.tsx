@@ -397,7 +397,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         avatar_url: updates.avatar,
         // Note: role updates should be admin-only, not included here
         updated_at: new Date().toISOString(),
-      })
+      } as never)
       .eq('id', user.id);
 
     if (error) {

@@ -35,6 +35,11 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
     currentVersion = 2;
   }
 
+  if (currentVersion < 3) {
+    await migrateToV3(db);
+    currentVersion = 3;
+  }
+
   // Enable WAL mode for better concurrent read/write performance
   await db.execAsync('PRAGMA journal_mode = WAL');
 
@@ -174,5 +179,51 @@ async function migrateToV2(db: SQLiteDatabase): Promise<void> {
   `);
 
   console.log('[SQLite] Migration to v2 complete.');
+}
+
+/**
+ * V3: Add soft delete support for Legend-State sync
+ * - Adds deleted column to projects and inventory_items
+ * - Creates indexes for deleted queries
+ * @see https://legendapp.com/open-source/state/v3/sync/supabase/
+ */
+async function migrateToV3(db: SQLiteDatabase): Promise<void> {
+  console.log('[SQLite] Running migration to v3 (Legend-State soft deletes)...');
+
+  // Check if columns exist
+  const projectsCols = await db.getAllAsync<{ name: string }>(
+    "PRAGMA table_info(projects)"
+  );
+  const inventoryCols = await db.getAllAsync<{ name: string }>(
+    "PRAGMA table_info(inventory_items)"
+  );
+
+  const projectsHasDeleted = projectsCols.some(col => col.name === 'deleted');
+  const inventoryHasDeleted = inventoryCols.some(col => col.name === 'deleted');
+
+  // Add deleted column to projects if not exists
+  if (!projectsHasDeleted) {
+    await db.execAsync('ALTER TABLE projects ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0');
+    console.log('[SQLite] Added deleted column to projects');
+  }
+
+  // Add deleted column to inventory_items if not exists
+  if (!inventoryHasDeleted) {
+    await db.execAsync('ALTER TABLE inventory_items ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0');
+    console.log('[SQLite] Added deleted column to inventory_items');
+  }
+
+  // Create indexes for deleted queries
+  await db.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_projects_deleted ON projects(deleted);
+    CREATE INDEX IF NOT EXISTS idx_inventory_deleted ON inventory_items(deleted);
+    CREATE INDEX IF NOT EXISTS idx_projects_user_deleted ON projects(user_id, deleted);
+    CREATE INDEX IF NOT EXISTS idx_inventory_user_deleted ON inventory_items(user_id, deleted);
+
+    -- Set schema version
+    PRAGMA user_version = 3;
+  `);
+
+  console.log('[SQLite] Migration to v3 complete.');
 }
 

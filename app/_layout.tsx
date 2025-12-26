@@ -13,7 +13,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "@/hooks/auth-context";
 import { ProjectsProvider, useProjects } from "@/hooks/projects-context";
 import { InventoryProvider, useInventory } from "@/hooks/inventory-context";
-import { LanguageProvider } from "@/hooks/language-context";
+import { LanguageProvider, useLanguage } from "@/hooks/language-context";
 import { migrateDatabase } from "@/lib/database/migrations";
 import { performSync } from "@/lib/cloud-sync";
 import Colors from "@/constants/colors";
@@ -49,8 +49,11 @@ function DatabaseLoadingFallback() {
 /**
  * Update Checker - Checks for OTA updates and prompts user to reload.
  * Only runs in production builds (not in dev mode).
+ * Uses translations for multilanguage support.
  */
 function UpdateChecker({ children }: { children: React.ReactNode }) {
+  const { t } = useLanguage();
+
   useEffect(() => {
     async function checkForUpdates() {
       // Skip in development mode
@@ -69,12 +72,12 @@ function UpdateChecker({ children }: { children: React.ReactNode }) {
 
           console.log('[Updates] Update downloaded, prompting user...');
           Alert.alert(
-            'Update Available',
-            'A new version has been downloaded. Restart now to apply the update?',
+            t('updates.title'),
+            t('updates.message'),
             [
-              { text: 'Later', style: 'cancel' },
+              { text: t('updates.later'), style: 'cancel' },
               {
-                text: 'Restart',
+                text: t('updates.restart'),
                 onPress: async () => {
                   await Updates.reloadAsync();
                 }
@@ -91,7 +94,7 @@ function UpdateChecker({ children }: { children: React.ReactNode }) {
     }
 
     checkForUpdates();
-  }, []);
+  }, [t]);
 
   return <>{children}</>;
 }
@@ -185,10 +188,10 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <StatusBar style="auto" />
-      <UpdateChecker>
-        <QueryClientProvider client={queryClient}>
-          <GestureHandlerRootView style={styles.container}>
-            <LanguageProvider>
+      <QueryClientProvider client={queryClient}>
+        <GestureHandlerRootView style={styles.container}>
+          <LanguageProvider>
+            <UpdateChecker>
               <AuthProvider>
               <Suspense fallback={<DatabaseLoadingFallback />}>
                 <SQLiteProvider
@@ -238,11 +241,11 @@ export default function RootLayout() {
                   </ProjectsProvider>
                 </SQLiteProvider>
               </Suspense>
-            </AuthProvider>
-            </LanguageProvider>
-          </GestureHandlerRootView>
-        </QueryClientProvider>
-      </UpdateChecker>
+              </AuthProvider>
+            </UpdateChecker>
+          </LanguageProvider>
+        </GestureHandlerRootView>
+      </QueryClientProvider>
     </SafeAreaProvider>
   );
 }

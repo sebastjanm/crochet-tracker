@@ -82,6 +82,12 @@ export default {
     noResultsFound: 'Keine Ergebnisse gefunden',
     remove: 'Entfernen',
   },
+  updates: {
+    title: 'Update verfügbar',
+    message: 'Eine neue Version wurde heruntergeladen. Jetzt neu starten, um das Update anzuwenden?',
+    later: 'Später',
+    restart: 'Neu starten',
+  },
   auth: {
     login: 'Anmelden',
     logout: 'Abmelden',

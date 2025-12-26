@@ -82,6 +82,12 @@ export default {
     noResultsFound: 'Ni rezultatov',
     remove: 'Odstrani',
   },
+  updates: {
+    title: 'Posodobitev na voljo',
+    message: 'Nova različica je bila prenesena. Ali želite znova zagnati aplikacijo?',
+    later: 'Kasneje',
+    restart: 'Znova zaženi',
+  },
   auth: {
     login: 'Prijava',
     logout: 'Odjava',

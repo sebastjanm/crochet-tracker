@@ -82,6 +82,12 @@ export default {
     noResultsFound: 'No results found',
     remove: 'Remove',
   },
+  updates: {
+    title: 'Update Available',
+    message: 'A new version has been downloaded. Restart now to apply the update?',
+    later: 'Later',
+    restart: 'Restart',
+  },
   auth: {
     login: 'Login',
     logout: 'Logout',

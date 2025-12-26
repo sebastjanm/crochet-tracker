@@ -9,7 +9,7 @@
  */
 
 import createContextHook from '@nkzw/create-context-hook';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { User, UserRole } from '@/types';
 import type { Session, AuthError } from '@supabase/supabase-js';
@@ -74,6 +74,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const isInitializedRef = useRef(false);
 
   // Computed role helpers
   const isPro = user?.role === 'pro' || user?.role === 'admin';
@@ -81,16 +82,42 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   /**
    * Fetch user profile from Supabase profiles table
+   * Includes a 5-second timeout to prevent hanging
    */
   const fetchProfile = useCallback(async (userId: string): Promise<User | null> => {
-    if (!supabase) return null;
+    console.log('[Auth] fetchProfile starting for:', userId);
+    if (!supabase) {
+      console.log('[Auth] fetchProfile: supabase is null');
+      return null;
+    }
 
     try {
-      const { data: profile, error } = await supabase
+      console.log('[Auth] fetchProfile: querying profiles table...');
+
+      // Add timeout to prevent hanging forever
+      const timeoutPromise = new Promise<null>((resolve) => {
+        setTimeout(() => {
+          console.warn('[Auth] fetchProfile: timeout after 5s');
+          resolve(null);
+        }, 5000);
+      });
+
+      const queryPromise = supabase
         .from('profiles')
         .select('id, email, name, avatar_url, role')
         .eq('id', userId)
         .single();
+
+      const result = await Promise.race([queryPromise, timeoutPromise]);
+
+      // If timeout won, result is null
+      if (result === null) {
+        console.warn('[Auth] fetchProfile: timed out, returning null');
+        return null;
+      }
+
+      const { data: profile, error } = result;
+      console.log('[Auth] fetchProfile: query complete', { profile, error: error?.message });
 
       if (error) {
         console.error('[Auth] Failed to fetch profile:', error.message);
@@ -112,14 +139,19 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
    * Handle session changes (login, logout, token refresh)
    */
   const handleSessionChange = useCallback(async (newSession: Session | null) => {
+    console.log('[Auth] handleSessionChange:', { hasSession: !!newSession, userId: newSession?.user?.id });
     setSession(newSession);
 
     if (newSession?.user) {
+      console.log('[Auth] handleSessionChange: fetching profile...');
       const profile = await fetchProfile(newSession.user.id);
+      console.log('[Auth] handleSessionChange: profile fetched', { hasProfile: !!profile });
       if (profile) {
+        console.log('[Auth] handleSessionChange: setting user from profile');
         setUser(profile);
       } else {
         // Fallback: create user from session data if profile not found yet
+        console.log('[Auth] handleSessionChange: using fallback user');
         setUser({
           id: newSession.user.id,
           email: newSession.user.email || '',
@@ -130,8 +162,10 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         });
       }
     } else {
+      console.log('[Auth] handleSessionChange: no session, clearing user');
       setUser(null);
     }
+    console.log('[Auth] handleSessionChange: complete');
   }, [fetchProfile]);
 
   /**
@@ -148,27 +182,42 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
     // Get initial session
     const initAuth = async () => {
+      console.log('[Auth] initAuth starting...');
       try {
+        console.log('[Auth] initAuth: getting session...');
         const { data: { session: initialSession } } = await supabase!.auth.getSession();
+        console.log('[Auth] initAuth: session retrieved', { hasSession: !!initialSession });
 
         if (mounted) {
+          console.log('[Auth] initAuth: calling handleSessionChange...');
           await handleSessionChange(initialSession);
+          console.log('[Auth] initAuth: handleSessionChange complete, setting isLoading=false');
           setIsLoading(false);
+          isInitializedRef.current = true;
         }
       } catch (error) {
         console.error('[Auth] Init error:', error);
         if (mounted) {
           setIsLoading(false);
+          isInitializedRef.current = true;
         }
       }
     };
 
+    console.log('[Auth] Starting initAuth...');
     initAuth();
 
     // Subscribe to auth state changes
+    // Skip INITIAL_SESSION and SIGNED_IN during init - initAuth handles these
     const { data: { subscription } } = supabase!.auth.onAuthStateChange(
       async (event, newSession) => {
         console.log('[Auth] State change:', event);
+
+        // Skip events during initialization - initAuth handles the initial session
+        if (!isInitializedRef.current && (event === 'INITIAL_SESSION' || event === 'SIGNED_IN')) {
+          console.log('[Auth] Skipping event during init:', event);
+          return;
+        }
 
         if (mounted) {
           await handleSessionChange(newSession);

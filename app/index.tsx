@@ -13,6 +13,9 @@ export default function RootIndex() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
 
+  // Debug logging
+  console.log('[Index] State:', { showSplash, isLoading, isAuthenticated });
+
   useEffect(() => {
     // Start animations
     Animated.parallel([
@@ -66,6 +69,7 @@ export default function RootIndex() {
   }
 
   if (isLoading) {
+    console.log('[Index] Showing loading screen (isLoading=true)');
     return (
       <SafeAreaView style={styles.splashContainer}>
         <View style={styles.logoContainer}>
@@ -77,9 +81,11 @@ export default function RootIndex() {
   }
 
   if (isAuthenticated) {
+    console.log('[Index] Redirecting to /projects');
     return <Redirect href="/projects" />;
   }
 
+  console.log('[Index] Redirecting to /(auth)/login');
   return <Redirect href="/(auth)/login" />;
 }
 

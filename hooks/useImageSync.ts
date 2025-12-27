@@ -1,0 +1,148 @@
+/**
+ * Image Sync Hook
+ *
+ * Manages the upload queue for local images.
+ * Connects the ImageSyncQueue to the Legend-State stores.
+ */
+
+import { useCallback, useEffect } from 'react';
+import { useAuth } from '@/hooks/auth-context';
+import { imageSyncQueue } from '@/lib/legend-state/image-sync-queue';
+import { getLocalImagesToUpload } from '@/lib/legend-state/type-mappers';
+import { getStores, updateProject, updateInventoryItem } from '@/lib/legend-state/config';
+
+export function useImageSync() {
+  const { user, isPro } = useAuth();
+  const { projects$, inventory$ } = getStores(user?.id ?? null, isPro);
+
+  // 1. Initialize Queue with Callbacks
+  useEffect(() => {
+    if (!user?.id) return;
+
+    imageSyncQueue.initialize(user.id, {
+      onImageUploaded: async (itemId, itemType, imageIndex, newUrl, oldUri) => {
+        console.log(`[ImageSync] Image uploaded for ${itemType} ${itemId}: ${newUrl}`);
+        
+        // Update the store with the new URL
+        if (itemType === 'project') {
+           // We need to read the current images to update safely
+           const project = projects$[itemId].get();
+           if (project) {
+             let images: any[] = [];
+             try { images = JSON.parse(project.images || '[]'); } catch {}
+             
+             // Replace URI
+             const updated = images.map(img => img === oldUri ? newUrl : img);
+             
+             // Write back to store
+             updateProject(projects$, itemId, { images: JSON.stringify(updated) });
+           }
+        } else if (itemType === 'inventory') {
+           const item = inventory$[itemId].get();
+           if (item) {
+             let images: any[] = [];
+             try { images = JSON.parse(item.images || '[]'); } catch {}
+             
+             const updated = images.map(img => img === oldUri ? newUrl : img);
+             
+             updateInventoryItem(inventory$, itemId, { images: JSON.stringify(updated) });
+           }
+        }
+      },
+      onImageFailed: (itemId, error) => {
+        console.warn(`[ImageSync] Upload failed for ${itemId}: ${error}`);
+      }
+    });
+
+    // Cleanup not strictly necessary as queue is singleton, but good practice if user changes
+    return () => {
+      // We don't want to kill the queue processing on unmount, so we leave it running
+    };
+  }, [user?.id, projects$, inventory$]);
+
+  // 2. Helper to Queue Images for a Project
+  const queueProjectImages = useCallback(async (project: any) => {
+    if (!user?.id) return;
+
+    const images = typeof project.images === 'string' 
+      ? JSON.parse(project.images) 
+      : (project.images || []);
+      
+    const localImages = getLocalImagesToUpload(images);
+    
+    if (localImages.length > 0) {
+      console.log(`[ImageSync] Queuing ${localImages.length} images for project ${project.id}`);
+      await imageSyncQueue.enqueue(
+        localImages.map(({ uri, index }) => ({
+          localUri: uri,
+          bucket: 'project-images',
+          itemId: project.id,
+          itemType: 'project',
+          imageIndex: index,
+        }))
+      );
+    }
+  }, [user?.id]);
+
+  // 3. Helper to Queue Images for Inventory
+  const queueInventoryImages = useCallback(async (item: any) => {
+    if (!user?.id) return;
+
+    const images = typeof item.images === 'string' 
+      ? JSON.parse(item.images) 
+      : (item.images || []);
+      
+    const localImages = getLocalImagesToUpload(images);
+    
+    if (localImages.length > 0) {
+      console.log(`[ImageSync] Queuing ${localImages.length} images for inventory ${item.id}`);
+      await imageSyncQueue.enqueue(
+        localImages.map(({ uri, index }) => ({
+          localUri: uri,
+          bucket: 'inventory-images',
+          itemId: item.id,
+          itemType: 'inventory',
+          imageIndex: index,
+        }))
+      );
+    }
+  }, [user?.id]);
+
+  // 4. Bulk Scan (Run on mount or manual trigger)
+  const scanForMissingUploads = useCallback(async () => {
+    if (!user?.id) return;
+    
+    console.log('[ImageSync] Scanning for missing uploads...');
+    const projects = projects$.get() || {};
+    const inventory = inventory$.get() || {};
+
+    let count = 0;
+    
+    for (const p of Object.values(projects)) {
+      await queueProjectImages(p);
+      count++;
+    }
+    for (const i of Object.values(inventory)) {
+      await queueInventoryImages(i);
+      count++;
+    }
+    console.log(`[ImageSync] Scanned ${count} records.`);
+  }, [user?.id, projects$, inventory$, queueProjectImages, queueInventoryImages]);
+
+  // Run scan once on mount (delayed slightly to let store load)
+  useEffect(() => {
+    if (user?.id) {
+      const timer = setTimeout(() => scanForMissingUploads(), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [user?.id, scanForMissingUploads]);
+
+  return {
+    queueProjectImages,
+    queueInventoryImages,
+    scanForMissingUploads,
+    queueStatus: imageSyncQueue.getStatus()
+  };
+}
+
+

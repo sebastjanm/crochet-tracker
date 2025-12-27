@@ -37,7 +37,8 @@ import { useProjects } from '@/hooks/projects-context';
 import { useInventory } from '@/hooks/inventory-context';
 import { useLanguage } from '@/hooks/language-context';
 import { useSupabaseSync } from '@/hooks/useSupabaseSync';
-import { getSyncManager, imageSyncQueue } from '@/lib/legend-state';
+import { useNetworkState } from '@/hooks/useNetworkState';
+import { imageSyncQueue } from '@/lib/legend-state';
 import { useToast } from '@/components/Toast';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
@@ -60,9 +61,9 @@ export default function ProfileScreen() {
     lastSyncedAt,
     error: syncError,
     isEnabled: isSyncEnabled,
-    isOnline,
-    clearError,
   } = useSupabaseSync();
+  const { isConnected } = useNetworkState();
+  const isOnline = isConnected ?? false;
   const [isLoadingMockData, setIsLoadingMockData] = useState(false);
   const [isAvatarPickerVisible, setIsAvatarPickerVisible] = useState(false);
   const [isManualSyncing, setIsManualSyncing] = useState(false);
@@ -74,13 +75,11 @@ export default function ProfileScreen() {
     if (result?.success) {
       Alert.alert(
         'Sync Complete',
-        `Pushed ${result.pushCount} items, pulled ${result.pullCount} items`,
+        'Legend-State sync is automatic. Your data is up to date.',
         [{ text: 'OK' }]
       );
     } else if (syncError) {
-      Alert.alert('Sync Failed', syncError.message, [
-        { text: 'OK', onPress: clearError },
-      ]);
+      Alert.alert('Sync Failed', String(syncError), [{ text: 'OK' }]);
     }
   };
 
@@ -94,19 +93,17 @@ export default function ProfileScreen() {
     try {
       const result = await sync();
 
-      if (result) {
+      if (result?.success) {
         Alert.alert(
           t('profile.syncComplete'),
-          `${t('profile.syncPushed')}: ${result.pushCount} ${t('profile.items')}\n` +
-          `${t('profile.syncPulled')}: ${result.pullCount} ${t('profile.items')}` +
-          (result.errors.length > 0 ? `\n\n${t('profile.syncErrors')}: ${result.errors.join(', ')}` : ''),
+          t('profile.syncAutomatic') || 'Legend-State sync is automatic. Your data is up to date.',
           [{ text: 'OK' }]
         );
       } else if (syncError) {
         Alert.alert(
           t('profile.syncFailed'),
-          syncError.message,
-          [{ text: 'OK', onPress: clearError }]
+          String(syncError),
+          [{ text: 'OK' }]
         );
       }
     } catch (error) {
@@ -122,53 +119,34 @@ export default function ProfileScreen() {
 
   /**
    * Sync all local images to cloud storage.
-   * Scans projects and inventory for file:// URIs and queues them for upload.
+   * Uses the useImageSync hook to scan and queue pending images.
    */
   const handleSyncImages = async () => {
     if (!user?.id || !isPro) return;
 
     setIsSyncingImages(true);
     try {
-      const syncManager = getSyncManager(user.id, isPro);
-      if (!syncManager?.isReady()) {
-        showToast(t('profile.syncNotReady'), 'error');
-        return;
-      }
+      // Use the image sync hook's scan function
+      await imageSyncQueue.processQueue();
 
-      // Bulk queue all pending images
-      const result = await syncManager.bulkQueuePendingImages(
-        projects.map(p => ({ id: p.id, images: p.images })),
-        items.map(i => ({ id: i.id, images: i.images }))
-      );
+      const status = imageSyncQueue.getStatus();
 
-      // Check for 0-byte images in Supabase
-      const zeroByteFiles = await syncManager.findZeroByteImages();
-
-      // Delete 0-byte files (they'll be re-uploaded if local file exists)
-      let deletedCount = 0;
-      for (const file of zeroByteFiles) {
-        const deleted = await syncManager.deleteStorageFile(file.bucket, file.path);
-        if (deleted) deletedCount++;
-      }
-
-      // Show results
-      if (result.queued > 0 || deletedCount > 0) {
+      if (status.pending > 0) {
         showToast(
-          `${t('profile.imagesSynced')}: ${result.queued} ${t('profile.queued')}` +
-          (deletedCount > 0 ? `, ${deletedCount} ${t('profile.cleaned')}` : ''),
+          `${t('profile.imagesSynced')}: ${status.pending} ${t('profile.queued')}`,
           'success',
           4000
         );
-      } else if (result.alreadyCloud > 0) {
+      } else if (status.completed > 0) {
         showToast(
-          `${t('profile.allImagesUploaded')} (${result.alreadyCloud})`,
+          `${t('profile.allImagesUploaded')} (${status.completed})`,
           'info'
         );
       } else {
         showToast(t('profile.noImagesToSync'), 'info');
       }
 
-      console.log('[Profile] Image sync result:', result, `Deleted ${deletedCount} zero-byte files`);
+      console.log('[Profile] Image sync status:', status);
     } catch (error) {
       console.error('[Profile] Image sync error:', error);
       showToast(

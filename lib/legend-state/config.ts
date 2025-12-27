@@ -1,48 +1,62 @@
 /**
- * Legend-State Configuration for Supabase Sync
+ * Legend-State Configuration
  *
- * ARCHITECTURE: Offline-First with Cloud Sync
- * ============================================
- * - SQLite = Source of truth for ALL users (offline-first guarantee)
- * - Legend-State = Cloud sync layer for Pro users only
+ * ARCHITECTURE: "Legend-State Native" (Source of Truth)
+ * ====================================================
+ * - Legend-State Observable = The SINGLE source of truth for the UI.
+ * - Persistence = AsyncStorage (local-first guarantee).
+ * - Sync = Supabase (attached only for Pro users).
  *
  * Data Flow:
- * 1. All reads come from SQLite (works offline)
- * 2. All writes go to SQLite first (offline-first)
- * 3. For Pro users, writes also go to Legend-State (triggers cloud sync)
- * 4. Cloud updates via Legend-State → written back to SQLite
+ * 1. UI reads/writes directly to Legend-State Observable.
+ * 2. Observable auto-persists to disk (AsyncStorage).
+ * 3. If User is Pro: Observable auto-syncs to Supabase.
  *
- * This ensures the app works offline for everyone while Pro users
- * get automatic cloud sync when online.
- *
- * @see https://supabase.com/blog/local-first-expo-legend-state
- * @see https://docs.expo.dev/guides/local-first/#legend-state
+ * @see https://legendapp.com/open-source/state/v3/sync/supabase/
  */
 
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 import { observable } from '@legendapp/state';
-import { configureSynced } from '@legendapp/state/sync';
+import { configureSynced, syncObservable } from '@legendapp/state/sync';
 import { observablePersistAsyncStorage } from '@legendapp/state/persist-plugins/async-storage';
-import {
-  syncedSupabase,
-  configureSyncedSupabase,
-} from '@legendapp/state/sync-plugins/supabase';
+import { syncedSupabase, configureSyncedSupabase } from '@legendapp/state/sync-plugins/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/database.types';
 
+// ============================================================================
+// CONFIGURATION
+// ============================================================================
+
 // Create a singleton persistence plugin instance
 const asyncStoragePlugin = observablePersistAsyncStorage({ AsyncStorage });
 
-// Configure global sync defaults with the local persist plugin
-// Legend-State v3 uses configureSynced for global persist configuration
-// @see https://www.legendapp.com/open-source/state/v3/llms-full.md
+// Configure global sync defaults
 configureSynced({
   persist: {
     plugin: asyncStoragePlugin,
   },
 });
+
+let isConfigured = false;
+
+export function initializeLegendStateSync(): void {
+  if (isConfigured) return;
+
+  if (supabase) {
+    configureSyncedSupabase({
+      generateId: () => uuidv4(),
+      changesSince: 'last-sync',
+      fieldCreatedAt: 'created_at',
+      fieldUpdatedAt: 'updated_at',
+      fieldDeleted: 'deleted',
+    });
+  }
+
+  isConfigured = true;
+  console.log('[LegendState] Configured (Persistence: AsyncStorage)');
+}
 
 // ============================================================================
 // TYPES
@@ -51,186 +65,131 @@ configureSynced({
 type ProjectRow = Database['public']['Tables']['projects']['Row'];
 type InventoryItemRow = Database['public']['Tables']['inventory_items']['Row'];
 
-// Legend-State v3 beta has complex types that cause excessive instantiation.
-// We use 'any' for the observable wrapper but the data is typed via Supabase.
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export type ProjectsStore = ReturnType<typeof observable<Record<string, ProjectRow>>>;
-export type InventoryStore = ReturnType<typeof observable<Record<string, InventoryItemRow>>>;
+export type ProjectsStore = any;
+export type InventoryStore = any;
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 // ============================================================================
-// ID GENERATION
+// FACTORIES
 // ============================================================================
 
-/**
- * Generate a UUID for new records.
- */
 export function generateId(): string {
   return uuidv4();
 }
 
-// ============================================================================
-// LEGEND-STATE SYNC CONFIGURATION
-// ============================================================================
-
-let isConfigured = false;
-
 /**
- * Configure Legend-State Supabase sync with global defaults.
- * Must be called once before creating stores.
+ * Create a Store for Projects.
+ * - Always persists locally.
+ * - Syncs to Supabase IF userId is provided AND isPro is true.
  */
-export function initializeLegendStateSync(): void {
-  if (isConfigured) return;
-  if (!supabase) {
-    console.warn('[LegendState] Supabase not configured, sync disabled');
-    return;
+export function createProjectsStore(userId: string | null, isPro: boolean): any {
+  initializeLegendStateSync();
+
+  // 1. Base config: Local Persistence
+  // Use a generic 'guest' key if no user, or user-specific key
+  const persistKey = userId ? `projects_${userId}` : 'projects_guest';
+
+  // 2. Cloud Config (Only if Pro + Authed)
+  if (userId && isPro && supabase) {
+    console.log(`[LegendState] Creating SYNCED projects store for ${userId}`);
+    
+    // SyncedSupabase handles both local persistence AND cloud sync
+    return observable(
+      syncedSupabase({
+        supabase,
+        collection: 'projects',
+        filter: (query: any) => query.eq('user_id', userId),
+        actions: ['read', 'create', 'update', 'delete'],
+        realtime: { filter: `user_id=eq.${userId}` },
+        persist: {
+          plugin: asyncStoragePlugin,
+          name: persistKey,
+          retrySync: true, // Retry failed syncs on reload
+        },
+        retry: { infinite: true }, // Retry offline changes forever
+        as: 'object',
+      } as any)
+    );
   }
 
-  // Configure global defaults for Legend-State Supabase sync
-  // Note: persistence plugin is set directly in each store's persist config
-  // Options like retry, as, persist go in individual syncedSupabase() calls
-  configureSyncedSupabase({
-    // Field mappings for sync (these are global defaults)
-    fieldCreatedAt: 'created_at',
-    fieldUpdatedAt: 'updated_at',
-    fieldDeleted: 'deleted',
-    // Use last-sync for incremental updates
-    changesSince: 'last-sync',
-    // Generate UUIDs for new records
-    generateId: () => uuidv4(),
+  // 3. Local-Only Config (Free / Guest)
+  console.log(`[LegendState] Creating LOCAL-ONLY projects store (${persistKey})`);
+  const obs = observable({});
+  
+  // Attach persistence manually for local-only mode
+  syncObservable(obs, {
+    persist: {
+      plugin: asyncStoragePlugin,
+      name: persistKey,
+    }
+  });
+  
+  return obs;
+}
+
+/**
+ * Create a Store for Inventory.
+ */
+export function createInventoryStore(userId: string | null, isPro: boolean): any {
+  initializeLegendStateSync();
+
+  const persistKey = userId ? `inventory_${userId}` : 'inventory_guest';
+
+  if (userId && isPro && supabase) {
+    console.log(`[LegendState] Creating SYNCED inventory store for ${userId}`);
+    return observable(
+      syncedSupabase({
+        supabase,
+        collection: 'inventory_items',
+        filter: (query: any) => query.eq('user_id', userId),
+        actions: ['read', 'create', 'update', 'delete'],
+        realtime: { filter: `user_id=eq.${userId}` },
+        persist: {
+          plugin: asyncStoragePlugin,
+          name: persistKey,
+          retrySync: true,
+        },
+        retry: { infinite: true },
+        as: 'object',
+      } as any)
+    );
+  }
+
+  console.log(`[LegendState] Creating LOCAL-ONLY inventory store (${persistKey})`);
+  const obs = observable({});
+  
+  // Attach persistence manually
+  syncObservable(obs, {
+    persist: {
+      plugin: asyncStoragePlugin,
+      name: persistKey,
+    }
   });
 
-  isConfigured = true;
-  console.log('[LegendState] Sync configured with Supabase (with AsyncStorage persistence)');
+  return obs;
 }
 
 // ============================================================================
-// OBSERVABLE FACTORIES
+// STORE MANAGEMENT (Singleton Cache)
 // ============================================================================
 
-/**
- * Create a synced projects observable for a user.
- * Automatically syncs with Supabase and persists locally.
- *
- * @param userId - The authenticated user's ID
- * @returns Observable of projects keyed by ID, or null if Supabase not configured
- */
-export function createProjectsStore(userId: string): any {
-  if (!supabase) {
-    console.warn('[LegendState] Cannot create projects store - Supabase not configured');
-    return null;
-  }
+// We cache stores by "userId + isPro" signature to detect mode changes
+const storeCache = new Map<string, { projects: any; inventory: any }>();
 
-  // Ensure global config is initialized
-  initializeLegendStateSync();
-
-  console.log(`[LegendState] Creating projects store for user: ${userId}`);
-
-  // Using 'as any' to bypass Legend-State v3 beta type issues
-  const syncConfig = syncedSupabase({
-    supabase,
-    collection: 'projects',
-    // Filter by user and exclude deleted
-    filter: (query: any) =>
-      query.eq('user_id', userId).eq('deleted', false),
-    // Enable all CRUD operations
-    actions: ['read', 'create', 'update', 'delete'],
-    // Enable realtime for this user's projects
-    realtime: {
-      filter: `user_id=eq.${userId}`,
-    },
-    // Persist with user-specific key and explicit plugin
-    persist: {
-      plugin: asyncStoragePlugin,
-      name: `projects_${userId}`,
-      retrySync: true,
-    },
-    // Return as object keyed by ID
-    as: 'object',
-    // Retry infinitely for offline-first
-    retry: {
-      infinite: true,
-    },
-  } as any);
-
-  return observable(syncConfig as any);
-}
-
-/**
- * Create a synced inventory observable for a user.
- * Automatically syncs with Supabase and persists locally.
- *
- * @param userId - The authenticated user's ID
- * @returns Observable of inventory items keyed by ID, or null if Supabase not configured
- */
-export function createInventoryStore(userId: string): any {
-  if (!supabase) {
-    console.warn('[LegendState] Cannot create inventory store - Supabase not configured');
-    return null;
-  }
-
-  // Ensure global config is initialized
-  initializeLegendStateSync();
-
-  console.log(`[LegendState] Creating inventory store for user: ${userId}`);
-
-  // Using 'as any' to bypass Legend-State v3 beta type issues
-  const syncConfig = syncedSupabase({
-    supabase,
-    collection: 'inventory_items',
-    // Filter by user and exclude deleted
-    filter: (query: any) =>
-      query.eq('user_id', userId).eq('deleted', false),
-    // Enable all CRUD operations
-    actions: ['read', 'create', 'update', 'delete'],
-    // Enable realtime for this user's inventory
-    realtime: {
-      filter: `user_id=eq.${userId}`,
-    },
-    // Persist with user-specific key and explicit plugin
-    persist: {
-      plugin: asyncStoragePlugin,
-      name: `inventory_${userId}`,
-      retrySync: true,
-    },
-    // Return as object keyed by ID
-    as: 'object',
-    // Retry infinitely for offline-first
-    retry: {
-      infinite: true,
-    },
-  } as any);
-
-  return observable(syncConfig as any);
-}
-
-// ============================================================================
-// STORE MANAGEMENT
-// ============================================================================
-
-// Cache stores per user to avoid recreating
-const storeCache = new Map<string, {
-  projects: any;
-  inventory: any;
-}>();
-
-/**
- * Get or create stores for a user.
- * Returns cached stores if they exist for the same user.
- */
-export function getStores(userId: string): {
-  projects$: any;
-  inventory$: any;
-} {
-  let cached = storeCache.get(userId);
-
+export function getStores(userId: string | null, isPro: boolean) {
+  const cacheKey = `${userId || 'guest'}_${isPro ? 'pro' : 'free'}`;
+  
+  let cached = storeCache.get(cacheKey);
   if (!cached) {
+    // Clear old caches to free memory/prevent conflicts
+    storeCache.clear();
+    
     cached = {
-      projects: createProjectsStore(userId),
-      inventory: createInventoryStore(userId),
+      projects: createProjectsStore(userId, isPro),
+      inventory: createInventoryStore(userId, isPro),
     };
-    storeCache.set(userId, cached);
-    console.log(`[LegendState] Created stores for user: ${userId}`);
+    storeCache.set(cacheKey, cached);
   }
 
   return {
@@ -239,172 +198,65 @@ export function getStores(userId: string): {
   };
 }
 
-/**
- * Clear stores for a user (call on logout).
- */
-export function clearStores(userId?: string): void {
-  if (userId) {
-    storeCache.delete(userId);
-    console.log(`[LegendState] Cleared stores for user: ${userId}`);
-  } else {
-    storeCache.clear();
-    console.log('[LegendState] Cleared all stores');
-  }
-}
-
 // ============================================================================
-// HELPER FUNCTIONS FOR CRUD OPERATIONS
+// CRUD HELPERS (Now operating purely on Observables)
 // ============================================================================
 
-/**
- * Add a project to the observable store.
- * Automatically syncs to Supabase.
- */
-export function addProject(
-  projects$: any,
-  userId: string,
-  project: Omit<ProjectRow, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'synced_at' | 'deleted'>
-): string {
+export function addProject(projects$: any, userId: string | null, projectData: any) {
   const id = generateId();
   const now = new Date().toISOString();
-
-  projects$[id].assign({
-    ...project,
+  
+  // Just write to the observable. 
+  // - If Synced: handles cloud + local.
+  // - If Local: handles local.
+  projects$[id].set({
+    ...projectData,
     id,
-    user_id: userId,
+    user_id: userId, // Can be null for guest
     created_at: now,
     updated_at: now,
-    synced_at: null,
     deleted: false,
   });
-
-  console.log(`[LegendState] Added project: ${id}`);
+  
   return id;
 }
 
-/**
- * Update a project in the observable store.
- */
-export function updateProject(
-  projects$: any,
-  id: string,
-  updates: Partial<Omit<ProjectRow, 'id' | 'user_id' | 'created_at'>>
-): void {
+export function updateProject(projects$: any, id: string, updates: any) {
   const now = new Date().toISOString();
   projects$[id].assign({
     ...updates,
     updated_at: now,
   });
-  console.log(`[LegendState] Updated project: ${id}`);
 }
 
-/**
- * Delete a project (soft delete via Legend-State).
- *
- * IMPORTANT: Use .delete() instead of manually setting deleted=true.
- * With fieldDeleted: 'deleted' configured, Legend-State internally:
- * 1. Updates Supabase with { deleted: true }
- * 2. Removes the item from the local observable
- *
- * @see https://legendapp.com/open-source/state/v3/sync/supabase/
- * @returns true if item was in observable and deleted, false if not found
- */
-export function deleteProject(projects$: any, id: string): boolean {
-  // Check if item exists in observable (get() returns undefined if not)
-  const existingItem = projects$[id].get();
-
-  if (!existingItem) {
-    console.warn(`[LegendState] Project ${id} not found in observable - cannot soft delete via Legend-State`);
-    return false;
-  }
-
-  projects$[id].delete();
-  console.log(`[LegendState] Soft deleted project: ${id}`);
-  return true;
+export function deleteProject(projects$: any, id: string) {
+  // Soft delete is handled by 'fieldDeleted' config in syncedSupabase
+  projects$[id].delete(); 
 }
 
-/**
- * Add an inventory item to the observable store.
- */
-export function addInventoryItem(
-  inventory$: any,
-  userId: string,
-  item: Omit<InventoryItemRow, 'id' | 'user_id' | 'date_added' | 'last_updated' | 'synced_at' | 'deleted'>
-): string {
+export function addInventoryItem(inventory$: any, userId: string | null, itemData: any) {
   const id = generateId();
   const now = new Date().toISOString();
-
-  inventory$[id].assign({
-    ...item,
+  
+  inventory$[id].set({
+    ...itemData,
     id,
     user_id: userId,
-    date_added: now,
+    date_added: now, // Note: Schema calls this date_added
     last_updated: now,
-    synced_at: null,
     deleted: false,
   });
-
-  console.log(`[LegendState] Added inventory item: ${id}`);
   return id;
 }
 
-/**
- * Update an inventory item in the observable store.
- */
-export function updateInventoryItem(
-  inventory$: any,
-  id: string,
-  updates: Partial<Omit<InventoryItemRow, 'id' | 'user_id' | 'date_added'>>
-): void {
+export function updateInventoryItem(inventory$: any, id: string, updates: any) {
   const now = new Date().toISOString();
   inventory$[id].assign({
     ...updates,
     last_updated: now,
   });
-  console.log(`[LegendState] Updated inventory item: ${id}`);
 }
 
-/**
- * Delete an inventory item (soft delete via Legend-State).
- *
- * IMPORTANT: Use .delete() instead of manually setting deleted=true.
- * With fieldDeleted: 'deleted' configured, Legend-State internally:
- * 1. Updates Supabase with { deleted: true }
- * 2. Removes the item from the local observable
- *
- * @see https://legendapp.com/open-source/state/v3/sync/supabase/
- * @returns true if item was in observable and deleted, false if not found
- */
-export function deleteInventoryItem(inventory$: any, id: string): boolean {
-  // Check if item exists in observable (get() returns undefined if not)
-  const existingItem = inventory$[id].get();
-
-  if (!existingItem) {
-    console.warn(`[LegendState] Inventory item ${id} not found in observable - cannot soft delete via Legend-State`);
-    return false;
-  }
-
+export function deleteInventoryItem(inventory$: any, id: string) {
   inventory$[id].delete();
-  console.log(`[LegendState] Soft deleted inventory item: ${id}`);
-  return true;
 }
-
-// ============================================================================
-// SCHEMA ALIGNMENT NOTE
-// ============================================================================
-
-/**
- * SQLite and Supabase schemas are aligned (as of migration 00015).
- *
- * Status values (same in both):
- * - 'to-do', 'in-progress', 'on-hold', 'completed', 'frogged'
- *
- * Category values (same in both):
- * - 'yarn', 'hook', 'other'
- *
- * Field names (same in both):
- * - inventory_items.name (not 'title')
- * - inventory_items.other_details (not 'notion_details')
- *
- * No conversion mappings are needed.
- */

@@ -1,242 +1,121 @@
 /**
- * Inventory Context with SQLite Storage
+ * Inventory Context (Legend-State Native)
  *
- * Provides inventory item CRUD operations with offline-first SQLite persistence.
- * Uses useSQLiteContext from expo-sqlite for database access.
- * Pro users get automatic cloud sync via Supabase.
- *
- * @see https://docs.expo.dev/versions/latest/sdk/sqlite/
+ * ARCHITECTURE:
+ * - Source of Truth: Legend-State Observable (inventory$)
+ * - Persistence: AsyncStorage (handled by Legend-State)
+ * - Sync: Supabase (handled by Legend-State)
  */
 
 import createContextHook from '@nkzw/create-context-hook';
-import { useSQLiteContext } from 'expo-sqlite';
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useMemo } from 'react';
+import { useSelector } from '@legendapp/state/react';
 import { InventoryItem } from '@/types';
 import { useImagePicker } from './useImagePicker';
 import { syncInventoryToProjects, removeInventoryFromProjects } from '@/lib/cross-context-sync';
-import { syncState } from '@legendapp/state';
-import { getStores, deleteInventoryItem as deleteLegendInventory } from '@/lib/legend-state/config';
-import { supabase } from '@/lib/supabase/client';
-import { mapLocalInventoryToCloud, replaceImageUri } from '@/lib/legend-state/type-mappers';
-import { useAuth } from '@/hooks/auth-context';
 import {
-  InventoryItemRow,
+  getStores,
+  addInventoryItem as addItemToStore,
+  updateInventoryItem as updateItemInStore,
+  deleteInventoryItem as deleteItemFromStore,
+} from '@/lib/legend-state/config';
+import { useAuth } from '@/hooks/auth-context';
+import { useImageSync } from '@/hooks/useImageSync';
+import {
   mapRowToInventoryItem,
   mapInventoryItemToRow,
-  generateId,
-  now,
-} from '@/lib/database/schema';
+} from '@/lib/legend-state/mappers';
 
 export const [InventoryProvider, useInventory] = createContextHook(() => {
-  const db = useSQLiteContext();
   const { user, isPro } = useAuth();
-  const [items, setItems] = useState<InventoryItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { queueInventoryImages } = useImageSync();
+  
+  // State for Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<InventoryItem['category'] | 'all'>('all');
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'quantity'>('name');
   const { showImagePickerOptions, isPickingImage } = useImagePicker();
 
-  // Legend-State stores reference for Pro users
-  const storesRef = useRef<{ inventory$: ReturnType<typeof getStores>['inventory$'] } | null>(null);
+  // Get the reactive store
+  const { inventory$ } = getStores(user?.id ?? null, isPro);
 
-  // Initialize Legend-State stores for Pro users
-  useEffect(() => {
-    if (isPro && user?.id) {
-      const stores = getStores(user.id);
-      storesRef.current = { inventory$: stores.inventory$ };
-      console.log('[Inventory] Legend-State stores initialized for Pro user');
-    } else {
-      storesRef.current = null;
-    }
-  }, [isPro, user?.id]);
+  // 2. Reactive Data Selector
+  const items: InventoryItem[] = useSelector(() => {
+    const itemsMap = inventory$.get();
+    if (!itemsMap) return [] as InventoryItem[];
 
-  /**
-   * Push inventory item to cloud via Legend-State (Pro users only).
-   * SQLite remains the source of truth - this syncs to cloud.
-   *
-   * IMPORTANT: Legend-State sync activates on .get() call.
-   * We must check syncState.isLoaded before writing.
-   * @see https://legendapp.com/open-source/state/v3/sync/persist-sync/
-   */
-  const pushToCloud = useCallback((item: InventoryItem) => {
-    if (!isPro || !user?.id) {
-      console.log('[Inventory] Skipping cloud push - not Pro or no user');
-      return;
-    }
+    return Object.values(itemsMap)
+      .filter((row: any) => !row.deleted)
+      .map((row: any): InventoryItem => {
+         const item = mapRowToInventoryItem(row);
+         return {
+           ...item,
+           yarnDetails: item.yarnDetails
+             ? {
+                 ...item.yarnDetails,
+                 purchaseDate: item.yarnDetails.purchaseDate
+                   ? new Date(item.yarnDetails.purchaseDate)
+                   : undefined,
+               }
+             : undefined,
+           hookDetails: item.hookDetails
+             ? {
+                 ...item.hookDetails,
+                 purchaseDate: item.hookDetails.purchaseDate
+                   ? new Date(item.hookDetails.purchaseDate)
+                   : undefined,
+               }
+             : undefined,
+         };
+      })
+      .sort((a: InventoryItem, b: InventoryItem) => b.lastUpdated.getTime() - a.lastUpdated.getTime());
+  });
 
-    const inventory$ = storesRef.current?.inventory$;
-    if (!inventory$) {
-      console.warn('[Inventory] Legend-State stores not initialized');
-      return;
-    }
+  const isLoading = false;
 
-    try {
-      // Check if sync is activated and loaded
-      const state$ = syncState(inventory$);
-      const isLoaded = state$.isLoaded?.get?.() ?? false;
-      const isPersistLoaded = state$.isPersistLoaded?.get?.() ?? false;
+  // ==========================================================================
+  // ACTIONS
+  // ==========================================================================
 
-      console.log('[Inventory] Sync state:', { isLoaded, isPersistLoaded });
-
-      if (!isLoaded) {
-        // Activate sync by calling .get() - this starts the Supabase connection
-        console.log('[Inventory] Activating sync by calling .get()...');
-        inventory$.get(); // This activates the sync
-      }
-
-      // Convert local item to cloud format and push to Legend-State
-      const cloudItem = mapLocalInventoryToCloud(item, user.id);
-
-      // Write to Legend-State observable (auto-syncs to Supabase)
-      inventory$[item.id].assign(cloudItem);
-
-      console.log('[Inventory] Pushed to cloud via Legend-State:', item.id);
-    } catch (error) {
-      console.error('[Inventory] Failed to push to cloud:', error);
-      // SQLite still has the data - cloud sync will retry
-    }
-  }, [isPro, user?.id]);
-
-  /**
-   * Load inventory items from SQLite database filtered by current user.
-   * Only loads non-deleted items belonging to the current user.
-   */
-  const loadInventory = useCallback(async () => {
-    // If no user is logged in, clear inventory and return
-    if (!user?.id) {
-      console.log('[Inventory] No user logged in, clearing inventory');
-      setItems([]);
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      // Filter by user_id and exclude deleted records
-      // Also include records with NULL user_id (legacy/orphaned data that belongs to this device)
-      const rows = await db.getAllAsync<InventoryItemRow>(
-        `SELECT * FROM inventory_items
-         WHERE (user_id = ? OR user_id IS NULL)
-         AND deleted = 0
-         ORDER BY last_updated DESC`,
-        [user.id]
-      );
-
-      const loadedItems = rows.map((row) => {
-        const item = mapRowToInventoryItem(row);
-
-        // Ensure dates are properly converted
-        return {
-          ...item,
-          yarnDetails: item.yarnDetails
-            ? {
-                ...item.yarnDetails,
-                purchaseDate: item.yarnDetails.purchaseDate
-                  ? new Date(item.yarnDetails.purchaseDate)
-                  : undefined,
-              }
-            : undefined,
-          hookDetails: item.hookDetails
-            ? {
-                ...item.hookDetails,
-                purchaseDate: item.hookDetails.purchaseDate
-                  ? new Date(item.hookDetails.purchaseDate)
-                  : undefined,
-              }
-            : undefined,
-        };
-      });
-
-      setItems(loadedItems);
-      console.log(`[Inventory] Loaded ${loadedItems.length} items from SQLite for user ${user.id}`);
-    } catch (error) {
-      console.error('[Inventory] Failed to load items:', error);
-      setItems([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [db, user?.id]);
-
-  // Reload inventory when user changes (login/logout)
-  useEffect(() => {
-    console.log('[Inventory] User changed, reloading inventory');
-    setIsLoading(true);
-    loadInventory();
-  }, [loadInventory]);
-
-  /**
-   * Add a new inventory item to the database.
-   */
   const addItem = async (
     item: Omit<InventoryItem, 'id' | 'dateAdded' | 'lastUpdated'>
   ): Promise<InventoryItem> => {
-    const id = generateId();
-    const timestamp = now();
-    const row = mapInventoryItemToRow(item);
+    // 1. Map Domain -> Row
+    const row = mapInventoryItemToRow({
+      ...item,
+      id: 'temp',
+      dateAdded: new Date(),
+      lastUpdated: new Date()
+    } as InventoryItem);
+    
+    // 2. Add to Store
+    const id = addItemToStore(inventory$, user?.id ?? null, row);
+    
+    // 3. Queue Images
+    if (item.images?.length) {
+      queueInventoryImages({ ...row, id });
+    }
 
-    await db.runAsync(
-      `INSERT INTO inventory_items (
-        id, category, name, description, images, quantity, unit,
-        yarn_details, hook_details, other_details, location, tags,
-        used_in_projects, notes, barcode, date_added, last_updated, pending_sync, user_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        id,
-        row.category,
-        row.name,
-        row.description,
-        row.images,
-        row.quantity,
-        row.unit,
-        row.yarn_details,
-        row.hook_details,
-        row.other_details,
-        row.location,
-        row.tags,
-        row.used_in_projects,
-        row.notes,
-        row.barcode,
-        timestamp,
-        timestamp,
-        1, // pending_sync = true
-        user?.id ?? null, // Associate with current user
-      ]
-    );
-
-    const newItem: InventoryItem = {
+    return {
       ...item,
       id,
-      dateAdded: new Date(timestamp),
-      lastUpdated: new Date(timestamp),
+      dateAdded: new Date(),
+      lastUpdated: new Date(),
     };
-
-    setItems((prev) => [newItem, ...prev]);
-    console.log(`[Inventory] Added item: ${newItem.name}`);
-
-    // Push to cloud via Legend-State (Pro users only)
-    pushToCloud(newItem);
-
-    return newItem;
   };
 
-  /**
-   * Add an item with barcode, updating quantity if it already exists.
-   */
   const addItemWithBarcode = async (
     barcode: string,
     additionalData: Partial<InventoryItem>
   ): Promise<InventoryItem> => {
-    const existingItem = items.find((item) => item.barcode === barcode);
+    const existingItem = items.find((item: InventoryItem) => item.barcode === barcode);
 
     if (existingItem) {
-      // If item with same barcode exists, just update quantity
-      await updateItem(existingItem.id, {
-        quantity: existingItem.quantity + (additionalData.quantity || 1),
-      });
-      return existingItem;
+      const newQuantity = existingItem.quantity + (additionalData.quantity || 1);
+      await updateItem(existingItem.id, { quantity: newQuantity });
+      return { ...existingItem, quantity: newQuantity };
     }
 
-    // Create new item with barcode data
     const category = additionalData.category || 'other';
     const itemName = additionalData.name || 'Unknown Item';
 
@@ -251,17 +130,14 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     } as Omit<InventoryItem, 'id' | 'dateAdded' | 'lastUpdated'>);
   };
 
-  /**
-   * Update an existing inventory item.
-   */
   const updateItem = async (id: string, updates: Partial<InventoryItem>) => {
-    const existingItem = items.find((item) => item.id === id);
+    const existingItem = items.find((i: InventoryItem) => i.id === id);
     if (!existingItem) {
       console.error(`[Inventory] Item ${id} not found`);
       return;
     }
 
-    // Sync projects if usedInProjects changed
+    // Handle Project Sync
     if (updates.usedInProjects !== undefined) {
       try {
         await syncInventoryToProjects(
@@ -270,81 +146,33 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
           updates.usedInProjects ?? [],
           existingItem.usedInProjects ?? []
         );
-        console.log('[Inventory] Projects synced with inventory changes');
       } catch (error) {
         console.error('[Inventory] Failed to sync projects:', error);
-        // Continue with update even if sync fails
       }
     }
 
-    const updatedItem: InventoryItem = {
-      ...existingItem,
-      ...updates,
-      lastUpdated: new Date(),
-    };
+    const mergedItem = { ...existingItem, ...updates };
+    const rowUpdates = mapInventoryItemToRow(mergedItem);
 
-    // Optimistic update
-    setItems((prev) => prev.map((item) => (item.id === id ? updatedItem : item)));
+    updateItemInStore(inventory$, id, rowUpdates);
 
-    const row = mapInventoryItemToRow(updatedItem);
-    const timestamp = now();
-
-    try {
-      await db.runAsync(
-        `UPDATE inventory_items SET
-          category = ?, name = ?, description = ?, images = ?, quantity = ?,
-          unit = ?, yarn_details = ?, hook_details = ?, other_details = ?,
-          location = ?, tags = ?, used_in_projects = ?, notes = ?, barcode = ?,
-          last_updated = ?, pending_sync = ?
-        WHERE id = ?`,
-        [
-          row.category,
-          row.name,
-          row.description,
-          row.images,
-          row.quantity,
-          row.unit,
-          row.yarn_details,
-          row.hook_details,
-          row.other_details,
-          row.location,
-          row.tags,
-          row.used_in_projects,
-          row.notes,
-          row.barcode,
-          timestamp,
-          1, // pending_sync = true
-          id,
-        ]
-      );
-
-      console.log(`[Inventory] Updated item: ${id}`);
-
-      // Push to cloud via Legend-State (Pro users only)
-      pushToCloud(updatedItem);
-    } catch (error) {
-      console.error(`[Inventory] Failed to update item ${id}:`, error);
-      setItems((prev) => prev.map((item) => (item.id === id ? existingItem : item)));
-      throw error;
+    if (updates.images) {
+      queueInventoryImages({ ...rowUpdates, id });
     }
+
+    console.log(`[Inventory] Updated item: ${id}`);
   };
 
-  /**
-   * Update item quantity by delta.
-   */
   const updateQuantity = async (id: string, delta: number) => {
-    const item = items.find((i) => i.id === id);
+    const item = items.find((i: InventoryItem) => i.id === id);
     if (item) {
       const newQuantity = Math.max(0, item.quantity + delta);
       await updateItem(id, { quantity: newQuantity });
     }
   };
 
-  /**
-   * Mark an item as used in a project.
-   */
   const markAsUsed = async (id: string, projectId?: string) => {
-    const item = items.find((i) => i.id === id);
+    const item = items.find((i: InventoryItem) => i.id === id);
     if (item) {
       const usedInProjects = item.usedInProjects || [];
       if (projectId && !usedInProjects.includes(projectId)) {
@@ -354,11 +182,8 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     }
   };
 
-  /**
-   * Add images to an item.
-   */
   const addImages = async (itemId: string, newImages: string[]) => {
-    const item = items.find((i) => i.id === itemId);
+    const item = items.find((i: InventoryItem) => i.id === itemId);
     if (item) {
       await updateItem(itemId, {
         images: [...(item.images || []), ...newImages],
@@ -366,11 +191,8 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     }
   };
 
-  /**
-   * Remove an image from an item.
-   */
   const removeImage = async (itemId: string, imageIndex: number) => {
-    const item = items.find((i) => i.id === itemId);
+    const item = items.find((i: InventoryItem) => i.id === itemId);
     if (item && item.images) {
       const newImages = [...item.images];
       newImages.splice(imageIndex, 1);
@@ -378,102 +200,32 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     }
   };
 
-  /**
-   * Delete an inventory item.
-   */
   const deleteItem = async (id: string) => {
-    const itemToDelete = items.find((item) => item.id === id);
-
-    // Clean up project references if this item is linked to projects
+    const itemToDelete = items.find((item: InventoryItem) => item.id === id);
     if (itemToDelete) {
       try {
         await removeInventoryFromProjects(id, itemToDelete.category);
-        console.log('[Inventory] Projects cleaned up after deletion');
       } catch (error) {
         console.error('[Inventory] Failed to clean up project references:', error);
-        // Continue with deletion even if cleanup fails
       }
     }
-
-    // Optimistic update
-    setItems((prev) => prev.filter((item) => item.id !== id));
-
-    try {
-      await db.runAsync('DELETE FROM inventory_items WHERE id = ?', [id]);
-      console.log(`[Inventory] Deleted item: ${id}`);
-
-      // Soft delete in cloud (Pro users only)
-      // Try Legend-State first, fall back to direct Supabase if item not in observable
-      if (isPro && user?.id) {
-        try {
-          let cloudDeleted = false;
-
-          // Try Legend-State if store is available
-          if (storesRef.current?.inventory$) {
-            cloudDeleted = deleteLegendInventory(storesRef.current.inventory$, id);
-            if (cloudDeleted) {
-              console.log(`[Inventory] Soft deleted in cloud via Legend-State: ${id}`);
-            }
-          }
-
-          // Fall back to direct Supabase if Legend-State didn't have the item
-          if (!cloudDeleted && supabase) {
-            console.log(`[Inventory] Falling back to direct Supabase soft delete: ${id}`);
-            const { error } = await supabase
-              .from('inventory_items')
-              .update({
-                deleted: true,
-                last_updated: new Date().toISOString(),
-              } as never)
-              .eq('id', id)
-              .eq('user_id', user.id);
-
-            if (error) {
-              console.error('[Inventory] Supabase soft delete failed:', error);
-            } else {
-              console.log(`[Inventory] Soft deleted in Supabase directly: ${id}`);
-            }
-          }
-        } catch (error) {
-          console.error('[Inventory] Failed to soft delete in cloud:', error);
-          // Local deletion succeeded - cloud sync will catch up
-        }
-      }
-    } catch (error) {
-      console.error(`[Inventory] Failed to delete item ${id}:`, error);
-      await loadInventory();
-      throw error;
-    }
+    deleteItemFromStore(inventory$, id);
+    console.log(`[Inventory] Deleted item: ${id}`);
   };
 
-  /**
-   * Get an item by ID.
-   */
-  const getItemById = (id: string): InventoryItem | undefined => {
-    return items.find((item) => item.id === id);
+  // Deprecated
+  const replaceInventoryImage = async (itemId: string, oldUri: string, newUrl: string) => {
+     // No-op
   };
 
-  /**
-   * Get all items by category.
-   */
-  const getItemsByCategory = (category: InventoryItem['category']): InventoryItem[] => {
-    return items.filter((item) => item.category === category);
-  };
-
-  /**
-   * Get an item by barcode.
-   */
-  const getItemByBarcode = (barcode: string): InventoryItem | undefined => {
-    return items.find((item) => item.barcode === barcode);
-  };
-
-  /**
-   * Search items by query.
-   */
+  const getItemById = (id: string) => items.find((i: InventoryItem) => i.id === id);
+  const getItemsByCategory = (category: InventoryItem['category']) => items.filter((i: InventoryItem) => i.category === category);
+  const getItemByBarcode = (barcode: string) => items.find((i: InventoryItem) => i.barcode === barcode);
+  
   const searchItems = (query: string): InventoryItem[] => {
     const lowerQuery = query.toLowerCase();
     return items.filter(
-      (item) =>
+      (item: InventoryItem) =>
         item.name?.toLowerCase().includes(lowerQuery) ||
         item.description?.toLowerCase().includes(lowerQuery) ||
         item.yarnDetails?.brand?.name?.toLowerCase().includes(lowerQuery) ||
@@ -483,56 +235,31 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     );
   };
 
-  // Filtered and sorted items based on current filters
   const filteredItems = useMemo(() => {
     let filtered = items;
-
-    // Apply category filter
     if (selectedCategory !== 'all') {
-      filtered = filtered.filter((item) => item.category === selectedCategory);
+      filtered = filtered.filter((item: InventoryItem) => item.category === selectedCategory);
     }
-
-    // Apply search filter
     if (searchQuery) {
-      const lowerQuery = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (item) =>
-          item.name?.toLowerCase().includes(lowerQuery) ||
-          item.description?.toLowerCase().includes(lowerQuery) ||
-          item.yarnDetails?.brand?.name?.toLowerCase().includes(lowerQuery) ||
-          item.yarnDetails?.colorName?.toLowerCase().includes(lowerQuery) ||
-          item.hookDetails?.brand?.toLowerCase().includes(lowerQuery) ||
-          item.barcode?.includes(searchQuery)
-      );
+      filtered = searchItems(searchQuery);
     }
-
-    // Apply sorting
-    filtered = [...filtered].sort((a, b) => {
+    filtered = [...filtered].sort((a: InventoryItem, b: InventoryItem) => {
       switch (sortBy) {
-        case 'name':
-          const aName = a.name || '';
-          const bName = b.name || '';
-          return aName.localeCompare(bName);
-        case 'date':
-          return b.lastUpdated.getTime() - a.lastUpdated.getTime();
-        case 'quantity':
-          return b.quantity - a.quantity;
-        default:
-          return 0;
+        case 'name': return (a.name || '').localeCompare(b.name || '');
+        case 'date': return b.lastUpdated.getTime() - a.lastUpdated.getTime();
+        case 'quantity': return b.quantity - a.quantity;
+        default: return 0;
       }
     });
-
     return filtered;
   }, [items, selectedCategory, searchQuery, sortBy]);
 
-  // Statistics
   const statistics = useMemo(() => {
-    const yarnItems = items.filter((i) => i.category === 'yarn');
-    const hookItems = items.filter((i) => i.category === 'hook');
-    const otherItems = items.filter((i) => i.category === 'other');
+    const yarnItems = items.filter((i: InventoryItem) => i.category === 'yarn');
+    const hookItems = items.filter((i: InventoryItem) => i.category === 'hook');
+    const otherItems = items.filter((i: InventoryItem) => i.category === 'other');
 
-    // Calculate total value from yarn and hook purchase prices
-    const totalValue = items.reduce((sum, item) => {
+    const totalValue = items.reduce((sum: number, item: InventoryItem) => {
       if (item.category === 'yarn' && item.yarnDetails?.purchasePrice) {
         return sum + item.yarnDetails.purchasePrice * item.quantity;
       }
@@ -546,101 +273,17 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
       totalItems: items.length,
       totalValue,
       yarnCount: yarnItems.length,
-      yarnSkeins: yarnItems.reduce((sum, item) => sum + item.quantity, 0),
+      yarnSkeins: yarnItems.reduce((sum: number, item: InventoryItem) => sum + item.quantity, 0),
       hookCount: hookItems.length,
       otherCount: otherItems.length,
       uniqueBrands: new Set([
-        ...yarnItems.map((i) => i.yarnDetails?.brand?.name).filter(Boolean),
-        ...hookItems.map((i) => i.hookDetails?.brand).filter(Boolean),
+        ...yarnItems.map((i: InventoryItem) => i.yarnDetails?.brand?.name).filter(Boolean),
+        ...hookItems.map((i: InventoryItem) => i.hookDetails?.brand).filter(Boolean),
       ]).size,
     };
   }, [items]);
 
-  /**
-   * Refresh items from database.
-   */
-  const refreshItems = async () => {
-    await loadInventory();
-    console.log('[Inventory] Refreshed from SQLite');
-  };
-
-  /**
-   * Replace a local image URI with a cloud URL after upload.
-   * Called by the image sync queue when an upload completes.
-   *
-   * IMPORTANT: This function queries SQLite directly instead of using the
-   * in-memory `items` state to avoid stale closure issues when called
-   * from background callbacks.
-   */
-  const replaceInventoryImage = useCallback(async (
-    itemId: string,
-    oldUri: string,
-    newUrl: string
-  ): Promise<void> => {
-    console.log(`[Inventory] replaceInventoryImage called:`, {
-      itemId,
-      oldUri: oldUri.slice(-50),
-      newUrl: newUrl.slice(0, 50),
-    });
-
-    try {
-      // Query SQLite directly for fresh data (avoids stale closure issues)
-      const row = await db.getFirstAsync<InventoryItemRow>(
-        'SELECT * FROM inventory_items WHERE id = ?',
-        [itemId]
-      );
-
-      if (!row) {
-        console.warn(`[Inventory] replaceInventoryImage: Item ${itemId} not found in SQLite`);
-        return;
-      }
-
-      const item = mapRowToInventoryItem(row);
-      const images = item.images || [];
-      const updatedImages = replaceImageUri(images, oldUri, newUrl);
-
-      // Check if any replacement was made
-      if (JSON.stringify(images) === JSON.stringify(updatedImages)) {
-        console.warn(`[Inventory] replaceInventoryImage: URI ${oldUri} not found in item ${itemId}`);
-        console.log(`[Inventory] Current images:`, images.map((img) =>
-          typeof img === 'string' ? img.slice(-40) : JSON.stringify(img).slice(-40)
-        ));
-        return;
-      }
-
-      // Direct SQLite update for image replacement (faster, avoids full item update)
-      const timestamp = now();
-      await db.runAsync(
-        'UPDATE inventory_items SET images = ?, last_updated = ?, pending_sync = 1 WHERE id = ?',
-        [JSON.stringify(updatedImages), timestamp, itemId]
-      );
-
-      // Update in-memory state
-      setItems((prev) =>
-        prev.map((i) =>
-          i.id === itemId
-            ? { ...i, images: updatedImages, lastUpdated: new Date(timestamp) }
-            : i
-        )
-      );
-
-      console.log(`[Inventory] Replaced image URI in item ${itemId}: ${oldUri.slice(-30)} → ${newUrl.slice(0, 50)}`);
-
-      // NOTE: We intentionally do NOT push to cloud here.
-      // Pushing immediately after each image replacement causes a race condition:
-      // 1. Image 1 uploads → we push (with only image 1's cloud URL)
-      // 2. Sync pulls from cloud → overwrites SQLite with partial data
-      // 3. Image 2 uploads → can't find its local URI (it was overwritten)
-      //
-      // Instead, the cloud URL will be synced on the next regular sync cycle,
-      // after all pending images are uploaded.
-    } catch (error) {
-      console.error(`[Inventory] replaceInventoryImage failed:`, error);
-    }
-  }, [db]);
-
   return {
-    // State
     items,
     filteredItems,
     isLoading,
@@ -648,8 +291,6 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     selectedCategory,
     sortBy,
     statistics,
-
-    // Actions
     addItem,
     addItemWithBarcode,
     updateItem,
@@ -658,27 +299,17 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     markAsUsed,
     addImages,
     removeImage,
-
-    // Queries
     getItemById,
     getItemsByCategory,
     getItemByBarcode,
     searchItems,
-
-    // Filters
     setSearchQuery,
     setSelectedCategory,
     setSortBy,
-
-    // Image picker
     showImagePickerOptions,
     isPickingImage,
-
-    // Cross-context sync
-    refreshItems,
+    refreshItems: async () => {},
     replaceInventoryImage,
-
-    // Legacy (for backward compatibility)
     yarnCount: statistics.yarnCount,
     hookCount: statistics.hookCount,
   };

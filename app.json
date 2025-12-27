@@ -74,8 +74,7 @@
       ],
       "expo-font",
       "expo-web-browser",
-      "expo-asset",
-      "expo-sqlite"
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true

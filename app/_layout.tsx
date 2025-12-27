@@ -4,24 +4,17 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
 import { setButtonStyleAsync } from "expo-navigation-bar";
-import { SQLiteProvider } from "expo-sqlite";
 import * as Updates from "expo-updates";
-import React, { useEffect, useRef, Suspense } from "react";
-import { StyleSheet, Platform, View, ActivityIndicator, AppState, AppStateStatus, Alert } from "react-native";
+import React, { useEffect } from "react";
+import { StyleSheet, Platform, Alert } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { AuthProvider, useAuth } from "@/hooks/auth-context";
-import { ProjectsProvider, useProjects } from "@/hooks/projects-context";
-import { InventoryProvider, useInventory } from "@/hooks/inventory-context";
+import { AuthProvider } from "@/hooks/auth-context";
+import { ProjectsProvider } from "@/hooks/projects-context";
+import { InventoryProvider } from "@/hooks/inventory-context";
 import { LanguageProvider, useLanguage } from "@/hooks/language-context";
-import { migrateDatabase } from "@/lib/database/migrations";
-import { imageSyncQueue, type ImageUploadCallbacks, clearStores } from "@/lib/legend-state";
-import { ToastProvider, useToast } from "@/components/Toast";
-import { useSupabaseSync } from "@/hooks/useSupabaseSync";
+import { ToastProvider } from "@/components/Toast";
 import Colors from "@/constants/colors";
-
-// Minimum time between foreground syncs (30 seconds)
-const FOREGROUND_SYNC_DEBOUNCE_MS = 30_000;
 
 SplashScreen.preventAutoHideAsync();
 
@@ -40,42 +33,17 @@ const styles = StyleSheet.create({
   },
 });
 
-/**
- * Loading fallback shown while SQLite database initializes.
- */
-function DatabaseLoadingFallback() {
-  return (
-    <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color={Colors.deepTeal} />
-    </View>
-  );
-}
-
-/**
- * Update Checker - Checks for OTA updates and prompts user to reload.
- * Only runs in production builds (not in dev mode).
- * Uses translations for multilanguage support.
- */
 function UpdateChecker({ children }: { children: React.ReactNode }) {
   const { t } = useLanguage();
 
   useEffect(() => {
     async function checkForUpdates() {
-      // Skip in development mode
-      if (__DEV__) {
-        console.log('[Updates] Skipping update check in dev mode');
-        return;
-      }
+      if (__DEV__) return;
 
       try {
-        console.log('[Updates] Checking for updates...');
         const update = await Updates.checkForUpdateAsync();
-
         if (update.isAvailable) {
-          console.log('[Updates] Update available, downloading...');
           await Updates.fetchUpdateAsync();
-
-          console.log('[Updates] Update downloaded, prompting user...');
           Alert.alert(
             t('updates.title'),
             t('updates.message'),
@@ -89,8 +57,6 @@ function UpdateChecker({ children }: { children: React.ReactNode }) {
               },
             ]
           );
-        } else {
-          console.log('[Updates] App is up to date');
         }
       } catch (error) {
         console.error('[Updates] Error checking for updates:', error);
@@ -103,192 +69,18 @@ function UpdateChecker({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/**
- * Legend-State Sync Manager - Handles background sync for Pro users.
- *
- * ARCHITECTURE: SQLite + Legend-State for Cloud Sync
- * ===================================================
- * - SQLite = Source of truth for ALL users (offline-first guarantee)
- * - Legend-State = Cloud sync layer for Pro users only
- * - Image upload queue handles file uploads separately
- *
- * The contexts (projects-context, inventory-context) handle:
- * - SQLite reads/writes (always)
- * - Legend-State pushes to cloud (Pro users)
- *
- * This component handles:
- * - Image upload queue initialization
- * - App foreground refresh
- * - Cleanup on logout
- *
- * @see https://supabase.com/blog/local-first-expo-legend-state
- */
-function LegendStateSyncManager({ children }: { children: React.ReactNode }) {
-  const { user, isPro } = useAuth();
-  const { refreshProjects, replaceProjectImage } = useProjects();
-  const { refreshItems, replaceInventoryImage } = useInventory();
-  const { showToast } = useToast();
-  const { t } = useLanguage();
-  const { sync, isSyncing, lastSyncedAt } = useSupabaseSync();
-  const appState = useRef(AppState.currentState);
-  // Track which user.id we've initialized for (prevents cross-user conflicts)
-  const initializedForUserId = useRef<string | null>(null);
-  // Track if initialization is in progress (prevents race conditions)
-  const isInitializing = useRef(false);
-
-  useEffect(() => {
-    const currentUserId = user?.id ?? null;
-
-    console.log('[SyncManager] useEffect triggered', {
-      isPro,
-      userId: currentUserId,
-      initializedForUserId: initializedForUserId.current,
-      isInitializing: isInitializing.current,
-    });
-
-    // Initialize or cleanup based on Pro status
-    if (isPro && currentUserId) {
-      // Skip if already initialized for this user or initialization in progress
-      if (initializedForUserId.current === currentUserId) {
-        console.log('[SyncManager] Already initialized for user:', currentUserId);
-        return;
-      }
-
-      // If initialized for different user, cleanup first
-      if (initializedForUserId.current && initializedForUserId.current !== currentUserId) {
-        console.log('[SyncManager] User changed, cleaning up old user:', initializedForUserId.current);
-        clearStores(initializedForUserId.current);
-        initializedForUserId.current = null;
-      }
-
-      // Skip if initialization is already in progress
-      if (isInitializing.current) {
-        console.log('[SyncManager] Initialization already in progress, skipping');
-        return;
-      }
-
-      console.log('[SyncManager] Setting up image callbacks for Pro user');
-
-      // Create image upload callbacks
-      const imageCallbacks: ImageUploadCallbacks = {
-        onImageUploaded: async (itemId, itemType, _imageIndex, newUrl, oldUri) => {
-          console.log(`[SyncManager] onImageUploaded callback called:`, {
-            itemId,
-            itemType,
-            newUrl: newUrl.substring(0, 50) + '...',
-            oldUri: oldUri.substring(0, 50) + '...',
-          });
-          if (itemType === 'project') {
-            await replaceProjectImage(itemId, oldUri, newUrl);
-          } else if (itemType === 'inventory') {
-            await replaceInventoryImage(itemId, oldUri, newUrl);
-          }
-        },
-        onImageFailed: (itemId, itemType, imageIndex, error) => {
-          console.error(`[SyncManager] Image upload failed: ${itemType}/${itemId}[${imageIndex}]`, error);
-          showToast(t('profile.imageUploadFailed'), 'error');
-        },
-      };
-
-      // Initialize image sync queue
-      // Set flags BEFORE async call to prevent race conditions
-      console.log('[SyncManager] Initializing image sync queue for Pro user:', currentUserId);
-      isInitializing.current = true;
-      const initializingForUser = currentUserId; // Capture user.id for closure
-
-      imageSyncQueue.initialize(currentUserId, imageCallbacks)
-        .then(() => {
-          // Only update state if we're still initializing for the same user
-          if (isInitializing.current && initializingForUser === currentUserId) {
-            initializedForUserId.current = currentUserId;
-            isInitializing.current = false;
-            console.log('[SyncManager] Image sync queue initialized for user:', currentUserId);
-          } else {
-            console.log('[SyncManager] Initialization completed but user changed, ignoring');
-          }
-        })
-        .catch((error) => {
-          // Only reset flags if we're still initializing for the same user
-          if (isInitializing.current && initializingForUser === currentUserId) {
-            isInitializing.current = false;
-          }
-          console.error('[SyncManager] Image sync queue initialization failed:', error);
-        });
-    } else {
-      // Cleanup when user logs out or is no longer Pro
-      if (initializedForUserId.current) {
-        console.log('[SyncManager] Cleaning up for user:', initializedForUserId.current);
-        clearStores(initializedForUserId.current);
-        initializedForUserId.current = null;
-        isInitializing.current = false;
-        console.log('[SyncManager] Cleaned up Legend-State stores (user logged out or not Pro)');
-      }
-    }
-
-    // App state listener for foreground detection - triggers cloud sync
-    const subscription = AppState.addEventListener(
-      'change',
-      async (nextAppState: AppStateStatus) => {
-        if (
-          appState.current.match(/inactive|background/) &&
-          nextAppState === 'active' &&
-          isPro &&
-          user?.id
-        ) {
-          // Check if we synced recently (debounce)
-          const timeSinceLastSync = lastSyncedAt
-            ? Date.now() - lastSyncedAt.getTime()
-            : Infinity;
-
-          if (timeSinceLastSync < FOREGROUND_SYNC_DEBOUNCE_MS) {
-            console.log('[SyncManager] App foregrounded, but synced recently - just refreshing local');
-            await refreshProjects();
-            await refreshItems();
-          } else if (isSyncing) {
-            console.log('[SyncManager] App foregrounded, sync already in progress');
-          } else {
-            console.log('[SyncManager] App foregrounded, syncing with cloud...');
-            // Full sync: push local changes + pull cloud changes → write to SQLite
-            const result = await sync();
-            if (result?.success) {
-              console.log(`[SyncManager] Foreground sync complete: pushed ${result.pushCount}, pulled ${result.pullCount}`);
-            } else if (result) {
-              console.warn('[SyncManager] Foreground sync had errors:', result.errors);
-            }
-          }
-        }
-        appState.current = nextAppState;
-      }
-    );
-
-    return () => {
-      subscription.remove();
-    };
-  }, [isPro, user?.id, refreshProjects, refreshItems, replaceProjectImage, replaceInventoryImage, showToast, t, sync, isSyncing, lastSyncedAt]);
-
-  return <>{children}</>;
-}
-
 export default function RootLayout() {
   useEffect(() => {
     async function prepare() {
       try {
-        // Set root background color to prevent white flash
         await SystemUI.setBackgroundColorAsync(Colors.headerBg);
-
-        // Configure Android navigation bar for edge-to-edge
         if (Platform.OS === 'android') {
-          // Note: setBackgroundColorAsync is not supported with edge-to-edge enabled
-          // Only button style can be configured in edge-to-edge mode
           await setButtonStyleAsync('dark');
         }
-
-        // Small delay to ensure providers are mounted
         await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error) {
         console.warn('Error during app initialization:', error);
       } finally {
-        // Hide splash screen after everything is ready
         await SplashScreen.hideAsync();
       }
     }
@@ -304,57 +96,43 @@ export default function RootLayout() {
           <LanguageProvider>
             <UpdateChecker>
               <AuthProvider>
-              <Suspense fallback={<DatabaseLoadingFallback />}>
-                <SQLiteProvider
-                  databaseName="artful.db"
-                  onInit={migrateDatabase}
-                >
-                  <ProjectsProvider>
-                    <InventoryProvider>
-                      <ToastProvider>
-                        <LegendStateSyncManager>
-                          <Stack
-                          screenOptions={{
-                            headerShown: false,
-                          }}
-                        >
-                          {/* Main app routes */}
-                          <Stack.Screen name="index" />
-                          <Stack.Screen name="(auth)" />
-                          <Stack.Screen name="(tabs)" />
-                          <Stack.Screen name="help" />
-                          <Stack.Screen name="legal" />
-                          <Stack.Screen name="about" />
-                          <Stack.Screen name="project/[id]" />
-                          <Stack.Screen name="video-player" />
-
-                          {/* YarnAI routes - nested layout handles individual screens */}
-                          <Stack.Screen name="yarnai" />
-
-                          {/* Modal routes */}
-                          <Stack.Screen
-                            name="add-inventory"
-                            options={{ presentation: 'modal' }}
-                          />
-                          <Stack.Screen
-                            name="edit-inventory/[id]"
-                            options={{ presentation: 'modal' }}
-                          />
-                          <Stack.Screen
-                            name="add-project"
-                            options={{ presentation: 'modal' }}
-                          />
-                          <Stack.Screen
-                            name="edit-project/[id]"
-                            options={{ presentation: 'modal' }}
-                          />
-                          </Stack>
-                        </LegendStateSyncManager>
-                      </ToastProvider>
-                    </InventoryProvider>
-                  </ProjectsProvider>
-                </SQLiteProvider>
-              </Suspense>
+                <ProjectsProvider>
+                  <InventoryProvider>
+                    <ToastProvider>
+                      <Stack
+                        screenOptions={{
+                          headerShown: false,
+                        }}
+                      >
+                        <Stack.Screen name="index" />
+                        <Stack.Screen name="(auth)" />
+                        <Stack.Screen name="(tabs)" />
+                        <Stack.Screen name="help" />
+                        <Stack.Screen name="legal" />
+                        <Stack.Screen name="about" />
+                        <Stack.Screen name="project/[id]" />
+                        <Stack.Screen name="video-player" />
+                        <Stack.Screen name="yarnai" />
+                        <Stack.Screen
+                          name="add-inventory"
+                          options={{ presentation: 'modal' }}
+                        />
+                        <Stack.Screen
+                          name="edit-inventory/[id]"
+                          options={{ presentation: 'modal' }}
+                        />
+                        <Stack.Screen
+                          name="add-project"
+                          options={{ presentation: 'modal' }}
+                        />
+                        <Stack.Screen
+                          name="edit-project/[id]"
+                          options={{ presentation: 'modal' }}
+                        />
+                      </Stack>
+                    </ToastProvider>
+                  </InventoryProvider>
+                </ProjectsProvider>
               </AuthProvider>
             </UpdateChecker>
           </LanguageProvider>

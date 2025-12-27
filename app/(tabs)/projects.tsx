@@ -658,7 +658,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     paddingVertical: 12,
-    paddingRight: 14,
+    paddingHorizontal: 14,
     gap: 3,
   },
   activeProjectTitle: {

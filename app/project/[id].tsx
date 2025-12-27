@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  TextInput,
   Alert,
+  ActivityIndicator,
+  LayoutAnimation,
+  UIManager,
   Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
@@ -23,6 +27,7 @@ import {
   RotateCcw,
   BookOpen,
   ChevronRight,
+  ChevronDown,
   ExternalLink,
   Pencil,
   Lock,
@@ -44,15 +49,27 @@ import { getImageSource } from '@/types';
 
 export default function ProjectDetailScreen() {
   const { id } = useLocalSearchParams();
-  const { getProjectById, deleteProject } = useProjects();
+  const { getProjectById, deleteProject, updateProject } = useProjects();
   const { getItemById, getItemsByCategory } = useInventory();
   const { t } = useLanguage();
   const { user } = useAuth();
   const [project, setProject] = useState(getProjectById(id as string));
 
+  // Enable LayoutAnimation on Android (run once on mount)
+  useEffect(() => {
+    if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+      UIManager.setLayoutAnimationEnabledExperimental(true);
+    }
+  }, []);
+
   // Check if user is Pro
   const isPro = user?.isPro === true;
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Pattern Adjustments expandable state
+  const [isPatternAdjustmentsExpanded, setIsPatternAdjustmentsExpanded] = useState(false);
+  const [patternAdjustmentsText, setPatternAdjustmentsText] = useState(project?.notes || '');
+  const [isSavingPatternAdjustments, setIsSavingPatternAdjustments] = useState(false);
 
   // Refresh project data when screen comes into focus
   useFocusEffect(
@@ -71,6 +88,8 @@ export default function ProjectDetailScreen() {
         });
         // Force a new object reference to trigger React re-render
         setProject({ ...updatedProject });
+        // Sync pattern adjustments text with latest data
+        setPatternAdjustmentsText(updatedProject.notes || '');
       } else {
         setProject(undefined);
       }
@@ -112,6 +131,33 @@ export default function ProjectDetailScreen() {
         },
       ]
     );
+  };
+
+  const togglePatternAdjustments = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    if (isPatternAdjustmentsExpanded) {
+      // Collapsing - reset text to original value
+      setPatternAdjustmentsText(project?.notes || '');
+    }
+    setIsPatternAdjustmentsExpanded(!isPatternAdjustmentsExpanded);
+  };
+
+  const handleSavePatternAdjustments = async () => {
+    if (!project) return;
+
+    setIsSavingPatternAdjustments(true);
+    try {
+      await updateProject(project.id, { notes: patternAdjustmentsText });
+      // Update local project state
+      setProject({ ...project, notes: patternAdjustmentsText });
+      // Collapse with animation
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setIsPatternAdjustmentsExpanded(false);
+    } catch (error) {
+      Alert.alert(t('common.error'), t('projects.failedToUpdate'));
+    } finally {
+      setIsSavingPatternAdjustments(false);
+    }
   };
 
   const getStatusColor = (status: ProjectStatus): string => {
@@ -521,24 +567,66 @@ export default function ProjectDetailScreen() {
               <ChevronRight size={18} color={Colors.warmGray} />
             </TouchableOpacity>
 
-            {/* Pattern Adjustments Row */}
-            <TouchableOpacity
-              onPress={() => router.push(`/edit-project/${project.id}`)}
-              activeOpacity={0.7}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel={t('projects.patternAdjustments')}
-              style={[styles.proFeatureRow, styles.proFeatureRowLast]}
-            >
-              <Wrench size={20} color={Colors.deepSage} />
-              <Text style={styles.proFeatureTitle}>{t('projects.patternAdjustments')}</Text>
-              {project.notes && (
-                <Text style={styles.proFeatureSubtitle} numberOfLines={1}>
-                  {project.notes.substring(0, 30)}{project.notes.length > 30 ? '...' : ''}
-                </Text>
+            {/* Pattern Adjustments - Inline Expandable */}
+            <View style={[styles.patternAdjustmentsContainer, styles.proFeatureRowLast]}>
+              <TouchableOpacity
+                onPress={togglePatternAdjustments}
+                activeOpacity={0.7}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={t('projects.patternAdjustments')}
+                accessibilityState={{ expanded: isPatternAdjustmentsExpanded }}
+                style={styles.patternAdjustmentsHeader}
+              >
+                <Wrench size={20} color={Colors.deepSage} />
+                <View style={styles.patternAdjustmentsTitleContainer}>
+                  <Text style={styles.proFeatureTitle}>{t('projects.patternAdjustments')}</Text>
+                  {!isPatternAdjustmentsExpanded && (
+                    <Text style={styles.patternAdjustmentsHint} numberOfLines={1}>
+                      {project.notes
+                        ? project.notes.substring(0, 40) + (project.notes.length > 40 ? '...' : '')
+                        : t('projects.patternAdjustmentsHint')}
+                    </Text>
+                  )}
+                </View>
+                {isPatternAdjustmentsExpanded ? (
+                  <ChevronDown size={18} color={Colors.warmGray} />
+                ) : (
+                  <ChevronRight size={18} color={Colors.warmGray} />
+                )}
+              </TouchableOpacity>
+
+              {isPatternAdjustmentsExpanded && (
+                <View style={styles.patternAdjustmentsExpanded}>
+                  <TextInput
+                    style={styles.patternAdjustmentsInput}
+                    value={patternAdjustmentsText}
+                    onChangeText={setPatternAdjustmentsText}
+                    placeholder={t('projects.patternAdjustmentsPlaceholder')}
+                    placeholderTextColor={Colors.warmGray}
+                    multiline
+                    textAlignVertical="top"
+                    accessible={true}
+                    accessibilityLabel={t('projects.patternAdjustments')}
+                  />
+                  <TouchableOpacity
+                    onPress={handleSavePatternAdjustments}
+                    style={styles.patternAdjustmentsSaveButton}
+                    activeOpacity={0.7}
+                    disabled={isSavingPatternAdjustments}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('common.saveChanges')}
+                  >
+                    {isSavingPatternAdjustments ? (
+                      <ActivityIndicator size="small" color={Colors.white} />
+                    ) : (
+                      <Text style={styles.patternAdjustmentsSaveText}>{t('common.saveChanges')}</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
               )}
-              <ChevronRight size={18} color={Colors.warmGray} />
-            </TouchableOpacity>
+            </View>
           </View>
 
           <View style={styles.actionButtonsRow}>
@@ -1131,5 +1219,60 @@ const styles = StyleSheet.create({
     fontWeight: '500' as const,
     fontSize: 16,
     letterSpacing: -0.1,
+  },
+  // Pattern Adjustments Expandable Styles
+  patternAdjustmentsContainer: {
+    overflow: 'hidden',
+  },
+  patternAdjustmentsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 14,
+    minHeight: 52,
+  },
+  patternAdjustmentsTitleContainer: {
+    flex: 1,
+  },
+  patternAdjustmentsHint: {
+    ...Typography.caption,
+    color: Colors.warmGray,
+    fontSize: 13,
+    marginTop: 2,
+  },
+  patternAdjustmentsExpanded: {
+    paddingTop: 8,
+    paddingBottom: 16,
+    borderTopWidth: normalizeBorder(1),
+    borderTopColor: Colors.border,
+  },
+  patternAdjustmentsInput: {
+    ...Typography.body,
+    color: Colors.charcoal,
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    borderWidth: normalizeBorder(1),
+    borderColor: Colors.border,
+    padding: 16,
+    minHeight: 100,
+    maxHeight: 200,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  patternAdjustmentsSaveButton: {
+    backgroundColor: Colors.deepSage,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+    minHeight: 46,
+  },
+  patternAdjustmentsSaveText: {
+    ...Typography.body,
+    color: Colors.white,
+    fontWeight: '600' as const,
+    fontSize: 15,
   },
 });

@@ -54,6 +54,7 @@ export default {
   common: {
     cancel: 'Отмена',
     save: 'Сохранить',
+    saveChanges: 'Сохранить изменения',
     delete: 'Удалить',
     edit: 'Редактировать',
     add: 'Добавить',
@@ -182,6 +183,7 @@ export default {
     patternAdjustments: 'Изменения в схеме',
     patternAdjustmentsOptional: 'Изменения в схеме (Необязательно)',
     patternAdjustmentsPlaceholder: 'Документируйте изменения (дополнительные ряды, другой крючок, пропущенные шаги...)',
+    patternAdjustmentsHint: 'Изменения в схеме',
     photosSelected: 'фото выбрано',
     projectNotFound: 'Проект не найден',
     goBack: 'Вернуться',

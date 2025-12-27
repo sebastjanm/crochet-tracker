@@ -54,6 +54,7 @@ export default {
   common: {
     cancel: 'Abbrechen',
     save: 'Speichern',
+    saveChanges: 'Änderungen speichern',
     delete: 'Löschen',
     edit: 'Bearbeiten',
     add: 'Hinzufügen',
@@ -182,6 +183,7 @@ export default {
     patternAdjustments: 'Musteranpassungen',
     patternAdjustmentsOptional: 'Musteranpassungen (Optional)',
     patternAdjustmentsPlaceholder: 'Änderungen dokumentieren (zusätzliche Reihen, andere Nadel, übersprungene Schritte...)',
+    patternAdjustmentsHint: 'Individuelle Änderungen am Muster',
     photosSelected: 'Foto(s) ausgewählt',
     projectNotFound: 'Projekt nicht gefunden',
     goBack: 'Zurück gehen',

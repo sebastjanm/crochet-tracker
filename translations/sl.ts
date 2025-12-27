@@ -54,6 +54,7 @@ export default {
   common: {
     cancel: 'Prekliči',
     save: 'Shrani',
+    saveChanges: 'Shrani spremembe',
     delete: 'Izbriši',
     edit: 'Uredi',
     add: 'Dodaj',
@@ -227,6 +228,7 @@ export default {
     patternAdjustments: 'Prilagoditve vzorca',
     patternAdjustmentsOptional: 'Prilagoditve vzorca (Opcijsko)',
     patternAdjustmentsPlaceholder: 'Dokumentirajte spremembe (dodatne vrste, drugačna kljukica, preskočeni koraki...)',
+    patternAdjustmentsHint: 'Prilagoditve vzorca',
     photosSelected: 'fotografij izbranih',
     projectNotFound: 'Projekt ni najden',
     goBack: 'Nazaj',

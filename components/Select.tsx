@@ -73,9 +73,13 @@ export function Select<T extends string = string>({
           accessibilityState={{ disabled: false }}
         >
           <View style={styles.selectContent}>
-            {hasValue && (
+            {hasValue ? (
               <Text style={styles.selectText}>
                 {selectedOption.label}
+              </Text>
+            ) : (
+              <Text style={[styles.selectText, styles.placeholderText]}>
+                {placeholder}
               </Text>
             )}
           </View>
@@ -213,6 +217,10 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '500' as const,
     lineHeight: 20,
+  },
+  placeholderText: {
+    color: Colors.warmGray,
+    fontWeight: '400' as const,
   },
   errorText: {
     ...Typography.caption2,

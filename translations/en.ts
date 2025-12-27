@@ -54,6 +54,7 @@ export default {
   common: {
     cancel: 'Cancel',
     save: 'Save',
+    saveChanges: 'Save Changes',
     delete: 'Delete',
     edit: 'Edit',
     add: 'Add',
@@ -232,6 +233,7 @@ export default {
     patternAdjustments: 'Pattern Adjustments',
     patternAdjustmentsOptional: 'Pattern Adjustments (Optional)',
     patternAdjustmentsPlaceholder: 'Document modifications (extra rows, different hook, skipped steps...)',
+    patternAdjustmentsHint: 'Custom changes to the pattern',
     photosSelected: 'photo(s) selected',
     projectNotFound: 'Project not found',
     goBack: 'Go Back',

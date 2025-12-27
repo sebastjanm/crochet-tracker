@@ -588,7 +588,9 @@ export default function EditProjectScreen() {
 
           <View style={styles.sectionDivider} />
 
-          {/* SECTION 6: Pattern Adjustments */}
+          {/* SECTION 6: Pattern Adjustments
+              Note: "Pattern Adjustments" in the UI maps to the "notes" field
+              in the data model for backward compatibility with existing data */}
           <Input
             label={t('projects.patternAdjustments')}
             placeholder={t('projects.patternAdjustmentsPlaceholder')}

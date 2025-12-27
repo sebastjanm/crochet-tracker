@@ -22,7 +22,7 @@ export function useImageSync() {
     imageSyncQueue.initialize(user.id, {
       onImageUploaded: async (itemId, itemType, imageIndex, newUrl, oldUri) => {
         console.log(`[ImageSync] Image uploaded for ${itemType} ${itemId}: ${newUrl}`);
-        
+
         // Update the store with the new URL
         if (itemType === 'project') {
            // We need to read the current images to update safely
@@ -30,10 +30,10 @@ export function useImageSync() {
            if (project) {
              let images: any[] = [];
              try { images = JSON.parse(project.images || '[]'); } catch {}
-             
+
              // Replace URI
              const updated = images.map(img => img === oldUri ? newUrl : img);
-             
+
              // Write back to store
              updateProject(projects$, itemId, { images: JSON.stringify(updated) });
            }
@@ -42,15 +42,49 @@ export function useImageSync() {
            if (item) {
              let images: any[] = [];
              try { images = JSON.parse(item.images || '[]'); } catch {}
-             
+
              const updated = images.map(img => img === oldUri ? newUrl : img);
-             
+
              updateInventoryItem(inventory$, itemId, { images: JSON.stringify(updated) });
            }
         }
       },
       onImageFailed: (itemId, error) => {
         console.warn(`[ImageSync] Upload failed for ${itemId}: ${error}`);
+      },
+      onStaleImageFound: async (itemId, itemType, staleUri) => {
+        console.log(`[ImageSync] Cleaning stale image from ${itemType} ${itemId}`);
+
+        // Helper to parse images (handles both JSON string and array formats)
+        const parseImages = (raw: any): string[] => {
+          if (typeof raw === 'string') {
+            try { return JSON.parse(raw || '[]'); } catch { return []; }
+          }
+          return Array.isArray(raw) ? raw : [];
+        };
+
+        // Remove the stale URI from the store
+        if (itemType === 'project') {
+          const project = projects$[itemId].get();
+          if (project) {
+            const images = parseImages(project.images);
+            const filtered = images.filter(img => img !== staleUri);
+            if (filtered.length !== images.length) {
+              updateProject(projects$, itemId, { images: JSON.stringify(filtered) });
+              console.log(`[ImageSync] Removed stale image from project ${itemId}`);
+            }
+          }
+        } else if (itemType === 'inventory') {
+          const item = inventory$[itemId].get();
+          if (item) {
+            const images = parseImages(item.images);
+            const filtered = images.filter(img => img !== staleUri);
+            if (filtered.length !== images.length) {
+              updateInventoryItem(inventory$, itemId, { images: JSON.stringify(filtered) });
+              console.log(`[ImageSync] Removed stale image from inventory ${itemId}`);
+            }
+          }
+        }
       }
     });
 

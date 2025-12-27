@@ -70,6 +70,12 @@ export interface ImageUploadCallbacks {
     imageIndex: number,
     error: string
   ) => void;
+  /** Called when a stale image reference is found (file no longer exists) */
+  onStaleImageFound?: (
+    itemId: string,
+    itemType: 'project' | 'inventory',
+    staleUri: string
+  ) => Promise<void>;
 }
 
 /**
@@ -226,6 +232,11 @@ class ImageSyncQueueManager {
         const file = new ExpoFile(image.localUri);
         if (!file.exists) {
           console.warn(`[ImageQueue] Skipping non-existent file: ${image.localUri.slice(-50)}`);
+          // Notify caller to clean up the stale reference
+          if (this.callbacks.onStaleImageFound) {
+            this.callbacks.onStaleImageFound(image.itemId, image.itemType, image.localUri)
+              .catch(err => console.error('[ImageQueue] Failed to clean stale image:', err));
+          }
           continue;
         }
       } catch {

@@ -18,6 +18,7 @@ import { ModalHeader } from '@/components/ModalHeader';
 import { ImageGallery } from '@/components/ImageGallery';
 import { SectionHeader } from '@/components/SectionHeader';
 import { Select } from '@/components/Select';
+import DatePicker from '@/components/DatePicker';
 import { ProjectSelectorModal } from '@/components/ProjectSelectorModal';
 import { Minus, Plus } from 'lucide-react-native';
 import { ProjectLinksSummary } from '@/components/ProjectLinksSummary';
@@ -60,7 +61,7 @@ export default function EditInventoryScreen() {
   const [recommendedHookSize, setRecommendedHookSize] = useState('');
   const [storage, setStorage] = useState('');
   const [store, setStore] = useState('');
-  const [purchaseDate, setPurchaseDate] = useState('');
+  const [purchaseDate, setPurchaseDate] = useState<Date | undefined>(undefined);
   const [purchasePrice, setPurchasePrice] = useState('');
   const [yarnLine, setYarnLine] = useState('');
   const [yarnNeedleSizeMm, setYarnNeedleSizeMm] = useState('');
@@ -75,7 +76,7 @@ export default function EditInventoryScreen() {
   const [hookHandleType, setHookHandleType] = useState('');
   const [hookMaterial, setHookMaterial] = useState('');
   const [hookStore, setHookStore] = useState('');
-  const [hookPurchaseDate, setHookPurchaseDate] = useState('');
+  const [hookPurchaseDate, setHookPurchaseDate] = useState<Date | undefined>(undefined);
   const [hookPurchasePrice, setHookPurchasePrice] = useState('');
 
   // Other specific fields
@@ -85,21 +86,13 @@ export default function EditInventoryScreen() {
   const [otherModel, setOtherModel] = useState('');
   const [otherMaterial, setOtherMaterial] = useState('');
   const [otherStore, setOtherStore] = useState('');
-  const [otherPurchaseDate, setOtherPurchaseDate] = useState('');
+  const [otherPurchaseDate, setOtherPurchaseDate] = useState<Date | undefined>(undefined);
   const [otherPurchasePrice, setOtherPurchasePrice] = useState('');
 
   // Root level fields (apply to all categories)
   const [unit, setUnit] = useState<'piece' | 'skein' | 'ball' | 'meter' | 'gram' | 'set'>('skein');
   const [usedInProjects, setUsedInProjects] = useState<string[]>([]);
   const [showProjectSelector, setShowProjectSelector] = useState(false);
-
-  // Helper function to format Date to EU format (DD.MM.YYYY)
-  const formatEUDate = (date: Date): string => {
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
-    const year = date.getFullYear();
-    return `${day}.${month}.${year}`;
-  };
 
   useEffect(() => {
     if (item) {
@@ -156,9 +149,9 @@ export default function EditInventoryScreen() {
           const date = item.yarnDetails.purchaseDate instanceof Date
             ? item.yarnDetails.purchaseDate
             : new Date(item.yarnDetails.purchaseDate);
-          setPurchaseDate(formatEUDate(date));
+          setPurchaseDate(date);
         } else {
-          setPurchaseDate('');
+          setPurchaseDate(undefined);
         }
         setPurchasePrice(item.yarnDetails.purchasePrice?.toString() || '');
       }
@@ -175,9 +168,9 @@ export default function EditInventoryScreen() {
           const date = item.hookDetails.purchaseDate instanceof Date
             ? item.hookDetails.purchaseDate
             : new Date(item.hookDetails.purchaseDate);
-          setHookPurchaseDate(formatEUDate(date));
+          setHookPurchaseDate(date);
         } else {
-          setHookPurchaseDate('');
+          setHookPurchaseDate(undefined);
         }
         setHookPurchasePrice(item.hookDetails.purchasePrice?.toString() || '');
         setStorage(item.hookDetails.storageLocation || '');
@@ -193,9 +186,9 @@ export default function EditInventoryScreen() {
           const date = item.otherDetails.purchaseDate instanceof Date
             ? item.otherDetails.purchaseDate
             : new Date(item.otherDetails.purchaseDate);
-          setOtherPurchaseDate(formatEUDate(date));
+          setOtherPurchaseDate(date);
         } else {
-          setOtherPurchaseDate('');
+          setOtherPurchaseDate(undefined);
         }
         setOtherPurchasePrice(item.otherDetails.purchasePrice?.toString() || '');
         setStorage(item.otherDetails.storageLocation || '');
@@ -211,25 +204,6 @@ export default function EditInventoryScreen() {
       setUnit('piece');
     }
   }, [category]);
-
-  // Helper function to parse EU date format (DD.MM.YYYY) to Date
-  const parseEUDate = (dateStr: string): Date | undefined => {
-    if (!dateStr) return undefined;
-
-    // Try parsing DD.MM.YYYY format
-    const parts = dateStr.split('.');
-    if (parts.length === 3) {
-      const day = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
-      const year = parseInt(parts[2], 10);
-
-      if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
-        return new Date(year, month, day);
-      }
-    }
-
-    return undefined;
-  };
 
   const handleSave = async () => {
     // Validate name based on category
@@ -297,7 +271,7 @@ export default function EditInventoryScreen() {
       needleSizeMax: needleSizes.max,
       storageLocation: storage.trim() || undefined,
       store: store.trim() || undefined,
-      purchaseDate: parseEUDate(purchaseDate),
+      purchaseDate,
       purchasePrice: priceNum,
       currency: user?.currency || 'EUR',
     } : undefined;
@@ -312,7 +286,7 @@ export default function EditInventoryScreen() {
       material: (hookMaterial.trim() || undefined) as 'steel' | 'aluminum' | 'bamboo' | 'wood' | 'plastic' | 'nickel' | 'brass' | 'resin' | 'carbonFiber' | 'other' | undefined,
       storageLocation: storage.trim() || undefined,
       store: hookStore.trim() || undefined,
-      purchaseDate: parseEUDate(hookPurchaseDate),
+      purchaseDate: hookPurchaseDate,
       purchasePrice: hookPriceNum,
       currency: user?.currency || 'EUR',
       // Keep legacy size field for backwards compatibility
@@ -328,7 +302,7 @@ export default function EditInventoryScreen() {
       material: otherMaterial.trim() || undefined,
       storageLocation: storage.trim() || undefined,
       store: otherStore.trim() || undefined,
-      purchaseDate: parseEUDate(otherPurchaseDate),
+      purchaseDate: otherPurchaseDate,
       purchasePrice: otherPriceNum,
       currency: user?.currency || 'EUR',
     } : undefined;
@@ -631,11 +605,12 @@ export default function EditInventoryScreen() {
                 onChangeText={setStore}
               />
 
-              <Input
+              <DatePicker
                 label={t('inventory.purchaseDate')}
-                placeholder="DD.MM.YYYY"
                 value={purchaseDate}
-                onChangeText={setPurchaseDate}
+                onChange={setPurchaseDate}
+                placeholder={t('inventory.selectPurchaseDate')}
+                maxDate={new Date()}
               />
 
               <Input
@@ -675,12 +650,42 @@ export default function EditInventoryScreen() {
                 onChangeText={setHookModel}
               />
 
-              <Input
+              <Select
                 label={t('inventory.sizeMm')}
-                placeholder="5.0"
                 value={hookSizeMm}
-                onChangeText={setHookSizeMm}
-                keyboardType="decimal-pad"
+                onChange={setHookSizeMm}
+                placeholder={t('inventory.selectHookSize')}
+                options={[
+                  { value: '1', label: '1 mm' },
+                  { value: '1.5', label: '1.5 mm' },
+                  { value: '2', label: '2 mm' },
+                  { value: '2.5', label: '2.5 mm' },
+                  { value: '3', label: '3 mm' },
+                  { value: '3.5', label: '3.5 mm' },
+                  { value: '4', label: '4 mm' },
+                  { value: '4.5', label: '4.5 mm' },
+                  { value: '5', label: '5 mm' },
+                  { value: '5.5', label: '5.5 mm' },
+                  { value: '6', label: '6 mm' },
+                  { value: '6.5', label: '6.5 mm' },
+                  { value: '7', label: '7 mm' },
+                  { value: '7.5', label: '7.5 mm' },
+                  { value: '8', label: '8 mm' },
+                  { value: '8.5', label: '8.5 mm' },
+                  { value: '9', label: '9 mm' },
+                  { value: '9.5', label: '9.5 mm' },
+                  { value: '10', label: '10 mm' },
+                  { value: '10.5', label: '10.5 mm' },
+                  { value: '11', label: '11 mm' },
+                  { value: '11.5', label: '11.5 mm' },
+                  { value: '12', label: '12 mm' },
+                  { value: '12.5', label: '12.5 mm' },
+                  { value: '13', label: '13 mm' },
+                  { value: '13.5', label: '13.5 mm' },
+                  { value: '14', label: '14 mm' },
+                  { value: '14.5', label: '14.5 mm' },
+                  { value: '15', label: '15 mm' },
+                ]}
               />
 
               <Select
@@ -722,11 +727,12 @@ export default function EditInventoryScreen() {
                 onChangeText={setHookStore}
               />
 
-              <Input
+              <DatePicker
                 label={t('inventory.purchaseDate')}
-                placeholder="DD.MM.YYYY"
                 value={hookPurchaseDate}
-                onChangeText={setHookPurchaseDate}
+                onChange={setHookPurchaseDate}
+                placeholder={t('inventory.selectPurchaseDate')}
+                maxDate={new Date()}
               />
 
               <Input
@@ -829,11 +835,12 @@ export default function EditInventoryScreen() {
                 onChangeText={setOtherStore}
               />
 
-              <Input
+              <DatePicker
                 label={t('inventory.purchaseDate')}
-                placeholder="DD.MM.YYYY"
                 value={otherPurchaseDate}
-                onChangeText={setOtherPurchaseDate}
+                onChange={setOtherPurchaseDate}
+                placeholder={t('inventory.selectPurchaseDate')}
+                maxDate={new Date()}
               />
 
               <Input

@@ -16,12 +16,12 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import { X, RefreshCw, CheckCircle, Clock, Package } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Updates from 'expo-updates';
+import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 import Colors from '@/constants/colors';
 import { Card } from '@/components/Card';
@@ -36,22 +36,17 @@ export default function AboutScreen() {
     currentlyRunning,
     isUpdateAvailable,
     isUpdatePending,
-    availableUpdate,
   } = Updates.useUpdates();
 
   // App version from app.json
   const appVersion = Constants.expoConfig?.version ?? '1.0.0';
-  const buildNumber = Platform.select({
-    ios: Constants.expoConfig?.ios?.buildNumber,
-    android: Constants.expoConfig?.android?.versionCode?.toString(),
-  }) ?? '-';
+  const buildNumber = Application.nativeBuildVersion ?? '-';
 
   // Update info
   const updateId = currentlyRunning?.updateId;
   const channel = currentlyRunning?.channel ?? (Updates.channel || 'embedded');
   const createdAt = currentlyRunning?.createdAt;
   const runtimeVersion = currentlyRunning?.runtimeVersion ?? appVersion;
-  const isEmbedded = !updateId; // No updateId means running embedded build
 
   // Format date
   const formatDate = (date: Date | undefined): string => {
@@ -149,7 +144,7 @@ export default function AboutScreen() {
 
   const infoRows = [
     { label: t('about.version'), value: versionDisplay },
-    { label: t('about.runtimeVersion'), value: runtimeVersion },
+    { label: t('about.runtimeVersion'), value: truncateId(runtimeVersion) },
     { label: t('about.channel'), value: channel },
     { label: t('about.updateId'), value: truncateId(updateId) },
     { label: t('about.lastUpdated'), value: formatDate(createdAt) },

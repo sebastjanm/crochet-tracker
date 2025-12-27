@@ -14,7 +14,7 @@ import {
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Lightbulb, Clock, CheckCircle, Star, Trash2, PauseCircle, RotateCcw, FileText, Link, Lock } from 'lucide-react-native';
+import { Lightbulb, Clock, CheckCircle, Star, Trash2, PauseCircle, RotateCcw, FileText, Link } from 'lucide-react-native';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { Select } from '@/components/Select';
@@ -27,7 +27,6 @@ import { FullscreenImageModal } from '@/components/FullscreenImageModal';
 import { useProjects } from '@/hooks/projects-context';
 import { useInventory } from '@/hooks/inventory-context';
 import { useLanguage } from '@/hooks/language-context';
-import { useAuth } from '@/hooks/auth-context';
 import { useImagePicker } from '@/hooks/useImagePicker';
 import { useImageActions } from '@/hooks/useImageActions';
 import Colors from '@/constants/colors';
@@ -41,8 +40,6 @@ export default function EditProjectScreen() {
   const { getProjectById, updateProject } = useProjects();
   const { items: inventory } = useInventory();
   const { t } = useLanguage();
-  const { user } = useAuth();
-  const isPro = user?.isPro === true;
   const { showImagePickerOptionsMultiple, takePhotoWithCamera } = useImagePicker();
   const { showImageActions } = useImageActions();
   const project = getProjectById(id as string);
@@ -591,26 +588,14 @@ export default function EditProjectScreen() {
 
           <View style={styles.sectionDivider} />
 
-          {/* SECTION 6: Additional Details - Notes (PRO FEATURE) */}
-          {isPro ? (
-            <Input
-              label={t('projects.notes')}
-              placeholder={t('projects.additionalNotes')}
-              value={notes}
-              onChangeText={setNotes}
-              multiline
-            />
-          ) : (
-            <View style={styles.proLockedField}>
-              <View style={styles.proLockedHeader}>
-                <Text style={styles.proLockedLabel}>{t('projects.notes')}</Text>
-                <View style={styles.proBadge}>
-                  <Lock size={10} color={Colors.white} />
-                  <Text style={styles.proBadgeText}>PRO</Text>
-                </View>
-              </View>
-            </View>
-          )}
+          {/* SECTION 6: Pattern Adjustments */}
+          <Input
+            label={t('projects.patternAdjustments')}
+            placeholder={t('projects.patternAdjustmentsPlaceholder')}
+            value={notes}
+            onChangeText={setNotes}
+            multiline
+          />
 
           <View style={styles.footer}>
             <Button
@@ -734,52 +719,6 @@ const styles = StyleSheet.create({
   footer: {
     marginTop: 24,
     marginBottom: 32,
-  },
-  // PRO locked field styles
-  proLockedField: {
-    marginBottom: 20,
-  },
-  proLockedHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
-  },
-  proLockedLabel: {
-    ...Typography.body,
-    color: Colors.charcoal,
-    fontWeight: '500' as const,
-    fontSize: 14,
-  },
-  proBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: Colors.sage,
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  proBadgeText: {
-    ...Typography.caption,
-    color: Colors.white,
-    fontSize: 10,
-    fontWeight: '700' as const,
-    letterSpacing: 0.5,
-  },
-  proLockedContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: Colors.beige,
-    borderRadius: 12,
-    padding: 16,
-  },
-  proLockedText: {
-    ...Typography.body,
-    color: Colors.warmGray,
-    fontSize: 14,
-    fontStyle: 'italic',
   },
   statusSection: {
     marginBottom: 16,

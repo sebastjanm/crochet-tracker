@@ -496,16 +496,6 @@ export default function InventoryDetailScreen() {
           )}
 
 
-          {/* Metadata */}
-          <View style={styles.metadata}>
-            <Text style={styles.metaText}>
-              {t('inventory.dateAdded')}: {formatEUDate(new Date(item.dateAdded))}
-            </Text>
-            <Text style={styles.metaText}>
-              {t('inventory.lastUpdated')}: {formatEUDate(new Date(item.lastUpdated))}
-            </Text>
-          </View>
-
           {/* Action Buttons Row */}
           <View style={styles.actionButtonsRow}>
             {/* Edit Button */}
@@ -535,6 +525,16 @@ export default function InventoryDetailScreen() {
               <Trash2 size={20} color={Colors.error} />
               <Text style={styles.deleteButtonText}>{t('common.delete')}</Text>
             </TouchableOpacity>
+          </View>
+
+          {/* Metadata - below actions for subtle hierarchy */}
+          <View style={styles.metadata}>
+            <Text style={styles.metaText}>
+              {t('inventory.dateAdded')}: {formatEUDate(new Date(item.dateAdded))}
+            </Text>
+            <Text style={styles.metaText}>
+              {t('inventory.lastUpdated')}: {formatEUDate(new Date(item.lastUpdated))}
+            </Text>
           </View>
         </View>
         </ScrollView>
@@ -727,22 +727,24 @@ const styles = StyleSheet.create({
     color: Colors.warmGray,
   },
   metadata: {
-    marginTop: 24,
+    marginBottom: 32,
     paddingTop: 16,
     borderTopWidth: normalizeBorder(1),
     borderTopColor: Colors.border,
+    alignItems: 'center',
   },
   metaText: {
     fontSize: 14,
     fontWeight: '400',
     color: Colors.warmGray,
     marginBottom: 4,
+    textAlign: 'center',
   },
   actionButtonsRow: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 40,
-    marginBottom: 32,
+    marginTop: 24,
+    marginBottom: 16,
   },
   editActionButton: {
     flex: 1,

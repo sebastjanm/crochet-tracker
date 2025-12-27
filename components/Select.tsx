@@ -99,7 +99,7 @@ export function Select<T extends string = string>({
         transparent={false}
         onRequestClose={handleCancel}
       >
-        <SafeAreaView style={styles.modalContainer} edges={['top']}>
+        <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{label}</Text>
             <TouchableOpacity

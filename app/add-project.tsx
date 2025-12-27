@@ -564,10 +564,10 @@ export default function AddProjectScreen() {
 
           <View style={styles.sectionDivider} />
 
-          {/* SECTION 6: Additional Details */}
+          {/* SECTION 6: Pattern Adjustments */}
           <Input
-            label={t('projects.notes')}
-            placeholder={t('projects.additionalNotes')}
+            label={t('projects.patternAdjustments')}
+            placeholder={t('projects.patternAdjustmentsPlaceholder')}
             value={notes}
             onChangeText={setNotes}
             multiline

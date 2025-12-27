@@ -42,7 +42,7 @@ export default function ProjectsScreen() {
     toggleCurrentlyWorkingOn,
   } = useProjects();
   const { t } = useLanguage();
-  const { user } = useAuth();
+  const { user, isPro } = useAuth();
   const { showToast } = useToast();
   const insets = useSafeAreaInsets();
 
@@ -236,7 +236,14 @@ export default function ProjectsScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.customHeader}>
           <View style={styles.headerContent}>
-            <Avatar user={user || undefined} size={isSmallDevice ? 44 : isTablet ? 52 : 56} />
+            <View style={styles.avatarContainer}>
+              <Avatar user={user || undefined} size={isSmallDevice ? 44 : isTablet ? 52 : 56} />
+              {isPro && (
+                <View style={styles.proBadge}>
+                  <Text style={styles.proBadgeText}>PRO</Text>
+                </View>
+              )}
+            </View>
             <View style={styles.textContainer}>
               <Text style={styles.headerGreeting} numberOfLines={1} ellipsizeMode="tail">
                 {t('home.greeting')}
@@ -360,6 +367,26 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: '100%',
     height: isSmallDevice ? 72 : isTablet ? 92 : 96,
+  },
+  avatarContainer: {
+    position: 'relative',
+  },
+  proBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -4,
+    backgroundColor: Colors.deepTeal,
+    paddingHorizontal: isSmallDevice ? 5 : 6,
+    paddingVertical: isSmallDevice ? 1 : 2,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: Colors.headerBg,
+  },
+  proBadgeText: {
+    color: Colors.white,
+    fontSize: isSmallDevice ? 8 : isTablet ? 10 : 9,
+    fontWeight: '700' as const,
+    letterSpacing: 0.5,
   },
   textContainer: {
     flex: 1,

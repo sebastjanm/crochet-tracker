@@ -26,7 +26,7 @@ import {
   ExternalLink,
   Pencil,
   Lock,
-  StickyNote,
+  Wrench,
 } from 'lucide-react-native';
 import { Button } from '@/components/Button';
 import { UniversalHeader } from '@/components/UniversalHeader';
@@ -521,39 +521,24 @@ export default function ProjectDetailScreen() {
               <ChevronRight size={18} color={Colors.warmGray} />
             </TouchableOpacity>
 
-            {/* Notes Row */}
+            {/* Pattern Adjustments Row */}
             <TouchableOpacity
               onPress={() => router.push(`/edit-project/${project.id}`)}
               activeOpacity={0.7}
               accessible={true}
               accessibilityRole="button"
-              accessibilityLabel={`${t('projects.notes')}${!isPro ? ` - ${t('projects.proFeature')}` : ''}`}
+              accessibilityLabel={t('projects.patternAdjustments')}
               style={[styles.proFeatureRow, styles.proFeatureRowLast]}
             >
-              <StickyNote size={20} color={Colors.deepSage} />
-              <Text style={styles.proFeatureTitle}>{t('projects.notes')}</Text>
-              {!isPro && (
-                <View style={styles.proBadge}>
-                  <Lock size={10} color={Colors.white} />
-                  <Text style={styles.proBadgeText}>PRO</Text>
-                </View>
-              )}
-              {isPro && project.notes && (
+              <Wrench size={20} color={Colors.deepSage} />
+              <Text style={styles.proFeatureTitle}>{t('projects.patternAdjustments')}</Text>
+              {project.notes && (
                 <Text style={styles.proFeatureSubtitle} numberOfLines={1}>
                   {project.notes.substring(0, 30)}{project.notes.length > 30 ? '...' : ''}
                 </Text>
               )}
               <ChevronRight size={18} color={Colors.warmGray} />
             </TouchableOpacity>
-          </View>
-
-          <View style={styles.metadata}>
-            <Text style={styles.metaText}>
-              {t('projects.created')}: {new Date(project.createdAt).toLocaleDateString()}
-            </Text>
-            <Text style={styles.metaText}>
-              {t('projects.updated')}: {new Date(project.updatedAt).toLocaleDateString()}
-            </Text>
           </View>
 
           <View style={styles.actionButtonsRow}>
@@ -582,6 +567,16 @@ export default function ProjectDetailScreen() {
               <Trash2 size={20} color={Colors.error} />
               <Text style={styles.deleteButtonText}>{t('common.delete')}</Text>
             </TouchableOpacity>
+          </View>
+
+          {/* Metadata - below actions for subtle hierarchy */}
+          <View style={styles.metadata}>
+            <Text style={styles.metaText}>
+              {t('projects.created')}: {new Date(project.createdAt).toLocaleDateString()}
+            </Text>
+            <Text style={styles.metaText}>
+              {t('projects.updated')}: {new Date(project.updatedAt).toLocaleDateString()}
+            </Text>
           </View>
         </View>
         </ScrollView>
@@ -1079,21 +1074,23 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   metadata: {
-    marginTop: 16,
+    marginBottom: 32,
     paddingTop: 16,
     borderTopWidth: normalizeBorder(1),
     borderTopColor: Colors.border,
+    alignItems: 'center',
   },
   metaText: {
     ...Typography.caption,
     color: Colors.warmGray,
     marginBottom: 4,
+    textAlign: 'center',
   },
   actionButtonsRow: {
     flexDirection: 'row',
     gap: 12,
     marginTop: 24,
-    marginBottom: 32,
+    marginBottom: 16,
   },
   editButton: {
     flex: 1,

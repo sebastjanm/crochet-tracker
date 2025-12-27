@@ -10,6 +10,7 @@ import {
   TextInput,
   ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { X, Check, Search, Package } from 'lucide-react-native';
 import { router } from 'expo-router';
@@ -263,7 +264,7 @@ export function MaterialPickerModal({
       presentationStyle="pageSheet"
       onRequestClose={handleCancel}
     >
-      <View style={styles.modal}>
+      <SafeAreaView style={styles.modal} edges={['top']}>
         {/* Header */}
         <View style={styles.modalHeader}>
           <TouchableOpacity
@@ -375,7 +376,7 @@ export function MaterialPickerModal({
             initialNumToRender={10}
           />
         )}
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 }

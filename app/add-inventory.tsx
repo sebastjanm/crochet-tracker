@@ -22,7 +22,7 @@ import { ModalHeader } from '@/components/ModalHeader';
 import { ImageGallery } from '@/components/ImageGallery';
 import { SectionHeader } from '@/components/SectionHeader';
 import { Select } from '@/components/Select';
-import DatePicker from '@/components/DatePicker';
+import { DatePicker } from '@/components/DatePicker';
 import { ProjectSelectorModal } from '@/components/ProjectSelectorModal';
 import { ProjectLinksSummary } from '@/components/ProjectLinksSummary';
 import { useInventory } from '@/hooks/inventory-context';
@@ -289,7 +289,7 @@ export default function AddInventoryScreen() {
 
   if (showScanner && Platform.OS !== 'web') {
     return (
-      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
         <ModalHeader
           title={`${t('inventory.scan')} ${scannerMode === 'qr' ? 'QR Code' : t('inventory.barcode')}`}
           onClose={() => setShowScanner(false)}
@@ -314,7 +314,7 @@ export default function AddInventoryScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <ModalHeader
         title={t('inventory.addToInventory')}
         showHelp={true}

@@ -315,7 +315,7 @@ export default function EditProjectScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <ModalHeader
         title={t('projects.editProject')}
         showHelp={true}

@@ -18,7 +18,7 @@ import { ModalHeader } from '@/components/ModalHeader';
 import { ImageGallery } from '@/components/ImageGallery';
 import { SectionHeader } from '@/components/SectionHeader';
 import { Select } from '@/components/Select';
-import DatePicker from '@/components/DatePicker';
+import { DatePicker } from '@/components/DatePicker';
 import { ProjectSelectorModal } from '@/components/ProjectSelectorModal';
 import { Minus, Plus } from 'lucide-react-native';
 import { ProjectLinksSummary } from '@/components/ProjectLinksSummary';
@@ -335,14 +335,14 @@ export default function EditInventoryScreen() {
 
   if (!item) {
     return (
-      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
         <Text style={styles.errorText}>Item not found</Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <ModalHeader
         title={t('inventory.editItem')}
         showHelp={true}

@@ -8,6 +8,7 @@ import {
   ScrollView,
   Pressable,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronDown, Check, X } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
@@ -98,7 +99,7 @@ export function Select<T extends string = string>({
         transparent={false}
         onRequestClose={handleCancel}
       >
-        <View style={styles.modalContainer}>
+        <SafeAreaView style={styles.modalContainer} edges={['top']}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{label}</Text>
             <TouchableOpacity
@@ -153,7 +154,7 @@ export function Select<T extends string = string>({
               );
             })}
           </ScrollView>
-        </View>
+        </SafeAreaView>
       </Modal>
     </View>
   );

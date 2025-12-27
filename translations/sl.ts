@@ -49,6 +49,18 @@ export default {
     'Super Bulky': 'Zelo debela',
     Jumbo: 'Jumbo',
   },
+  yarnWeightDesc: {
+    Lace: 'Zelo tanka, nežna',
+    'Light Fingering': 'Za nogavice, otroška oblačila',
+    Fingering: 'Za nogavice, otroška oblačila',
+    Sport: 'Športna oblačila, kape, lahki puloverji',
+    DK: 'Otroška oblačila, lahka oblačila',
+    Worsted: 'Puloverji, toplejši izdelki',
+    Aran: 'Puloverji, toplejši izdelki',
+    Bulky: 'Hitri projekti, robustne teksture',
+    'Super Bulky': 'Zelo debela, drzni projekti',
+    Jumbo: 'Izjemno debela',
+  },
   units: {
     skein: 'Klopka',
     hank: 'Motek',

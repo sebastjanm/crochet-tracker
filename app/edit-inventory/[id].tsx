@@ -19,12 +19,10 @@ import { ImageGallery } from '@/components/ImageGallery';
 import { SectionHeader } from '@/components/SectionHeader';
 import { Select } from '@/components/Select';
 import { ColorFamilySelect } from '@/components/ColorFamilySelect';
+import { WeightCategorySelect } from '@/components/WeightCategorySelect';
 import { DatePicker } from '@/components/DatePicker';
-import { ProjectSelectorModal } from '@/components/ProjectSelectorModal';
 import { Minus, Plus } from 'lucide-react-native';
-import { ProjectLinksSummary } from '@/components/ProjectLinksSummary';
 import { useInventory } from '@/hooks/inventory-context';
-import { useProjects } from '@/hooks/projects-context';
 import { useAuth } from '@/hooks/auth-context';
 import { useLanguage } from '@/hooks/language-context';
 import Colors from '@/constants/colors';
@@ -38,7 +36,6 @@ console.log('🔍 DEBUG [edit-inventory]: Device pixel ratio =', getPixelRatio()
 export default function EditInventoryScreen() {
   const { id } = useLocalSearchParams();
   const { items, updateItem } = useInventory();
-  const { projects } = useProjects();
   const { user } = useAuth();
   const { t } = useLanguage();
 
@@ -92,8 +89,6 @@ export default function EditInventoryScreen() {
 
   // Root level fields (apply to all categories)
   const [unit, setUnit] = useState<'piece' | 'skein' | 'ball' | 'meter' | 'gram' | 'set'>('skein');
-  const [usedInProjects, setUsedInProjects] = useState<string[]>([]);
-  const [showProjectSelector, setShowProjectSelector] = useState(false);
 
   useEffect(() => {
     if (item) {
@@ -105,7 +100,6 @@ export default function EditInventoryScreen() {
 
       // Root level fields
       setUnit(item.unit || 'skein');
-      setUsedInProjects(item.usedInProjects || []);
 
       // Set name from root level based on category
       if (item.category === 'yarn') {
@@ -315,13 +309,14 @@ export default function EditInventoryScreen() {
       ? hookName.trim()
       : otherName.trim();
 
+    // Preserve existing project links - they can only be modified via Yarn Details screen
     const updatedItem: Partial<InventoryItem> = {
       name: itemName,
       category,
       description: description.trim(),
       quantity: qty,
       unit,
-      usedInProjects: usedInProjects.length > 0 ? usedInProjects : undefined,
+      usedInProjects: item.usedInProjects,
       images,
       yarnDetails,
       hookDetails,
@@ -437,16 +432,45 @@ export default function EditInventoryScreen() {
             />
           )}
 
-          {/* Description - always second */}
-          <Input
-            label={t('inventory.description')}
-            placeholder={t('inventory.describeItem')}
-            value={description}
-            onChangeText={setDescription}
-            multiline
-          />
+          {/* Yarn: Brand, Color fields in Basic Info */}
+          {category === 'yarn' && (
+            <>
+              <Input
+                label={t('inventory.brand')}
+                placeholder={t('inventory.brandPlaceholder')}
+                value={brand}
+                onChangeText={setBrand}
+              />
 
-          {/* Quantity - always third */}
+              <View style={styles.row}>
+                <View style={styles.halfInput}>
+                  <Input
+                    label={t('inventory.color')}
+                    placeholder={t('inventory.colorNamePlaceholder')}
+                    value={color}
+                    onChangeText={setColor}
+                  />
+                </View>
+                <View style={styles.halfInput}>
+                  <Input
+                    label={t('inventory.colorCode')}
+                    placeholder={t('inventory.colorCodePlaceholder')}
+                    value={colorCode}
+                    onChangeText={setColorCode}
+                  />
+                </View>
+              </View>
+
+              <ColorFamilySelect
+                label={t('inventory.colorFamily')}
+                placeholder={t('inventory.selectColorFamily')}
+                value={colorFamily}
+                onChange={setColorFamily}
+              />
+            </>
+          )}
+
+          {/* Quantity */}
           <View style={styles.quantitySection}>
             <Text style={styles.quantityLabel}>
               {category === 'yarn' ? t('inventory.quantitySkeins') : t('inventory.quantityPieces')}
@@ -484,24 +508,16 @@ export default function EditInventoryScreen() {
             </View>
           </View>
 
-          {/* Root level fields - apply to all categories */}
-          <SectionHeader title={t('inventory.additionalInfo')} />
-
-          <View style={styles.fieldGroup}>
-            <Text style={styles.sectionLabel}>{t('inventory.usedInProjects')}</Text>
-
-            <ProjectLinksSummary
-              selectedProjectIds={usedInProjects}
-              onPress={() => setShowProjectSelector(true)}
+          {/* Hook/Other: Description after quantity */}
+          {category !== 'yarn' && (
+            <Input
+              label={t('inventory.description')}
+              placeholder={t('inventory.describeItem')}
+              value={description}
+              onChangeText={setDescription}
+              multiline
             />
-
-            <ProjectSelectorModal
-              visible={showProjectSelector}
-              onClose={() => setShowProjectSelector(false)}
-              selectedProjectIds={usedInProjects}
-              onSelectionChange={setUsedInProjects}
-            />
-          </View>
+          )}
 
           {/* Category-specific details section */}
           {category === 'yarn' && (
@@ -509,43 +525,10 @@ export default function EditInventoryScreen() {
               <SectionHeader title={t('inventory.yarnDetails')} />
 
               <Input
-                label={t('inventory.brand')}
-                placeholder={t('inventory.brandPlaceholder')}
-                value={brand}
-                onChangeText={setBrand}
-              />
-
-              <Input
                 label={t('inventory.productLine')}
                 placeholder={t('inventory.productLinePlaceholder')}
                 value={yarnLine}
                 onChangeText={setYarnLine}
-              />
-
-              <View style={styles.row}>
-                <View style={styles.halfInput}>
-                  <Input
-                    label={t('inventory.color')}
-                    placeholder={t('inventory.colorNamePlaceholder')}
-                    value={color}
-                    onChangeText={setColor}
-                  />
-                </View>
-                <View style={styles.halfInput}>
-                  <Input
-                    label={t('inventory.colorCode')}
-                    placeholder={t('inventory.colorCodePlaceholder')}
-                    value={colorCode}
-                    onChangeText={setColorCode}
-                  />
-                </View>
-              </View>
-
-              <ColorFamilySelect
-                label={t('inventory.colorFamily')}
-                placeholder={t('inventory.selectColorFamily')}
-                value={colorFamily}
-                onChange={setColorFamily}
               />
 
               <Input
@@ -555,11 +538,11 @@ export default function EditInventoryScreen() {
                 onChangeText={setFiber}
               />
 
-              <Input
+              <WeightCategorySelect
                 label={t('inventory.weightCategory')}
                 placeholder={t('inventory.weightCategoryPlaceholder')}
                 value={weightCategory}
-                onChangeText={setWeightCategory}
+                onChange={setWeightCategory}
               />
 
               <View style={styles.row}>
@@ -979,78 +962,6 @@ const styles = StyleSheet.create({
   fieldGroup: {
     marginBottom: 16,
   },
-  switchField: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: Colors.white,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: normalizeBorder(1),
-    borderColor: Colors.border,
-    marginBottom: 16,
-  },
-  switchLabelContainer: {
-    flex: 1,
-    marginRight: 16,
-  },
-  switchLabel: {
-    ...Typography.body,
-    color: Colors.charcoal,
-    fontWeight: '600' as const,
-    marginBottom: 4,
-  },
-  switchHint: {
-    ...Typography.caption,
-    color: Colors.warmGray,
-    fontSize: 12,
-  },
-  selectedProjectsChips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 12,
-  },
-  projectChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: Colors.sage,
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    maxWidth: 180,
-  },
-  projectChipText: {
-    ...Typography.body,
-    color: Colors.white,
-    fontSize: 14,
-    fontWeight: '600' as const,
-    flex: 1,
-  },
-  projectChipRemove: {
-    color: Colors.white,
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  selectProjectsButton: {
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    borderWidth: normalizeBorder(1.5),
-    borderColor: Colors.sage,
-    borderStyle: 'dashed',
-    backgroundColor: Colors.white,
-    minHeight: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  selectProjectsButtonText: {
-    ...Typography.body,
-    color: Colors.sage,
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
   handleTypeButtons: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1169,12 +1080,5 @@ const styles = StyleSheet.create({
   typeButtonTextActive: {
     color: Colors.white,
     fontWeight: '600' as const,
-  },
-  noProjectsText: {
-    ...Typography.body,
-    color: Colors.warmGray,
-    fontStyle: 'italic',
-    textAlign: 'center',
-    paddingVertical: 16,
   },
 });

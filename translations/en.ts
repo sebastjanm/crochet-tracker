@@ -49,6 +49,18 @@ export default {
     'Super Bulky': 'Super Bulky',
     Jumbo: 'Jumbo',
   },
+  yarnWeightDesc: {
+    Lace: 'Very fine, delicate',
+    'Light Fingering': 'For socks, baby items',
+    Fingering: 'For socks, baby items',
+    Sport: 'Sportswear, hats, light sweaters',
+    DK: 'Baby clothes, light garments',
+    Worsted: 'Sweaters, warmer items',
+    Aran: 'Sweaters, warmer items',
+    Bulky: 'Quick projects, chunky textures',
+    'Super Bulky': 'Very thick, bold projects',
+    Jumbo: 'Extremely thick',
+  },
   units: {
     skein: 'Skein',
     hank: 'Hank',

@@ -9,6 +9,7 @@ import {
   Pressable,
   TextInput,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { X, Check, Search, FolderGit2 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
@@ -165,7 +166,7 @@ export function ProjectSelectorModal({
       presentationStyle="pageSheet"
       onRequestClose={handleCancel}
     >
-      <View style={styles.modal}>
+      <SafeAreaView style={styles.modal} edges={['top', 'bottom']}>
         {/* Header */}
         <View style={styles.modalHeader}>
           <TouchableOpacity
@@ -243,7 +244,7 @@ export function ProjectSelectorModal({
             initialNumToRender={10}
           />
         )}
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 }
@@ -325,7 +326,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
-    minHeight: 72,
+    minHeight: 80,
   },
   optionPressed: {
     backgroundColor: Colors.beige,
@@ -338,8 +339,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    minHeight: 72,
+    paddingVertical: 16,
+    minHeight: 80,
   },
   optionImage: {
     width: 48,

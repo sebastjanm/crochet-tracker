@@ -25,6 +25,10 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 // Helper to get image source for expo-image
 function getImageSource(image: ProjectImage): ImageSource {
   if (typeof image === 'string') {
+    // Debug log for troubleshooting simulator images
+    if (__DEV__) {
+      // console.log('[ImageGallery] Rendering image:', image.slice(-50));
+    }
     return { uri: image };
   }
   return image;

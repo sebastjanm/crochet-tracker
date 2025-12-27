@@ -8,6 +8,13 @@ export type ProjectImage = string | ImageSource;
 // Helper to convert ProjectImage to ImageSource for expo-image
 export function getImageSource(image: ProjectImage): ImageSource {
   if (typeof image === 'string') {
+    // Debug bad URLs
+    if (!image.startsWith('http') && !image.startsWith('file://')) {
+      console.warn('[getImageSource] Invalid or relative URL detected:', image);
+      // Attempt to fix relative Supabase paths if possible (heuristic)
+      // This assumes standard Supabase URL structure if we have the project URL env var
+      // But better to fix the data at source.
+    }
     return { uri: image };
   }
   return image;

@@ -733,6 +733,8 @@ export default {
     cloudSync: 'Cloud Sync',
     syncNow: 'Sync Now',
     syncing: 'Syncing...',
+    syncAutomatic: 'Auto-Sync',
+    syncAutomaticDescription: 'Automatically sync changes when online',
     syncDescription: 'Sync your projects and inventory with the cloud',
     syncHint: 'Push local changes and pull updates from the cloud',
     syncComplete: 'Sync Complete',

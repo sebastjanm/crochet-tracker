@@ -733,6 +733,8 @@ export default {
     cloudSync: 'Sinhronizacija v oblaku',
     syncNow: 'Sinhroniziraj zdaj',
     syncing: 'Sinhroniziram...',
+    syncAutomatic: 'Samodejna sinhronizacija',
+    syncAutomaticDescription: 'Samodejno sinhroniziraj spremembe, ko je povezava na voljo',
     syncDescription: 'Sinhroniziraj projekte in zalogo z oblakom',
     syncHint: 'Naloži lokalne spremembe in prenesi posodobitve iz oblaka',
     syncComplete: 'Sinhronizacija končana',

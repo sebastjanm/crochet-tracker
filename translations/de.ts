@@ -720,6 +720,8 @@ export default {
     cloudSync: 'Cloud-Synchronisierung',
     syncNow: 'Jetzt synchronisieren',
     syncing: 'Synchronisiere...',
+    syncAutomatic: 'Auto-Sync',
+    syncAutomaticDescription: 'Änderungen automatisch synchronisieren, wenn online',
     syncDescription: 'Synchronisiere Projekte und Inventar mit der Cloud',
     syncHint: 'Lokale Änderungen hochladen und Updates aus der Cloud abrufen',
     syncComplete: 'Synchronisierung abgeschlossen',

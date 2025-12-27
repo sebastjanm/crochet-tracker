@@ -161,9 +161,22 @@ export default function ProjectsScreen() {
     );
   };
 
+  const getProjectTypeLabel = (type?: string) => {
+    if (!type) return t('projects.projectTypes.other');
+    return t(`projects.projectTypes.${type}`) || t('projects.projectTypes.other');
+  };
+
+  const formatStartDate = (date?: Date | string) => {
+    if (!date) return null;
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(d.getTime())) return null;
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
   const renderActiveProject = ({ item }: { item: Project }) => {
     const defaultImageIndex = item.defaultImageIndex ?? 0;
     const displayImage = item.images[defaultImageIndex] || item.images[0];
+    const startDateFormatted = formatStartDate(item.startDate);
 
     return (
       <TouchableOpacity
@@ -188,16 +201,21 @@ export default function ProjectsScreen() {
             />
           ) : (
             <View style={[styles.activeProjectImage, styles.placeholderImage]}>
-              <Volleyball size={32} color={Colors.warmGray} />
+              <Volleyball size={36} color={Colors.warmGray} />
             </View>
           )}
-          <View style={styles.activeProjectBadge}>
-            <Zap size={12} color={Colors.white} fill={Colors.white} />
-          </View>
           <View style={styles.activeProjectInfo}>
             <Text style={styles.activeProjectTitle} numberOfLines={1}>
               {item.title}
             </Text>
+            <Text style={styles.activeProjectType} numberOfLines={1}>
+              {getProjectTypeLabel(item.projectType)}
+            </Text>
+            {startDateFormatted && (
+              <Text style={styles.activeProjectDate} numberOfLines={1}>
+                {startDateFormatted}
+              </Text>
+            )}
           </View>
         </View>
       </TouchableOpacity>
@@ -557,14 +575,17 @@ const styles = StyleSheet.create({
   activeSection: {
     backgroundColor: Colors.beige,
     paddingTop: 12,
-    paddingBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    marginBottom: 4,
   },
   activeSectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     paddingHorizontal: 16,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   activeSectionTitle: {
     ...Typography.body,
@@ -574,23 +595,24 @@ const styles = StyleSheet.create({
   },
   activeProjectsList: {
     paddingHorizontal: 16,
-    gap: 12,
+    gap: 14,
   },
   activeProjectItem: {
-    width: 120,
+    width: isSmallDevice ? 260 : isTablet ? 320 : 280,
   },
   activeProjectCard: {
-    borderRadius: 10,
+    flexDirection: 'row',
+    borderRadius: 14,
     backgroundColor: Colors.white,
-    borderWidth: 2,
+    borderWidth: normalizeBorder(1),
     borderColor: Colors.deepTeal,
     overflow: 'hidden',
     ...Platform.select({
       ios: {
-        shadowColor: Colors.deepTeal,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 4,
+        shadowColor: Colors.charcoal,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
       },
       android: {
         elevation: 3,
@@ -599,29 +621,40 @@ const styles = StyleSheet.create({
     }),
   },
   activeProjectImage: {
-    width: '100%',
-    height: 80,
+    width: isSmallDevice ? 88 : isTablet ? 104 : 96,
+    height: isSmallDevice ? 88 : isTablet ? 104 : 96,
+    borderRadius: 10,
+    margin: 10,
     backgroundColor: Colors.beige,
   },
-  activeProjectBadge: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: Colors.deepTeal,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   activeProjectInfo: {
-    padding: 8,
+    flex: 1,
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingRight: 14,
+    gap: 3,
   },
   activeProjectTitle: {
-    ...Typography.caption,
+    ...Typography.body,
     color: Colors.charcoal,
     fontWeight: '600' as const,
-    fontSize: 12,
+    fontSize: isSmallDevice ? 15 : 17,
+    lineHeight: isSmallDevice ? 20 : 22,
+  },
+  activeProjectType: {
+    ...Typography.caption,
+    color: Colors.warmGray,
+    fontWeight: '500' as const,
+    fontSize: isSmallDevice ? 13 : 14,
+    lineHeight: isSmallDevice ? 17 : 19,
+  },
+  activeProjectDate: {
+    ...Typography.caption,
+    color: Colors.deepTeal,
+    fontWeight: '400' as const,
+    fontSize: isSmallDevice ? 12 : 13,
+    lineHeight: isSmallDevice ? 16 : 17,
+    opacity: 0.8,
   },
 
   // Active project card highlight in main grid

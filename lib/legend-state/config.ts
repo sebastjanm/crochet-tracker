@@ -145,6 +145,9 @@ export function createInventoryStore(userId: string | null, isPro: boolean): any
         filter: (query: any) => query.eq('user_id', userId),
         actions: ['read', 'create', 'update', 'delete'],
         realtime: { filter: `user_id=eq.${userId}` },
+        // Override: inventory_items uses 'last_updated' not 'updated_at'
+        fieldCreatedAt: 'date_added',
+        fieldUpdatedAt: 'last_updated',
         persist: {
           plugin: asyncStoragePlugin,
           name: persistKey,

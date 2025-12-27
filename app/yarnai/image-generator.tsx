@@ -10,9 +10,9 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Image,
   Dimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ImageIcon, RotateCcw } from 'lucide-react-native';
 import Colors from '@/constants/colors';
@@ -354,10 +354,10 @@ export default function ImageGenerator() {
           {generatedImage && (
             <View style={styles.resultSection}>
               <Text style={styles.resultTitle}>{t('yarnai.imageGeneratorResult')}</Text>
-              <Image 
+              <Image
                 source={{ uri: generatedImage }}
                 style={styles.generatedImage}
-                resizeMode="cover"
+                contentFit="cover"
               />
               <View style={styles.actionButtons}>
                 <TouchableOpacity 

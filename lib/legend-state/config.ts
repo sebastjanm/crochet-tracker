@@ -22,6 +22,8 @@
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 import { observable } from '@legendapp/state';
+import { configureSynced } from '@legendapp/state/sync';
+import { observablePersistAsyncStorage } from '@legendapp/state/persist-plugins/async-storage';
 import {
   syncedSupabase,
   configureSyncedSupabase,
@@ -29,6 +31,18 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/database.types';
+
+// Create a singleton persistence plugin instance
+const asyncStoragePlugin = observablePersistAsyncStorage({ AsyncStorage });
+
+// Configure global sync defaults with the local persist plugin
+// Legend-State v3 uses configureSynced for global persist configuration
+// @see https://www.legendapp.com/open-source/state/v3/llms-full.md
+configureSynced({
+  persist: {
+    plugin: asyncStoragePlugin,
+  },
+});
 
 // ============================================================================
 // TYPES
@@ -73,6 +87,7 @@ export function initializeLegendStateSync(): void {
   }
 
   // Configure global defaults for Legend-State Supabase sync
+  // Note: persistence plugin is set directly in each store's persist config
   // Options like retry, as, persist go in individual syncedSupabase() calls
   configureSyncedSupabase({
     // Field mappings for sync (these are global defaults)
@@ -86,7 +101,7 @@ export function initializeLegendStateSync(): void {
   });
 
   isConfigured = true;
-  console.log('[LegendState] Sync configured with Supabase');
+  console.log('[LegendState] Sync configured with Supabase (with AsyncStorage persistence)');
 }
 
 // ============================================================================
@@ -124,8 +139,9 @@ export function createProjectsStore(userId: string): any {
     realtime: {
       filter: `user_id=eq.${userId}`,
     },
-    // Persist with user-specific key
+    // Persist with user-specific key and explicit plugin
     persist: {
+      plugin: asyncStoragePlugin,
       name: `projects_${userId}`,
       retrySync: true,
     },
@@ -171,8 +187,9 @@ export function createInventoryStore(userId: string): any {
     realtime: {
       filter: `user_id=eq.${userId}`,
     },
-    // Persist with user-specific key
+    // Persist with user-specific key and explicit plugin
     persist: {
+      plugin: asyncStoragePlugin,
       name: `inventory_${userId}`,
       retrySync: true,
     },

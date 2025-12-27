@@ -37,7 +37,7 @@ import { useProjects } from '@/hooks/projects-context';
 import { useInventory } from '@/hooks/inventory-context';
 import { useLanguage } from '@/hooks/language-context';
 import { useSupabaseSync } from '@/hooks/useSupabaseSync';
-import { getSyncManager } from '@/lib/legend-state';
+import { getSyncManager, imageSyncQueue } from '@/lib/legend-state';
 import { useToast } from '@/components/Toast';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
@@ -315,6 +315,73 @@ export default function ProfileScreen() {
     } catch (error) {
       Alert.alert('Error', 'Failed to get data counts.');
     }
+  };
+
+  /**
+   * Debug: Check image sync queue status
+   */
+  const handleCheckImageQueue = () => {
+    const status = imageSyncQueue.getStatus();
+    const failed = imageSyncQueue.getFailedItems();
+
+    console.log('[Profile] Image Queue Status:', status);
+    console.log('[Profile] Failed Items:', failed);
+
+    // Count local vs cloud images in projects
+    let projectLocalImages = 0;
+    let projectCloudImages = 0;
+    projects.forEach(p => {
+      p.images?.forEach(img => {
+        const uri = typeof img === 'string' ? img : img.uri;
+        if (uri?.startsWith('file://')) projectLocalImages++;
+        else if (uri?.startsWith('http')) projectCloudImages++;
+      });
+    });
+
+    // Count local vs cloud images in inventory
+    let inventoryLocalImages = 0;
+    let inventoryCloudImages = 0;
+    items.forEach(i => {
+      i.images?.forEach(img => {
+        const uri = typeof img === 'string' ? img : img.uri;
+        if (uri?.startsWith('file://')) inventoryLocalImages++;
+        else if (uri?.startsWith('http')) inventoryCloudImages++;
+      });
+    });
+
+    const message = [
+      `Queue Status:`,
+      `• Total: ${status.total}`,
+      `• Pending: ${status.pending}`,
+      `• Uploading: ${status.uploading}`,
+      `• Completed: ${status.completed}`,
+      `• Failed: ${status.failed}`,
+      ``,
+      `Project Images:`,
+      `• Local (file://): ${projectLocalImages}`,
+      `• Cloud (https://): ${projectCloudImages}`,
+      ``,
+      `Inventory Images:`,
+      `• Local (file://): ${inventoryLocalImages}`,
+      `• Cloud (https://): ${inventoryCloudImages}`,
+    ].join('\n');
+
+    Alert.alert(
+      '🔍 Image Queue Debug',
+      message,
+      [
+        { text: 'Retry Failed', onPress: () => imageSyncQueue.retryFailed() },
+        {
+          text: 'Clear Failed',
+          style: 'destructive',
+          onPress: async () => {
+            await imageSyncQueue.clearFailed();
+            showToast('Cleared failed uploads', 'success');
+          }
+        },
+        { text: 'OK', style: 'cancel' },
+      ]
+    );
   };
 
   const menuItems = [
@@ -619,6 +686,21 @@ export default function ProfileScreen() {
                 <Package size={20} color={Colors.teal} />
                 <Text style={styles.debugLabel}>View Data Counts</Text>
                 <Text style={styles.debugDescription}>Check current storage</Text>
+              </TouchableOpacity>
+
+              <View style={styles.menuDivider} />
+
+              <TouchableOpacity
+                style={styles.debugItem}
+                onPress={handleCheckImageQueue}
+                activeOpacity={0.7}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Check image sync queue"
+              >
+                <Cloud size={20} color={Colors.sage} />
+                <Text style={styles.debugLabel}>Image Queue Status</Text>
+                <Text style={styles.debugDescription}>Debug image sync</Text>
               </TouchableOpacity>
 
               <View style={styles.menuDivider} />

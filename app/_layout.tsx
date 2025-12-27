@@ -129,12 +129,25 @@ function LegendStateSyncManager({ children }: { children: React.ReactNode }) {
   const hasInitialized = useRef(false);
 
   useEffect(() => {
+    console.log('[SyncManager] useEffect triggered', {
+      isPro,
+      userId: user?.id,
+      hasInitialized: hasInitialized.current,
+    });
+
     // Initialize or cleanup based on Pro status
     if (isPro && user?.id) {
+      console.log('[SyncManager] Setting up image callbacks for Pro user');
+
       // Create image upload callbacks
       const imageCallbacks: ImageUploadCallbacks = {
         onImageUploaded: async (itemId, itemType, _imageIndex, newUrl, oldUri) => {
-          console.log(`[SyncManager] Image uploaded: ${itemType}/${itemId}`);
+          console.log(`[SyncManager] onImageUploaded callback called:`, {
+            itemId,
+            itemType,
+            newUrl: newUrl.substring(0, 50) + '...',
+            oldUri: oldUri.substring(0, 50) + '...',
+          });
           if (itemType === 'project') {
             await replaceProjectImage(itemId, oldUri, newUrl);
           } else if (itemType === 'inventory') {

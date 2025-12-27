@@ -266,47 +266,47 @@ export default function InventoryDetailScreen() {
                 </View>
               )}
 
-              {(item.yarnDetails.grams || item.yarnDetails.meters) && (
+              {(item.yarnDetails.grams != null || item.yarnDetails.meters != null) && (
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>{t('inventory.ballSpecs')}</Text>
                   <Text style={styles.detailValue}>
-                    {item.yarnDetails.grams && `${item.yarnDetails.grams}g`}
-                    {(item.yarnDetails.grams && item.yarnDetails.meters) ? ' • ' : ''}
-                    {item.yarnDetails.meters && `${item.yarnDetails.meters}m`}
+                    {item.yarnDetails.grams != null ? `${item.yarnDetails.grams}g` : ''}
+                    {(item.yarnDetails.grams != null && item.yarnDetails.meters != null) ? ' • ' : ''}
+                    {item.yarnDetails.meters != null ? `${item.yarnDetails.meters}m` : ''}
                   </Text>
                 </View>
               )}
 
-              {(item.yarnDetails.gaugeStitches || item.yarnDetails.gaugeRows) && (
+              {(item.yarnDetails.gaugeStitches != null || item.yarnDetails.gaugeRows != null) && (
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>{t('inventory.gauge')}</Text>
                   <Text style={styles.detailValue}>
-                    {item.yarnDetails.gaugeStitches && `${item.yarnDetails.gaugeStitches} st`}
-                    {(item.yarnDetails.gaugeStitches && item.yarnDetails.gaugeRows) ? ' × ' : ''}
-                    {item.yarnDetails.gaugeRows && `${item.yarnDetails.gaugeRows} rows`}
+                    {item.yarnDetails.gaugeStitches != null ? `${item.yarnDetails.gaugeStitches} st` : ''}
+                    {(item.yarnDetails.gaugeStitches != null && item.yarnDetails.gaugeRows != null) ? ' × ' : ''}
+                    {item.yarnDetails.gaugeRows != null ? `${item.yarnDetails.gaugeRows} rows` : ''}
                     {' / 10cm'}
                   </Text>
                 </View>
               )}
 
-              {(item.yarnDetails.hookSizeMin || item.yarnDetails.hookSizeMax) && (
+              {(item.yarnDetails.hookSizeMin != null || item.yarnDetails.hookSizeMax != null) && (
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>{t('inventory.recommendedHook')}</Text>
                   <Text style={styles.detailValue}>
                     {item.yarnDetails.hookSizeMin === item.yarnDetails.hookSizeMax
                       ? `${item.yarnDetails.hookSizeMin}mm`
-                      : `${item.yarnDetails.hookSizeMin || '?'}-${item.yarnDetails.hookSizeMax || '?'}mm`}
+                      : `${item.yarnDetails.hookSizeMin ?? '?'}-${item.yarnDetails.hookSizeMax ?? '?'}mm`}
                   </Text>
                 </View>
               )}
 
-              {(item.yarnDetails.needleSizeMin || item.yarnDetails.needleSizeMax) && (
+              {(item.yarnDetails.needleSizeMin != null || item.yarnDetails.needleSizeMax != null) && (
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>{t('inventory.recommendedNeedles')}</Text>
                   <Text style={styles.detailValue}>
                     {item.yarnDetails.needleSizeMin === item.yarnDetails.needleSizeMax
                       ? `${item.yarnDetails.needleSizeMin}mm`
-                      : `${item.yarnDetails.needleSizeMin || '?'}-${item.yarnDetails.needleSizeMax || '?'}mm`}
+                      : `${item.yarnDetails.needleSizeMin ?? '?'}-${item.yarnDetails.needleSizeMax ?? '?'}mm`}
                   </Text>
                 </View>
               )}
@@ -336,7 +336,7 @@ export default function InventoryDetailScreen() {
                 </View>
               )}
 
-              {item.hookDetails.sizeMm && (
+              {item.hookDetails.sizeMm != null && (
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>{t('inventory.sizeMm')}</Text>
                   <Text style={styles.detailValue}>{item.hookDetails.sizeMm}mm</Text>

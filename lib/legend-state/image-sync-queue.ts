@@ -12,6 +12,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { File as ExpoFile } from 'expo-file-system';
 import { uploadImage, isLocalFileUri, StorageBucket } from '@/lib/supabase/storage';
 
 const QUEUE_STORAGE_KEY = '@image-upload-queue';
@@ -94,6 +95,13 @@ class ImageSyncQueueManager {
    * Call cleanup() first if you need to reinitialize with new callbacks.
    */
   async initialize(userId: string, callbacks?: ImageUploadCallbacks): Promise<void> {
+    console.log('[ImageQueue] Initialize called', {
+      userId,
+      hasCallbacks: !!(callbacks?.onImageUploaded || callbacks?.onImageFailed),
+      alreadyInitialized: this.isInitialized,
+      existingUserId: this.userId,
+    });
+
     // Guard against reinitializing with empty callbacks
     // This prevents SyncManager from overwriting callbacks set by LegendStateSyncManager
     if (this.isInitialized && this.userId === userId) {
@@ -116,14 +124,32 @@ class ImageSyncQueueManager {
       if (stored) {
         const parsed = JSON.parse(stored) as QueuedImage[];
         // Filter to only pending/uploading items (reset uploading to pending)
+        // Also filter out items where the local file no longer exists
         this.queue = parsed
           .filter(item => item.status !== 'completed')
+          .filter(item => {
+            // Check if local file still exists
+            try {
+              const file = new ExpoFile(item.localUri);
+              if (!file.exists) {
+                console.warn(`[ImageQueue] Removing stale queue entry (file deleted): ${item.localUri.slice(-50)}`);
+                return false;
+              }
+              return true;
+            } catch {
+              console.warn(`[ImageQueue] Removing invalid queue entry: ${item.localUri.slice(-50)}`);
+              return false;
+            }
+          })
           .map(item => ({
             ...item,
             status: item.status === 'uploading' ? 'pending' : item.status,
           }));
 
         console.log(`[ImageQueue] Loaded ${this.queue.length} pending items from storage`);
+
+        // Persist cleaned queue (remove stale entries from storage)
+        await this.persistQueue();
       }
     } catch (error) {
       console.error('[ImageQueue] Failed to load queue from storage:', error);
@@ -175,6 +201,13 @@ class ImageSyncQueueManager {
    * @returns Number of items actually added (excludes duplicates)
    */
   async enqueue(images: EnqueueOptions[]): Promise<number> {
+    console.log('[ImageQueue] Enqueue called', {
+      imageCount: images.length,
+      isInitialized: this.isInitialized,
+      hasUserId: !!this.userId,
+      hasCallbacks: !!(this.callbacks.onImageUploaded || this.callbacks.onImageFailed),
+    });
+
     if (!this.isInitialized || !this.userId) {
       console.warn('[ImageQueue] Queue not initialized, cannot enqueue');
       return 0;
@@ -185,6 +218,18 @@ class ImageSyncQueueManager {
     for (const image of images) {
       // Skip if not a local file
       if (!isLocalFileUri(image.localUri)) {
+        continue;
+      }
+
+      // Skip if file doesn't exist (e.g., stale cache URIs)
+      try {
+        const file = new ExpoFile(image.localUri);
+        if (!file.exists) {
+          console.warn(`[ImageQueue] Skipping non-existent file: ${image.localUri.slice(-50)}`);
+          continue;
+        }
+      } catch {
+        console.warn(`[ImageQueue] Error checking file existence: ${image.localUri.slice(-50)}`);
         continue;
       }
 
@@ -256,6 +301,13 @@ class ImageSyncQueueManager {
 
         // Trigger callback
         if (this.callbacks.onImageUploaded && item.resultUrl) {
+          console.log('[ImageQueue] Calling onImageUploaded callback', {
+            itemId: item.itemId,
+            itemType: item.itemType,
+            imageIndex: item.imageIndex,
+            newUrl: item.resultUrl,
+            oldUri: item.localUri,
+          });
           try {
             await this.callbacks.onImageUploaded(
               item.itemId,
@@ -264,9 +316,15 @@ class ImageSyncQueueManager {
               item.resultUrl,
               item.localUri
             );
+            console.log('[ImageQueue] Callback executed successfully');
           } catch (error) {
             console.error('[ImageQueue] Callback error:', error);
           }
+        } else {
+          console.warn('[ImageQueue] No callback to execute', {
+            hasCallback: !!this.callbacks.onImageUploaded,
+            hasResultUrl: !!item.resultUrl,
+          });
         }
       } else {
         // Handle retry or failure
@@ -308,8 +366,18 @@ class ImageSyncQueueManager {
    * Upload a single item
    */
   private async uploadItem(item: QueuedImage): Promise<boolean> {
+    console.log('[ImageQueue] uploadItem starting', {
+      id: item.id,
+      localUri: item.localUri,
+      bucket: item.bucket,
+      itemId: item.itemId,
+      itemType: item.itemType,
+      retryCount: item.retryCount,
+    });
+
     if (!this.userId) {
       item.lastError = 'No user ID';
+      console.error('[ImageQueue] uploadItem failed: No user ID');
       return false;
     }
 
@@ -321,15 +389,24 @@ class ImageSyncQueueManager {
         item.itemId
       );
 
+      console.log('[ImageQueue] uploadImage result', {
+        success: result.success,
+        hasUrl: !!result.url,
+        error: result.error,
+      });
+
       if (result.success && result.url) {
         item.resultUrl = result.url;
+        console.log('[ImageQueue] Upload SUCCESS', result.url);
         return true;
       } else {
         item.lastError = result.error || 'Upload failed';
+        console.error('[ImageQueue] Upload FAILED', item.lastError);
         return false;
       }
     } catch (error) {
       item.lastError = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[ImageQueue] Upload EXCEPTION', item.lastError);
       return false;
     }
   }

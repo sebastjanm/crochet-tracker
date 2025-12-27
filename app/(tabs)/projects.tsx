@@ -114,7 +114,7 @@ export default function ProjectsScreen() {
 
   const renderProject = ({ item }: { item: Project }) => {
     const defaultImageIndex = item.defaultImageIndex ?? 0;
-    const displayImage = item.images[defaultImageIndex] || item.images[0] || 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop';
+    const displayImage = item.images[defaultImageIndex] || item.images[0];
     const isActive = item.isCurrentlyWorkingOn === true;
 
     return (
@@ -130,13 +130,19 @@ export default function ProjectsScreen() {
         accessibilityHint={`Tap to view details. Long press to ${isActive ? 'remove from' : 'mark as'} currently working on`}
       >
         <View style={[styles.projectCard, isActive && styles.projectCardActive]}>
-          <Image
-            source={getImageSource(displayImage)}
-            style={styles.projectImage}
-            contentFit="cover"
-            transition={200}
-            cachePolicy="memory-disk"
-          />
+          {displayImage ? (
+            <Image
+              source={getImageSource(displayImage)}
+              style={styles.projectImage}
+              contentFit="cover"
+              transition={200}
+              cachePolicy="memory-disk"
+            />
+          ) : (
+            <View style={[styles.projectImage, styles.placeholderImage]}>
+              <Volleyball size={48} color={Colors.warmGray} />
+            </View>
+          )}
           <View style={[styles.statusIndicator, { backgroundColor: getStatusColor(item.status) }]}>
             {getStatusIcon(item.status)}
           </View>
@@ -157,7 +163,7 @@ export default function ProjectsScreen() {
 
   const renderActiveProject = ({ item }: { item: Project }) => {
     const defaultImageIndex = item.defaultImageIndex ?? 0;
-    const displayImage = item.images[defaultImageIndex] || item.images[0] || 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop';
+    const displayImage = item.images[defaultImageIndex] || item.images[0];
 
     return (
       <TouchableOpacity
@@ -172,13 +178,19 @@ export default function ProjectsScreen() {
         accessibilityHint="Tap to view details. Long press to remove from currently working on"
       >
         <View style={styles.activeProjectCard}>
-          <Image
-            source={getImageSource(displayImage)}
-            style={styles.activeProjectImage}
-            contentFit="cover"
-            transition={200}
-            cachePolicy="memory-disk"
-          />
+          {displayImage ? (
+            <Image
+              source={getImageSource(displayImage)}
+              style={styles.activeProjectImage}
+              contentFit="cover"
+              transition={200}
+              cachePolicy="memory-disk"
+            />
+          ) : (
+            <View style={[styles.activeProjectImage, styles.placeholderImage]}>
+              <Volleyball size={32} color={Colors.warmGray} />
+            </View>
+          )}
           <View style={styles.activeProjectBadge}>
             <Zap size={12} color={Colors.white} fill={Colors.white} />
           </View>
@@ -464,6 +476,10 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 160,
     backgroundColor: Colors.beige,
+  },
+  placeholderImage: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   projectInfo: {
     padding: 12,

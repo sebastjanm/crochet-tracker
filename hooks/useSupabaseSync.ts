@@ -27,9 +27,17 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useSQLiteContext, type SQLiteDatabase } from 'expo-sqlite';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
 import { getSyncManager, type SyncResult } from '@/lib/legend-state';
-import { mapLocalProjectToCloud, mapLocalInventoryToCloud } from '@/lib/legend-state';
+import {
+  mapLocalProjectToCloud,
+  mapLocalInventoryToCloud,
+  mapCloudProjectToLocal,
+  mapCloudInventoryToLocal,
+} from '@/lib/legend-state';
+import { mapProjectToRow, mapInventoryItemToRow } from '@/lib/database/schema';
+import type { Project as CloudProject, InventoryItem as CloudInventoryItem } from '@/lib/supabase/database.types';
 import { useAuth } from '@/hooks/auth-context';
 import { useProjects } from '@/hooks/projects-context';
 import { useInventory } from '@/hooks/inventory-context';
@@ -37,6 +45,152 @@ import { useNetworkState } from '@/hooks/useNetworkState';
 import Storage from 'expo-sqlite/kv-store';
 
 const LAST_SYNCED_KEY = 'supabase_last_synced_at';
+
+// ============================================================================
+// SQLITE WRITE HELPERS
+// ============================================================================
+
+/**
+ * Write pulled cloud projects to local SQLite database.
+ * Uses INSERT OR REPLACE to handle both new records and updates.
+ *
+ * @param cloudProjects - Projects pulled from Supabase
+ * @param userId - Current user ID
+ * @param db - SQLite database instance
+ */
+async function writePulledProjectsToSQLite(
+  cloudProjects: CloudProject[],
+  userId: string,
+  db: SQLiteDatabase
+): Promise<number> {
+  let written = 0;
+
+  for (const cloudProject of cloudProjects) {
+    try {
+      const localProject = mapCloudProjectToLocal(cloudProject);
+      const row = mapProjectToRow(localProject);
+
+      await db.runAsync(
+        `INSERT OR REPLACE INTO projects (
+          id, title, description, status, project_type, images, default_image_index,
+          pattern_pdf, pattern_url, pattern_images, inspiration_url, notes,
+          yarn_used, yarn_used_ids, hook_used_ids, yarn_materials, work_progress,
+          inspiration_sources, start_date, completed_date, created_at, updated_at,
+          pending_sync, user_id, currently_working_on, currently_working_on_at,
+          currently_working_on_ended_at, deleted
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          localProject.id,
+          row.title,
+          row.description,
+          row.status,
+          row.project_type,
+          row.images,
+          row.default_image_index,
+          row.pattern_pdf,
+          row.pattern_url,
+          row.pattern_images,
+          row.inspiration_url,
+          row.notes,
+          row.yarn_used,
+          row.yarn_used_ids,
+          row.hook_used_ids,
+          row.yarn_materials,
+          row.work_progress,
+          row.inspiration_sources,
+          row.start_date,
+          row.completed_date,
+          localProject.createdAt.toISOString(),
+          localProject.updatedAt.toISOString(),
+          0, // pending_sync = false (already synced from cloud)
+          userId,
+          row.currently_working_on,
+          row.currently_working_on_at,
+          row.currently_working_on_ended_at,
+          0, // deleted = false
+        ]
+      );
+      written++;
+    } catch (error) {
+      console.error(`[Sync] Failed to write project ${cloudProject.id}:`, error);
+      // Continue with next project - don't let one failure block all
+    }
+  }
+
+  if (written > 0) {
+    console.log(`[Sync] Wrote ${written} projects to SQLite`);
+  }
+
+  return written;
+}
+
+/**
+ * Write pulled cloud inventory items to local SQLite database.
+ * Uses INSERT OR REPLACE to handle both new records and updates.
+ *
+ * @param cloudItems - Inventory items pulled from Supabase
+ * @param userId - Current user ID
+ * @param db - SQLite database instance
+ */
+async function writePulledInventoryToSQLite(
+  cloudItems: CloudInventoryItem[],
+  userId: string,
+  db: SQLiteDatabase
+): Promise<number> {
+  let written = 0;
+
+  for (const cloudItem of cloudItems) {
+    try {
+      const localItem = mapCloudInventoryToLocal(cloudItem);
+      const row = mapInventoryItemToRow(localItem);
+
+      await db.runAsync(
+        `INSERT OR REPLACE INTO inventory_items (
+          id, category, name, description, images, quantity, unit,
+          yarn_details, hook_details, other_details, location, tags,
+          used_in_projects, notes, barcode, date_added, last_updated,
+          pending_sync, user_id, deleted
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          localItem.id,
+          row.category,
+          row.name,
+          row.description,
+          row.images,
+          row.quantity,
+          row.unit,
+          row.yarn_details,
+          row.hook_details,
+          row.other_details,
+          row.location,
+          row.tags,
+          row.used_in_projects,
+          row.notes,
+          row.barcode,
+          localItem.dateAdded.toISOString(),
+          localItem.lastUpdated.toISOString(),
+          0, // pending_sync = false (already synced from cloud)
+          userId,
+          0, // deleted = false
+        ]
+      );
+      written++;
+    } catch (error) {
+      console.error(`[Sync] Failed to write inventory item ${cloudItem.id}:`, error);
+      // Continue with next item - don't let one failure block all
+    }
+  }
+
+  if (written > 0) {
+    console.log(`[Sync] Wrote ${written} inventory items to SQLite`);
+  }
+
+  return written;
+}
+
+// ============================================================================
+// SYNC STATE TYPES
+// ============================================================================
 
 export interface SyncState {
   /** Whether sync is currently in progress */
@@ -61,6 +215,7 @@ export interface UseSupabaseSyncReturn extends SyncState {
 }
 
 export function useSupabaseSync(): UseSupabaseSyncReturn {
+  const db = useSQLiteContext();
   const { user, isPro } = useAuth();
   const { projects, refreshProjects } = useProjects();
   const { items, refreshItems } = useInventory();
@@ -179,12 +334,20 @@ export function useSupabaseSync(): UseSupabaseSyncReturn {
         }
       }
 
-      // Pull from cloud and refresh local state
+      // Pull from cloud
       const cloudProjects = await syncManager.pullProjects();
       const cloudInventory = await syncManager.pullInventoryItems();
       result.pullCount = cloudProjects.length + cloudInventory.length;
 
-      // Refresh local state to pick up any cloud changes
+      // Write pulled cloud data to SQLite (the local source of truth)
+      if (cloudProjects.length > 0) {
+        await writePulledProjectsToSQLite(cloudProjects, user.id, db);
+      }
+      if (cloudInventory.length > 0) {
+        await writePulledInventoryToSQLite(cloudInventory, user.id, db);
+      }
+
+      // Refresh local state to pick up the newly written data
       await Promise.all([refreshProjects(), refreshItems()]);
 
       const now = new Date();
@@ -216,7 +379,7 @@ export function useSupabaseSync(): UseSupabaseSyncReturn {
     } finally {
       setIsSyncing(false);
     }
-  }, [isEnabled, isOnline, user?.id, isSyncing, projects, items, refreshProjects, refreshItems]);
+  }, [isEnabled, isOnline, user?.id, isSyncing, projects, items, refreshProjects, refreshItems, db]);
 
   const clearError = useCallback(() => {
     setError(null);

@@ -1,6 +1,41 @@
 import { useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
+import { File as ExpoFile, Directory, Paths } from 'expo-file-system';
 import { Alert, Platform } from 'react-native';
+
+/**
+ * Copy a picked image from temp cache to permanent storage.
+ * ImagePicker files in Library/Caches/ImagePicker/ are temporary
+ * and can be deleted by iOS at any time.
+ *
+ * Uses SDK 54 expo-file-system API with File/Directory/Paths.
+ */
+async function copyToPermanentStorage(tempUri: string): Promise<string> {
+  try {
+    // Create images directory in document storage
+    const imagesDir = new Directory(Paths.document, 'images');
+    if (!imagesDir.exists) {
+      imagesDir.create();
+    }
+
+    // Generate unique filename preserving extension
+    const extension = tempUri.split('.').pop()?.toLowerCase() || 'jpg';
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${extension}`;
+
+    // Create source file reference and copy to permanent location
+    const sourceFile = new ExpoFile(tempUri);
+    const destFile = new ExpoFile(imagesDir, fileName);
+
+    sourceFile.copy(destFile);
+
+    console.log('[ImagePicker] Copied to permanent storage:', destFile.uri);
+    return destFile.uri;
+  } catch (error) {
+    console.error('[ImagePicker] Failed to copy to permanent storage:', error);
+    // Return original URI as fallback (may fail later if cache is cleared)
+    return tempUri;
+  }
+}
 
 export const useImagePicker = () => {
   const [isPickingImage, setIsPickingImage] = useState(false);
@@ -24,7 +59,11 @@ export const useImagePicker = () => {
       });
 
       if (!result.canceled && result.assets) {
-        return result.assets.map(asset => asset.uri);
+        // Copy all picked images to permanent storage
+        const permanentUris = await Promise.all(
+          result.assets.map(asset => copyToPermanentStorage(asset.uri))
+        );
+        return permanentUris;
       }
       return [];
     } catch (error) {
@@ -53,7 +92,8 @@ export const useImagePicker = () => {
       });
 
       if (!result.canceled && result.assets && result.assets[0]) {
-        return result.assets[0].uri;
+        // Copy to permanent storage
+        return await copyToPermanentStorage(result.assets[0].uri);
       }
       return null;
     } catch (error) {

@@ -2,20 +2,18 @@
  * Supabase Storage Upload Utility
  *
  * Handles image uploads to Supabase Storage buckets.
- * Uses expo-file-system to read files and expo-blob for proper Blob creation.
  *
- * Flow:
- * 1. Read file as Uint8Array using expo-file-system File.bytes()
- * 2. Create proper Blob using expo-blob
- * 3. Upload Blob to Supabase Storage
+ * SDK 54 Approach:
+ * - expo-file-system File class implements the W3C Blob interface
+ * - Pass File directly to Supabase (no need to read bytes)
+ * - HEIC images are converted to JPEG using expo-image-manipulator
  *
  * @see https://docs.expo.dev/versions/latest/sdk/filesystem/
- * @see https://docs.expo.dev/versions/latest/sdk/blob/
  * @see https://supabase.com/docs/guides/storage/uploads/standard-uploads
  */
 
 import { File as ExpoFile } from 'expo-file-system';
-import { Blob as ExpoBlob } from 'expo-blob';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { supabase, isSupabaseConfigured } from './client';
 
 export type StorageBucket = 'project-images' | 'inventory-images' | 'avatars' | 'pattern-pdfs';
@@ -106,6 +104,13 @@ export async function uploadImage(
   itemId: string,
   options: UploadOptions = {}
 ): Promise<UploadResult> {
+  console.log('[Storage] uploadImage called', {
+    localUri: localUri.substring(0, 60) + '...',
+    bucket,
+    userId: userId.substring(0, 8) + '...',
+    itemId,
+  });
+
   // Validate Supabase is configured
   if (!isSupabaseConfigured()) {
     return {
@@ -149,36 +154,48 @@ export async function uploadImage(
       };
     }
 
-    // Generate unique storage path: {userId}/{itemId}/{timestamp}.{ext}
-    const extension = file.extension?.replace('.', '') || localUri.split('.').pop()?.toLowerCase() || 'jpg';
-    const fileName = `${userId}/${itemId}/${Date.now()}.${extension}`;
+    // Check if HEIC and convert to JPEG (iOS uses HEIC by default)
+    let processedUri = localUri;
+    const detectedType = file.type || getMimeType(localUri);
 
-    // Determine content type (prefer file.type if available, fallback to extension-based)
-    const contentType = options.contentType || (file.type && file.type !== '' ? file.type : getMimeType(localUri));
-
-    console.log(`[Storage] Uploading to ${bucket}/${fileName} (${contentType}, ${file.size} bytes)`);
-
-    // Step 1: Read file as Uint8Array using expo-file-system
-    const bytes = await file.bytes();
-    console.log(`[Storage] Read ${bytes.byteLength} bytes from file`);
-
-    if (bytes.byteLength === 0) {
-      return {
-        success: false,
-        error: 'File bytes is empty (0 bytes)',
-      };
+    if (localUri.toLowerCase().endsWith('.heic') || detectedType === 'image/heic') {
+      console.log('[Storage] Converting HEIC to JPEG...');
+      try {
+        const converted = await ImageManipulator.manipulateAsync(
+          localUri,
+          [],  // No transformations, just format conversion
+          { format: ImageManipulator.SaveFormat.JPEG, compress: 0.8 }
+        );
+        processedUri = converted.uri;
+        console.log('[Storage] Converted HEIC to JPEG:', processedUri.slice(0, 50));
+      } catch (convertError) {
+        console.error('[Storage] HEIC conversion failed:', convertError);
+        // Continue with original file, upload may still work
+      }
     }
 
-    // Step 2: Create proper Blob using expo-blob (Expo's web-standards-compliant Blob)
-    // @see https://docs.expo.dev/versions/latest/sdk/blob/
-    const blob = new ExpoBlob([bytes], { type: contentType });
-    console.log(`[Storage] Created ExpoBlob: size=${blob.size}, type=${blob.type}`);
+    // Re-create file instance if we converted
+    const processedFile = processedUri !== localUri ? new ExpoFile(processedUri) : file;
 
-    // Step 3: Upload to Supabase Storage
-    // Cast to Blob since Supabase types expect web Blob, but ExpoBlob is compatible
+    // Generate unique storage path: {userId}/{itemId}/{timestamp}.{ext}
+    // Always use .jpg for converted HEIC files
+    const extension = processedUri !== localUri
+      ? 'jpg'
+      : (file.extension?.replace('.', '') || localUri.split('.').pop()?.toLowerCase() || 'jpg');
+    const fileName = `${userId}/${itemId}/${Date.now()}.${extension}`;
+
+    // Determine content type - use JPEG for converted files
+    const contentType = processedUri !== localUri
+      ? 'image/jpeg'
+      : (options.contentType || (file.type && file.type !== '' ? file.type : getMimeType(localUri)));
+
+    console.log(`[Storage] Uploading to ${bucket}/${fileName} (${contentType}, ${processedFile.size} bytes)`);
+
+    // Upload File directly - ExpoFile implements W3C Blob interface (SDK 54)
+    // No need to read bytes, just pass the File object
     const { data, error } = await supabase!.storage
       .from(bucket)
-      .upload(fileName, blob as unknown as Blob, {
+      .upload(fileName, processedFile as unknown as Blob, {
         contentType,
         upsert: options.upsert ?? false,
       });

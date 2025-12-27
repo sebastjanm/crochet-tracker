@@ -70,7 +70,7 @@ export default function InventoryScreen() {
       >
         <View style={styles.itemCard}>
           {item.images && item.images.length > 0 ? (
-            <Image source={getImageSource(item.images[0])} style={styles.itemImage} />
+            <Image source={getImageSource(item.images[0])} style={styles.itemImage} contentFit="cover" />
           ) : (
             <View style={[styles.itemImage, styles.placeholderImage]}>
               {item.category === 'yarn' ? (
@@ -267,7 +267,6 @@ const styles = StyleSheet.create({
   itemImage: {
     width: '100%',
     height: 140,
-    resizeMode: 'cover',
   },
   placeholderImage: {
     backgroundColor: Colors.beige,

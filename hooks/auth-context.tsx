@@ -10,9 +10,13 @@
 
 import createContextHook from '@nkzw/create-context-hook';
 import { useState, useEffect, useCallback, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { User, UserRole } from '@/types';
 import type { Session, AuthError } from '@supabase/supabase-js';
+
+// Cache key for persisting user profile locally
+const USER_CACHE_KEY = 'cached_user_profile';
 
 // ============================================================================
 // TYPES
@@ -64,6 +68,45 @@ function mapProfileToUser(
     isPro: role === 'pro' || role === 'admin',
     isAdmin: role === 'admin',
   };
+}
+
+/**
+ * Save user profile to local cache for persistence across app restarts
+ */
+async function cacheUserProfile(user: User): Promise<void> {
+  try {
+    await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(user));
+    console.log('[Auth] User profile cached locally');
+  } catch (error) {
+    console.error('[Auth] Failed to cache user profile:', error);
+  }
+}
+
+/**
+ * Load user profile from local cache
+ */
+async function loadCachedUserProfile(): Promise<User | null> {
+  try {
+    const cached = await AsyncStorage.getItem(USER_CACHE_KEY);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+  } catch (error) {
+    console.error('[Auth] Failed to load cached profile:', error);
+  }
+  return null;
+}
+
+/**
+ * Clear cached user profile on logout
+ */
+async function clearUserCache(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(USER_CACHE_KEY);
+    console.log('[Auth] User cache cleared');
+  } catch (error) {
+    console.error('[Auth] Failed to clear user cache:', error);
+  }
 }
 
 // ============================================================================
@@ -137,21 +180,32 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   /**
    * Handle session changes (login, logout, token refresh)
+   * Uses local cache for immediate user state, then refreshes from Supabase
    */
   const handleSessionChange = useCallback(async (newSession: Session | null) => {
     console.log('[Auth] handleSessionChange:', { hasSession: !!newSession, userId: newSession?.user?.id });
     setSession(newSession);
 
     if (newSession?.user) {
-      console.log('[Auth] handleSessionChange: fetching profile...');
+      // First, try to load cached profile for immediate UI
+      const cachedUser = await loadCachedUserProfile();
+      if (cachedUser && cachedUser.id === newSession.user.id) {
+        console.log('[Auth] Using cached user profile (isPro:', cachedUser.isPro, ')');
+        setUser(cachedUser);
+      }
+
+      // Then fetch fresh profile from Supabase (in background if we have cache)
+      console.log('[Auth] handleSessionChange: fetching fresh profile...');
       const profile = await fetchProfile(newSession.user.id);
       console.log('[Auth] handleSessionChange: profile fetched', { hasProfile: !!profile });
+
       if (profile) {
         console.log('[Auth] handleSessionChange: setting user from profile');
         setUser(profile);
-      } else {
-        // Fallback: create user from session data if profile not found yet
-        console.log('[Auth] handleSessionChange: using fallback user');
+        await cacheUserProfile(profile); // Cache for next time
+      } else if (!cachedUser) {
+        // Only use fallback if no cached user AND no profile from server
+        console.log('[Auth] handleSessionChange: using fallback user (no cache, no profile)');
         setUser({
           id: newSession.user.id,
           email: newSession.user.email || '',
@@ -161,9 +215,11 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           isAdmin: false,
         });
       }
+      // If we have cached user but fetch failed, keep using cached user (already set above)
     } else {
       console.log('[Auth] handleSessionChange: no session, clearing user');
       setUser(null);
+      await clearUserCache(); // Clear cache on logout
     }
     console.log('[Auth] handleSessionChange: complete');
   }, [fetchProfile]);
@@ -268,6 +324,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     if (profile) {
       setUser(profile);
       setSession(data.session);
+      await cacheUserProfile(profile); // Cache on login
       return profile;
     }
 
@@ -283,6 +340,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
     setUser(fallbackUser);
     setSession(data.session);
+    await cacheUserProfile(fallbackUser); // Cache fallback too
     return fallbackUser;
   };
 
@@ -369,6 +427,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     if (!supabase) {
       setUser(null);
       setSession(null);
+      await clearUserCache();
       return;
     }
 
@@ -381,6 +440,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
     setUser(null);
     setSession(null);
+    await clearUserCache();
   };
 
   /**
@@ -405,11 +465,13 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       throw error;
     }
 
-    // Update local state
-    setUser({
+    // Update local state and cache
+    const updatedUser = {
       ...user,
       ...updates,
-    });
+    };
+    setUser(updatedUser);
+    await cacheUserProfile(updatedUser);
   };
 
   /**
@@ -421,6 +483,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     const profile = await fetchProfile(user.id);
     if (profile) {
       setUser(profile);
+      await cacheUserProfile(profile);
       console.log('🔄 User profile refreshed from Supabase');
     }
   };

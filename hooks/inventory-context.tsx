@@ -14,6 +14,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { InventoryItem } from '@/types';
 import { useImagePicker } from './useImagePicker';
 import { syncInventoryToProjects, removeInventoryFromProjects } from '@/lib/cross-context-sync';
+import { syncState } from '@legendapp/state';
 import { getStores, deleteInventoryItem as deleteLegendInventory } from '@/lib/legend-state/config';
 import { supabase } from '@/lib/supabase/client';
 import { mapLocalInventoryToCloud, replaceImageUri } from '@/lib/legend-state/type-mappers';
@@ -53,6 +54,10 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
   /**
    * Push inventory item to cloud via Legend-State (Pro users only).
    * SQLite remains the source of truth - this syncs to cloud.
+   *
+   * IMPORTANT: Legend-State sync activates on .get() call.
+   * We must check syncState.isLoaded before writing.
+   * @see https://legendapp.com/open-source/state/v3/sync/persist-sync/
    */
   const pushToCloud = useCallback((item: InventoryItem) => {
     if (!isPro || !user?.id) {
@@ -67,6 +72,19 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     }
 
     try {
+      // Check if sync is activated and loaded
+      const state$ = syncState(inventory$);
+      const isLoaded = state$.isLoaded?.get?.() ?? false;
+      const isPersistLoaded = state$.isPersistLoaded?.get?.() ?? false;
+
+      console.log('[Inventory] Sync state:', { isLoaded, isPersistLoaded });
+
+      if (!isLoaded) {
+        // Activate sync by calling .get() - this starts the Supabase connection
+        console.log('[Inventory] Activating sync by calling .get()...');
+        inventory$.get(); // This activates the sync
+      }
+
       // Convert local item to cloud format and push to Legend-State
       const cloudItem = mapLocalInventoryToCloud(item, user.id);
 

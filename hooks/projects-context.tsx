@@ -13,6 +13,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Project, ProjectStatus, ProjectYarn } from '@/types';
 import { syncProjectMaterials, removeProjectFromInventory } from '@/lib/cross-context-sync';
+import { syncState } from '@legendapp/state';
 import { getStores, updateProject as updateLegendProject, deleteProject as deleteLegendProject } from '@/lib/legend-state/config';
 import { supabase } from '@/lib/supabase/client';
 import { mapLocalProjectToCloud, replaceImageUri } from '@/lib/legend-state/type-mappers';
@@ -48,6 +49,10 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
   /**
    * Push project to cloud via Legend-State (Pro users only).
    * SQLite remains the source of truth - this syncs to cloud.
+   *
+   * IMPORTANT: Legend-State sync activates on .get() call.
+   * We must check syncState.isLoaded before writing.
+   * @see https://legendapp.com/open-source/state/v3/sync/persist-sync/
    */
   const pushToCloud = useCallback((project: Project) => {
     if (!isPro || !user?.id) {
@@ -62,6 +67,19 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
     }
 
     try {
+      // Check if sync is activated and loaded
+      const state$ = syncState(projects$);
+      const isLoaded = state$.isLoaded?.get?.() ?? false;
+      const isPersistLoaded = state$.isPersistLoaded?.get?.() ?? false;
+
+      console.log('[Projects] Sync state:', { isLoaded, isPersistLoaded });
+
+      if (!isLoaded) {
+        // Activate sync by calling .get() - this starts the Supabase connection
+        console.log('[Projects] Activating sync by calling .get()...');
+        projects$.get(); // This activates the sync
+      }
+
       // Convert local project to cloud format and push to Legend-State
       const cloudProject = mapLocalProjectToCloud(project, user.id);
 

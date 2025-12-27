@@ -300,11 +300,27 @@ export function updateProject(
 
 /**
  * Delete a project (soft delete via Legend-State).
+ *
+ * IMPORTANT: Use .delete() instead of manually setting deleted=true.
+ * With fieldDeleted: 'deleted' configured, Legend-State internally:
+ * 1. Updates Supabase with { deleted: true }
+ * 2. Removes the item from the local observable
+ *
+ * @see https://legendapp.com/open-source/state/v3/sync/supabase/
+ * @returns true if item was in observable and deleted, false if not found
  */
-export function deleteProject(projects$: any, id: string): void {
-  projects$[id].deleted.set(true);
-  projects$[id].updated_at.set(new Date().toISOString());
+export function deleteProject(projects$: any, id: string): boolean {
+  // Check if item exists in observable (get() returns undefined if not)
+  const existingItem = projects$[id].get();
+
+  if (!existingItem) {
+    console.warn(`[LegendState] Project ${id} not found in observable - cannot soft delete via Legend-State`);
+    return false;
+  }
+
+  projects$[id].delete();
   console.log(`[LegendState] Soft deleted project: ${id}`);
+  return true;
 }
 
 /**
@@ -350,11 +366,27 @@ export function updateInventoryItem(
 
 /**
  * Delete an inventory item (soft delete via Legend-State).
+ *
+ * IMPORTANT: Use .delete() instead of manually setting deleted=true.
+ * With fieldDeleted: 'deleted' configured, Legend-State internally:
+ * 1. Updates Supabase with { deleted: true }
+ * 2. Removes the item from the local observable
+ *
+ * @see https://legendapp.com/open-source/state/v3/sync/supabase/
+ * @returns true if item was in observable and deleted, false if not found
  */
-export function deleteInventoryItem(inventory$: any, id: string): void {
-  inventory$[id].deleted.set(true);
-  inventory$[id].last_updated.set(new Date().toISOString());
+export function deleteInventoryItem(inventory$: any, id: string): boolean {
+  // Check if item exists in observable (get() returns undefined if not)
+  const existingItem = inventory$[id].get();
+
+  if (!existingItem) {
+    console.warn(`[LegendState] Inventory item ${id} not found in observable - cannot soft delete via Legend-State`);
+    return false;
+  }
+
+  inventory$[id].delete();
   console.log(`[LegendState] Soft deleted inventory item: ${id}`);
+  return true;
 }
 
 // ============================================================================

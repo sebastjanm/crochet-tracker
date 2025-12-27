@@ -14,6 +14,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Project, ProjectStatus, ProjectYarn } from '@/types';
 import { syncProjectMaterials, removeProjectFromInventory } from '@/lib/cross-context-sync';
 import { getStores, updateProject as updateLegendProject, deleteProject as deleteLegendProject } from '@/lib/legend-state/config';
+import { supabase } from '@/lib/supabase/client';
 import { mapLocalProjectToCloud, replaceImageUri } from '@/lib/legend-state/type-mappers';
 import { useAuth } from '@/hooks/auth-context';
 import {
@@ -334,11 +335,38 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
       await db.runAsync('DELETE FROM projects WHERE id = ?', [id]);
       console.log(`[Projects] Deleted project: ${id}`);
 
-      // Soft delete in cloud via Legend-State (Pro users only)
-      if (isPro && user?.id && storesRef.current?.projects$) {
+      // Soft delete in cloud (Pro users only)
+      // Try Legend-State first, fall back to direct Supabase if item not in observable
+      if (isPro && user?.id) {
         try {
-          deleteLegendProject(storesRef.current.projects$, id);
-          console.log(`[Projects] Soft deleted in cloud via Legend-State: ${id}`);
+          let cloudDeleted = false;
+
+          // Try Legend-State if store is available
+          if (storesRef.current?.projects$) {
+            cloudDeleted = deleteLegendProject(storesRef.current.projects$, id);
+            if (cloudDeleted) {
+              console.log(`[Projects] Soft deleted in cloud via Legend-State: ${id}`);
+            }
+          }
+
+          // Fall back to direct Supabase if Legend-State didn't have the item
+          if (!cloudDeleted && supabase) {
+            console.log(`[Projects] Falling back to direct Supabase soft delete: ${id}`);
+            const { error } = await supabase
+              .from('projects')
+              .update({
+                deleted: true,
+                updated_at: new Date().toISOString(),
+              } as never)
+              .eq('id', id)
+              .eq('user_id', user.id);
+
+            if (error) {
+              console.error('[Projects] Supabase soft delete failed:', error);
+            } else {
+              console.log(`[Projects] Soft deleted in Supabase directly: ${id}`);
+            }
+          }
         } catch (error) {
           console.error('[Projects] Failed to soft delete in cloud:', error);
           // Local deletion succeeded - cloud sync will catch up
@@ -433,31 +461,77 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
   /**
    * Replace a local image URI with a cloud URL after upload.
    * Called by the image sync queue when an upload completes.
+   *
+   * IMPORTANT: This function queries SQLite directly instead of using the
+   * in-memory `projects` state to avoid stale closure issues when called
+   * from background callbacks.
    */
   const replaceProjectImage = useCallback(async (
     projectId: string,
     oldUri: string,
     newUrl: string
   ): Promise<void> => {
-    const project = projects.find((p) => p.id === projectId);
-    if (!project) {
-      console.warn(`[Projects] replaceProjectImage: Project ${projectId} not found`);
-      return;
+    console.log(`[Projects] replaceProjectImage called:`, {
+      projectId,
+      oldUri: oldUri.slice(-50),
+      newUrl: newUrl.slice(0, 50),
+    });
+
+    try {
+      // Query SQLite directly for fresh data (avoids stale closure issues)
+      const row = await db.getFirstAsync<ProjectRow>(
+        'SELECT * FROM projects WHERE id = ?',
+        [projectId]
+      );
+
+      if (!row) {
+        console.warn(`[Projects] replaceProjectImage: Project ${projectId} not found in SQLite`);
+        return;
+      }
+
+      const project = mapRowToProject(row);
+      const images = project.images || [];
+      const updatedImages = replaceImageUri(images, oldUri, newUrl);
+
+      // Check if any replacement was made
+      if (JSON.stringify(images) === JSON.stringify(updatedImages)) {
+        console.warn(`[Projects] replaceProjectImage: URI ${oldUri} not found in project ${projectId}`);
+        console.log(`[Projects] Current images:`, images.map((img) =>
+          typeof img === 'string' ? img.slice(-40) : JSON.stringify(img).slice(-40)
+        ));
+        return;
+      }
+
+      // Direct SQLite update for image replacement (faster, avoids full project update)
+      const timestamp = now();
+      await db.runAsync(
+        'UPDATE projects SET images = ?, updated_at = ?, pending_sync = 1 WHERE id = ?',
+        [JSON.stringify(updatedImages), timestamp, projectId]
+      );
+
+      // Update in-memory state
+      setProjects((prev) =>
+        prev.map((p) =>
+          p.id === projectId
+            ? { ...p, images: updatedImages, updatedAt: new Date(timestamp) }
+            : p
+        )
+      );
+
+      console.log(`[Projects] Replaced image URI in project ${projectId}: ${oldUri.slice(-30)} → ${newUrl.slice(0, 50)}`);
+
+      // NOTE: We intentionally do NOT push to cloud here.
+      // Pushing immediately after each image replacement causes a race condition:
+      // 1. Image 1 uploads → we push (with only image 1's cloud URL)
+      // 2. Sync pulls from cloud → overwrites SQLite with partial data
+      // 3. Image 2 uploads → can't find its local URI (it was overwritten)
+      //
+      // Instead, the cloud URL will be synced on the next regular sync cycle,
+      // after all pending images are uploaded.
+    } catch (error) {
+      console.error(`[Projects] replaceProjectImage failed:`, error);
     }
-
-    const images = project.images || [];
-    const updatedImages = replaceImageUri(images, oldUri, newUrl);
-
-    // Check if any replacement was made
-    if (JSON.stringify(images) === JSON.stringify(updatedImages)) {
-      console.warn(`[Projects] replaceProjectImage: URI ${oldUri} not found in project ${projectId}`);
-      return;
-    }
-
-    // Update via existing updateProject to ensure SQLite and cloud sync
-    await updateProject(projectId, { images: updatedImages });
-    console.log(`[Projects] Replaced image URI in project ${projectId}: ${oldUri} → ${newUrl}`);
-  }, [projects, updateProject]);
+  }, [db]);
 
   return {
     projects,

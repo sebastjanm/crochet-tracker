@@ -20,8 +20,11 @@ import type { Project as CloudProject, InventoryItem as CloudInventoryItem } fro
 /**
  * Convert local Project to Supabase Project format.
  * Schemas are aligned - only need to add cloud-specific fields and convert dates.
+ *
+ * NOTE: Returns Omit<CloudProject, 'deleted'> because the 'deleted' field
+ * is managed by Legend-State soft delete, not by this mapper.
  */
-export function mapLocalProjectToCloud(project: LocalProject, userId: string): CloudProject {
+export function mapLocalProjectToCloud(project: LocalProject, userId: string): Omit<CloudProject, 'deleted'> {
   return {
     id: project.id,
     user_id: userId,
@@ -47,7 +50,8 @@ export function mapLocalProjectToCloud(project: LocalProject, userId: string): C
     created_at: project.createdAt.toISOString(),
     updated_at: project.updatedAt.toISOString(),
     synced_at: new Date().toISOString(),
-    deleted: false,
+    // NOTE: Do NOT set 'deleted' here - it's managed by Legend-State soft delete
+    // Setting deleted: false here would overwrite soft-deleted records
     // Currently Working On feature
     currently_working_on: project.isCurrentlyWorkingOn ?? false,
     currently_working_on_at: project.currentlyWorkingOnAt || null,
@@ -102,8 +106,11 @@ export function mapCloudProjectToLocal(project: CloudProject): LocalProject {
 /**
  * Convert local InventoryItem to Supabase InventoryItem format.
  * Schemas are aligned - field names match (name, other_details).
+ *
+ * NOTE: Returns Omit<CloudInventoryItem, 'deleted'> because the 'deleted' field
+ * is managed by Legend-State soft delete, not by this mapper.
  */
-export function mapLocalInventoryToCloud(item: LocalInventoryItem, userId: string): CloudInventoryItem {
+export function mapLocalInventoryToCloud(item: LocalInventoryItem, userId: string): Omit<CloudInventoryItem, 'deleted'> {
   return {
     id: item.id,
     user_id: userId,
@@ -124,7 +131,8 @@ export function mapLocalInventoryToCloud(item: LocalInventoryItem, userId: strin
     hook_details: item.hookDetails ? JSON.parse(JSON.stringify(item.hookDetails)) : null,
     other_details: item.otherDetails ? JSON.parse(JSON.stringify(item.otherDetails)) : null, // Same field name now
     synced_at: new Date().toISOString(),
-    deleted: false,
+    // NOTE: Do NOT set 'deleted' here - it's managed by Legend-State soft delete
+    // Setting deleted: false here would overwrite soft-deleted records
   };
 }
 

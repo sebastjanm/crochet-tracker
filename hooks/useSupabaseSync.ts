@@ -314,7 +314,8 @@ export function useSupabaseSync(): UseSupabaseSyncReturn {
       for (const project of projects) {
         try {
           const cloudProject = mapLocalProjectToCloud(project, user.id);
-          await syncManager.pushProject(cloudProject);
+          // Add deleted: false for push - mappers don't set it to avoid overwriting soft deletes
+          await syncManager.pushProject({ ...cloudProject, deleted: false });
           result.pushCount++;
         } catch (err) {
           const errMsg = err instanceof Error ? err.message : String(err);
@@ -326,7 +327,8 @@ export function useSupabaseSync(): UseSupabaseSyncReturn {
       for (const item of items) {
         try {
           const cloudItem = mapLocalInventoryToCloud(item, user.id);
-          await syncManager.pushInventoryItem(cloudItem);
+          // Add deleted: false for push - mappers don't set it to avoid overwriting soft deletes
+          await syncManager.pushInventoryItem({ ...cloudItem, deleted: false });
           result.pushCount++;
         } catch (err) {
           const errMsg = err instanceof Error ? err.message : String(err);

@@ -4,7 +4,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
 import { setButtonStyleAsync } from "expo-navigation-bar";
-import { SQLiteProvider, useSQLiteContext } from "expo-sqlite";
+import { SQLiteProvider } from "expo-sqlite";
 import * as Updates from "expo-updates";
 import React, { useEffect, useRef, Suspense } from "react";
 import { StyleSheet, Platform, View, ActivityIndicator, AppState, AppStateStatus, Alert } from "react-native";
@@ -160,19 +160,25 @@ function LegendStateSyncManager({ children }: { children: React.ReactNode }) {
         },
       };
 
-      // Initialize image sync queue (Pro users need image uploads)
-      if (!hasInitialized.current) {
-        hasInitialized.current = true;
-        console.log('[SyncManager] Initializing image sync queue for Pro user:', user.id);
+      // Initialize image sync queue OR update callbacks
+      // The queue's initialize() method handles both cases:
+      // - First call: Full initialization
+      // - Subsequent calls: Updates callbacks only (doesn't re-initialize queue)
+      // This ensures callbacks always have fresh references to context methods
+      console.log('[SyncManager] Initializing/updating image sync queue for Pro user:', user.id);
 
-        imageSyncQueue.initialize(user.id, imageCallbacks)
-          .then(() => {
+      imageSyncQueue.initialize(user.id, imageCallbacks)
+        .then(() => {
+          if (!hasInitialized.current) {
+            hasInitialized.current = true;
             console.log('[SyncManager] Image sync queue initialized successfully');
-          })
-          .catch((error) => {
-            console.error('[SyncManager] Image sync queue initialization failed:', error);
-          });
-      }
+          } else {
+            console.log('[SyncManager] Image sync queue callbacks updated');
+          }
+        })
+        .catch((error) => {
+          console.error('[SyncManager] Image sync queue initialization failed:', error);
+        });
     } else {
       // Cleanup when user logs out or is no longer Pro
       if (hasInitialized.current) {

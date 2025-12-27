@@ -4,17 +4,15 @@
  * Handles image uploads to Supabase Storage buckets.
  *
  * SDK 54 Approach:
- * - expo-file-system File class implements the W3C Blob interface
- * - Pass File directly to Supabase (no need to read bytes)
+ * - Reads file as ArrayBuffer/Base64 to ensure content is sent
+ * - Passes raw data to Supabase upload
  * - HEIC images are converted to JPEG using expo-image-manipulator
- *
- * @see https://docs.expo.dev/versions/latest/sdk/filesystem/
- * @see https://supabase.com/docs/guides/storage/uploads/standard-uploads
  */
 
 import { File as ExpoFile } from 'expo-file-system';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { supabase, isSupabaseConfigured } from './client';
+import { decode } from 'base64-arraybuffer';
 
 export type StorageBucket = 'project-images' | 'inventory-images' | 'avatars' | 'pattern-pdfs';
 
@@ -26,29 +24,18 @@ export interface UploadResult {
 }
 
 export interface UploadOptions {
-  /** Override content type detection */
   contentType?: string;
-  /** Overwrite existing file */
   upsert?: boolean;
 }
 
-/**
- * Check if a URI is a local file path
- */
 export function isLocalFileUri(uri: string): boolean {
   return uri.startsWith('file://');
 }
 
-/**
- * Check if a URI is a Supabase Storage URL
- */
 export function isSupabaseStorageUrl(uri: string): boolean {
   return uri.includes('supabase.co/storage');
 }
 
-/**
- * Get MIME type from file extension
- */
 function getMimeType(uri: string): string {
   const extension = uri.split('.').pop()?.toLowerCase();
   switch (extension) {
@@ -66,37 +53,10 @@ function getMimeType(uri: string): string {
     case 'pdf':
       return 'application/pdf';
     default:
-      return 'image/jpeg'; // Default for images from camera/picker
+      return 'image/jpeg';
   }
 }
 
-/**
- * Upload a local file to Supabase Storage
- *
- * Uses expo-file-system File class which natively implements Blob.
- * This is the most efficient approach for SDK 54+.
- *
- * @param localUri - Local file:// URI from expo-image-picker or camera
- * @param bucket - Target storage bucket
- * @param userId - User ID for path organization
- * @param itemId - Item ID (project or inventory) for path organization
- * @param options - Upload options
- * @returns Upload result with public URL on success
- *
- * @example
- * ```typescript
- * const result = await uploadImage(
- *   'file:///path/to/image.jpg',
- *   'project-images',
- *   'user-123',
- *   'project-456'
- * );
- *
- * if (result.success) {
- *   console.log('Uploaded to:', result.url);
- * }
- * ```
- */
 export async function uploadImage(
   localUri: string,
   bucket: StorageBucket,
@@ -111,104 +71,75 @@ export async function uploadImage(
     itemId,
   });
 
-  // Validate Supabase is configured
   if (!isSupabaseConfigured()) {
-    return {
-      success: false,
-      error: 'Supabase is not configured',
-    };
+    return { success: false, error: 'Supabase is not configured' };
   }
 
-  // Validate it's a local file
   if (!isLocalFileUri(localUri)) {
-    return {
-      success: false,
-      error: `Not a local file URI: ${localUri}`,
-    };
+    return { success: false, error: `Not a local file URI: ${localUri}` };
   }
 
   try {
-    // Create ExpoFile instance from URI - implements Blob interface
     const file = new ExpoFile(localUri);
-
-    // Check file exists
     if (!file.exists) {
-      return {
-        success: false,
-        error: `File does not exist: ${localUri}`,
-      };
+      return { success: false, error: `File does not exist: ${localUri}` };
     }
 
-    console.log(`[Storage] File info:`, {
-      uri: localUri.slice(0, 50),
-      size: file.size,
-      type: file.type,
-      exists: file.exists
-    });
-
-    // Validate file has content
     if (file.size === 0) {
-      return {
-        success: false,
-        error: 'File is empty (0 bytes)',
-      };
+      return { success: false, error: 'File is empty (0 bytes)' };
     }
 
-    // Check if HEIC and convert to JPEG (iOS uses HEIC by default)
+    // HEIC Conversion
     let processedUri = localUri;
-    const detectedType = file.type || getMimeType(localUri);
+    const isHeic = localUri.toLowerCase().endsWith('.heic');
 
-    if (localUri.toLowerCase().endsWith('.heic') || detectedType === 'image/heic') {
+    if (isHeic) {
       console.log('[Storage] Converting HEIC to JPEG...');
       try {
         const converted = await ImageManipulator.manipulateAsync(
           localUri,
-          [],  // No transformations, just format conversion
+          [],
           { format: ImageManipulator.SaveFormat.JPEG, compress: 0.8 }
         );
         processedUri = converted.uri;
         console.log('[Storage] Converted HEIC to JPEG:', processedUri.slice(0, 50));
       } catch (convertError) {
         console.error('[Storage] HEIC conversion failed:', convertError);
-        // Continue with original file, upload may still work
       }
     }
 
-    // Re-create file instance if we converted
-    const processedFile = processedUri !== localUri ? new ExpoFile(processedUri) : file;
-
-    // Generate unique storage path: {userId}/{itemId}/{timestamp}.{ext}
-    // Always use .jpg for converted HEIC files
+    // Generate Path
     const extension = processedUri !== localUri
       ? 'jpg'
-      : (file.extension?.replace('.', '') || localUri.split('.').pop()?.toLowerCase() || 'jpg');
+      : (localUri.split('.').pop()?.toLowerCase() || 'jpg');
     const fileName = `${userId}/${itemId}/${Date.now()}.${extension}`;
 
-    // Determine content type - use JPEG for converted files
+    // Determine Content Type
     const contentType = processedUri !== localUri
       ? 'image/jpeg'
-      : (options.contentType || (file.type && file.type !== '' ? file.type : getMimeType(localUri)));
+      : (options.contentType || getMimeType(localUri));
 
-    console.log(`[Storage] Uploading to ${bucket}/${fileName} (${contentType}, ${processedFile.size} bytes)`);
+    // READ FILE CONTENT EXPLICITLY (Fix for 0-byte uploads)
+    // SDK 54: Use File.base64() method for reading file content
+    // Then decode to ArrayBuffer for Supabase upload
+    const processedFile = processedUri !== localUri ? new ExpoFile(processedUri) : file;
+    const base64 = await processedFile.base64();
+    const fileData = decode(base64);
 
-    // Upload File directly - ExpoFile implements W3C Blob interface (SDK 54)
-    // No need to read bytes, just pass the File object
+    console.log(`[Storage] Uploading to ${bucket}/${fileName} (${contentType}, ${fileData.byteLength} bytes)`);
+
     const { data, error } = await supabase!.storage
       .from(bucket)
-      .upload(fileName, processedFile as unknown as Blob, {
+      .upload(fileName, fileData, {
         contentType,
         upsert: options.upsert ?? false,
       });
 
     if (error) {
       console.error('[Storage] Upload error:', error);
-      return {
-        success: false,
-        error: error.message,
-      };
+      return { success: false, error: error.message };
     }
 
-    // Get public URL (buckets are public)
     const { data: urlData } = supabase!.storage
       .from(bucket)
       .getPublicUrl(data.path);
@@ -229,14 +160,6 @@ export async function uploadImage(
   }
 }
 
-/**
- * Upload multiple images in parallel
- *
- * @param images - Array of { localUri, itemId } pairs
- * @param bucket - Target storage bucket
- * @param userId - User ID for path organization
- * @returns Array of upload results in same order as input
- */
 export async function uploadImages(
   images: Array<{ localUri: string; itemId: string }>,
   bucket: StorageBucket,
@@ -250,13 +173,6 @@ export async function uploadImages(
   return results;
 }
 
-/**
- * Delete a file from Supabase Storage
- *
- * @param path - Storage path (not full URL)
- * @param bucket - Storage bucket
- * @returns Success status
- */
 export async function deleteImage(
   path: string,
   bucket: StorageBucket
@@ -284,22 +200,6 @@ export async function deleteImage(
   }
 }
 
-/**
- * Extract storage path from a Supabase public URL
- *
- * @param url - Full Supabase storage URL
- * @param bucket - Storage bucket name
- * @returns Storage path or null if not a valid URL
- *
- * @example
- * ```typescript
- * const path = extractPathFromUrl(
- *   'https://xxx.supabase.co/storage/v1/object/public/project-images/user/proj/123.jpg',
- *   'project-images'
- * );
- * // Returns: 'user/proj/123.jpg'
- * ```
- */
 export function extractPathFromUrl(url: string, bucket: StorageBucket): string | null {
   const pattern = new RegExp(`/storage/v1/object/public/${bucket}/(.+)$`);
   const match = url.match(pattern);

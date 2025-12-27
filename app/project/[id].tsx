@@ -53,7 +53,9 @@ export default function ProjectDetailScreen() {
   const { getItemById, getItemsByCategory } = useInventory();
   const { t } = useLanguage();
   const { user } = useAuth();
-  const [project, setProject] = useState(getProjectById(id as string));
+  
+  // Use reactive selector directly - NO local state
+  const project = getProjectById(id as string);
 
   // Enable LayoutAnimation on Android (run once on mount)
   useEffect(() => {
@@ -68,34 +70,17 @@ export default function ProjectDetailScreen() {
 
   // Pattern Adjustments expandable state
   const [isPatternAdjustmentsExpanded, setIsPatternAdjustmentsExpanded] = useState(false);
-  const [patternAdjustmentsText, setPatternAdjustmentsText] = useState(project?.notes || '');
+  // Note: patternAdjustmentsText needs to be stateful for editing, 
+  // but we should initialize it from the reactive project prop
+  const [patternAdjustmentsText, setPatternAdjustmentsText] = useState('');
   const [isSavingPatternAdjustments, setIsSavingPatternAdjustments] = useState(false);
 
-  // Refresh project data when screen comes into focus
-  useFocusEffect(
-    React.useCallback(() => {
-      console.log('🔄 Project detail screen focused, refreshing data for ID:', id);
-      const updatedProject = getProjectById(id as string);
-      console.log('📦 Fetched project data:', updatedProject ? updatedProject.title : 'NOT FOUND');
-      if (updatedProject) {
-        console.log('📝 Project details:', {
-          title: updatedProject.title,
-          status: updatedProject.status,
-          notes: updatedProject.notes?.substring(0, 50),
-          images: updatedProject.images?.length,
-          yarnCount: updatedProject.yarnUsedIds?.length,
-          hookCount: updatedProject.hookUsedIds?.length,
-        });
-        // Force a new object reference to trigger React re-render
-        setProject({ ...updatedProject });
-        // Sync pattern adjustments text with latest data
-        setPatternAdjustmentsText(updatedProject.notes || '');
-      } else {
-        setProject(undefined);
-      }
-      console.log('✨ State updated with new project data');
-    }, [id, getProjectById])
-  );
+  // Sync local editing state when project notes change from outside (e.g. sync)
+  useEffect(() => {
+    if (project?.notes) {
+      setPatternAdjustmentsText(project.notes);
+    }
+  }, [project?.notes]);
 
   if (!project) {
     return (
@@ -148,8 +133,7 @@ export default function ProjectDetailScreen() {
     setIsSavingPatternAdjustments(true);
     try {
       await updateProject(project.id, { notes: patternAdjustmentsText });
-      // Update local project state
-      setProject({ ...project, notes: patternAdjustmentsText });
+      // Legend-State reactive store auto-updates UI - no manual refresh needed
       // Collapse with animation
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setIsPatternAdjustmentsExpanded(false);

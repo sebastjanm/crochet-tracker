@@ -43,22 +43,16 @@ export default function InventoryDetailScreen() {
   const { getItemById, deleteItem, updateItem } = useInventory();
   const { projects } = useProjects();
   const { t } = useLanguage();
-  const [item, setItem] = useState(getItemById(id as string));
-
+  
+  // Use reactive selector directly - NO local state
+  const item = getItemById(id as string);
+  
   const [showProjectSelector, setShowProjectSelector] = useState(false);
 
-  // Refresh item data when screen comes into focus
-  useFocusEffect(
-    React.useCallback(() => {
-      const updatedItem = getItemById(id as string);
-      if (updatedItem) {
-        // Force a new object reference to trigger React re-render
-        setItem({ ...updatedItem });
-      } else {
-        setItem(undefined);
-      }
-    }, [id, getItemById])
-  );
+  // Debug log to verify data flow
+  if (item && __DEV__) {
+    console.log('[InventoryDetail] Render item:', item.id, 'Images:', item.images?.length);
+  }
 
   if (!item) {
     return (
@@ -113,11 +107,7 @@ export default function InventoryDetailScreen() {
     await updateItem(item.id, {
       usedInProjects: projectIds.length > 0 ? projectIds : undefined,
     });
-    // Refresh item data
-    const updatedItem = getItemById(item.id);
-    if (updatedItem) {
-      setItem({ ...updatedItem });
-    }
+    // No need to manually refresh - Legend-State reactive store auto-updates UI
   };
 
   return (

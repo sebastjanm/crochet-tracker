@@ -459,7 +459,7 @@ export default function AddProjectScreen() {
           <SelectedMaterialsPreview
             items={inventory.filter((item) => yarnMaterials.some(y => y.itemId === item.id))}
             onRemove={handleRemoveYarn}
-            emptyText={t('projects.noYarnAdded')}
+            hideEmptyState
             category="yarn"
             quantities={Object.fromEntries(yarnMaterials.map(y => [y.itemId, y.quantity]))}
             onQuantityChange={handleYarnQuantityChange}
@@ -476,7 +476,7 @@ export default function AddProjectScreen() {
           <SelectedMaterialsPreview
             items={inventory.filter((item) => hookUsedIds.includes(item.id))}
             onRemove={handleRemoveHook}
-            emptyText={t('projects.noHooksAdded')}
+            hideEmptyState
             category="hook"
           />
 

@@ -22,6 +22,8 @@ interface SelectedMaterialsPreviewProps {
   items: InventoryItem[];
   onRemove: (id: string) => void;
   emptyText?: string;
+  /** Hide empty state entirely - cleaner when section header already has an add action */
+  hideEmptyState?: boolean;
   category: 'yarn' | 'hook';
   // Yarn quantity tracking (optional)
   quantities?: Record<string, number>; // itemId -> quantity
@@ -32,6 +34,7 @@ export function SelectedMaterialsPreview({
   items,
   onRemove,
   emptyText,
+  hideEmptyState = false,
   category,
   quantities,
   onQuantityChange,
@@ -63,6 +66,10 @@ export function SelectedMaterialsPreview({
   );
 
   if (items.length === 0) {
+    // When section header already has obvious "Add" action, hide empty state for cleaner UI
+    if (hideEmptyState) {
+      return null;
+    }
     return (
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyText}>

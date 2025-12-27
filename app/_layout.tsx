@@ -17,7 +17,11 @@ import { LanguageProvider, useLanguage } from "@/hooks/language-context";
 import { migrateDatabase } from "@/lib/database/migrations";
 import { imageSyncQueue, type ImageUploadCallbacks, clearStores } from "@/lib/legend-state";
 import { ToastProvider, useToast } from "@/components/Toast";
+import { useSupabaseSync } from "@/hooks/useSupabaseSync";
 import Colors from "@/constants/colors";
+
+// Minimum time between foreground syncs (30 seconds)
+const FOREGROUND_SYNC_DEBOUNCE_MS = 30_000;
 
 SplashScreen.preventAutoHideAsync();
 
@@ -125,6 +129,7 @@ function LegendStateSyncManager({ children }: { children: React.ReactNode }) {
   const { refreshItems, replaceInventoryImage } = useInventory();
   const { showToast } = useToast();
   const { t } = useLanguage();
+  const { sync, isSyncing, lastSyncedAt } = useSupabaseSync();
   const appState = useRef(AppState.currentState);
   // Track which user.id we've initialized for (prevents cross-user conflicts)
   const initializedForUserId = useRef<string | null>(null);
@@ -220,7 +225,7 @@ function LegendStateSyncManager({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // App state listener for foreground detection
+    // App state listener for foreground detection - triggers cloud sync
     const subscription = AppState.addEventListener(
       'change',
       async (nextAppState: AppStateStatus) => {
@@ -230,11 +235,27 @@ function LegendStateSyncManager({ children }: { children: React.ReactNode }) {
           isPro &&
           user?.id
         ) {
-          console.log('[SyncManager] App foregrounded, refreshing data');
-          // Legend-State handles sync automatically via realtime subscriptions
-          // Refresh contexts to pick up any changes
-          await refreshProjects();
-          await refreshItems();
+          // Check if we synced recently (debounce)
+          const timeSinceLastSync = lastSyncedAt
+            ? Date.now() - lastSyncedAt.getTime()
+            : Infinity;
+
+          if (timeSinceLastSync < FOREGROUND_SYNC_DEBOUNCE_MS) {
+            console.log('[SyncManager] App foregrounded, but synced recently - just refreshing local');
+            await refreshProjects();
+            await refreshItems();
+          } else if (isSyncing) {
+            console.log('[SyncManager] App foregrounded, sync already in progress');
+          } else {
+            console.log('[SyncManager] App foregrounded, syncing with cloud...');
+            // Full sync: push local changes + pull cloud changes → write to SQLite
+            const result = await sync();
+            if (result?.success) {
+              console.log(`[SyncManager] Foreground sync complete: pushed ${result.pushCount}, pulled ${result.pullCount}`);
+            } else if (result) {
+              console.warn('[SyncManager] Foreground sync had errors:', result.errors);
+            }
+          }
         }
         appState.current = nextAppState;
       }
@@ -243,7 +264,7 @@ function LegendStateSyncManager({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.remove();
     };
-  }, [isPro, user?.id, refreshProjects, refreshItems, replaceProjectImage, replaceInventoryImage, showToast, t]);
+  }, [isPro, user?.id, refreshProjects, refreshItems, replaceProjectImage, replaceInventoryImage, showToast, t, sync, isSyncing, lastSyncedAt]);
 
   return <>{children}</>;
 }

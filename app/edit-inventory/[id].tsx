@@ -18,6 +18,7 @@ import { ModalHeader } from '@/components/ModalHeader';
 import { ImageGallery } from '@/components/ImageGallery';
 import { SectionHeader } from '@/components/SectionHeader';
 import { Select } from '@/components/Select';
+import { ColorFamilySelect } from '@/components/ColorFamilySelect';
 import { DatePicker } from '@/components/DatePicker';
 import { ProjectSelectorModal } from '@/components/ProjectSelectorModal';
 import { Minus, Plus } from 'lucide-react-native';
@@ -540,11 +541,11 @@ export default function EditInventoryScreen() {
                 </View>
               </View>
 
-              <Input
+              <ColorFamilySelect
                 label={t('inventory.colorFamily')}
-                placeholder={t('inventory.colorFamilyPlaceholder')}
+                placeholder={t('inventory.selectColorFamily')}
                 value={colorFamily}
-                onChangeText={setColorFamily}
+                onChange={setColorFamily}
               />
 
               <Input

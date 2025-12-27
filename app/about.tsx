@@ -144,9 +144,11 @@ export default function AboutScreen() {
     }
   };
 
+  // Combined version string: "1.0.0 (42)"
+  const versionDisplay = `${appVersion} (${buildNumber})`;
+
   const infoRows = [
-    { label: t('about.version'), value: appVersion },
-    { label: t('about.build'), value: buildNumber },
+    { label: t('about.version'), value: versionDisplay },
     { label: t('about.runtimeVersion'), value: runtimeVersion },
     { label: t('about.channel'), value: channel },
     { label: t('about.updateId'), value: truncateId(updateId) },

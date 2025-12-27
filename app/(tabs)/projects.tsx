@@ -10,7 +10,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Plus, Clock, CheckCircle, Lightbulb, Volleyball, HelpCircle, PauseCircle, RotateCcw, Zap } from 'lucide-react-native';
 import { Button } from '@/components/Button';
@@ -44,6 +44,7 @@ export default function ProjectsScreen() {
   const { t } = useLanguage();
   const { user } = useAuth();
   const { showToast } = useToast();
+  const insets = useSafeAreaInsets();
 
   const userName = user?.name?.split(' ')[0] || t('profile.defaultName');
 
@@ -228,8 +229,18 @@ export default function ProjectsScreen() {
           </View>
         </View>
       </SafeAreaView>
-      
-      {/* Currently Working On Section */}
+
+      <SearchableFilterBar
+        filters={statusFilters.map(f => ({ id: f.key, label: f.label, count: f.count, icon: f.icon, color: f.color }))}
+        selectedFilter={filter}
+        onFilterChange={(id) => setFilter(id as ProjectStatus | 'all')}
+        searchPlaceholder={t('common.searchProjects')}
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+      />
+
+      <View style={styles.container}>
+      {/* Currently Working On Section - Now below filters */}
       {currentlyWorkingOnProjects.length > 0 && (
         <View style={styles.activeSection}>
           <View style={styles.activeSectionHeader}>
@@ -247,16 +258,6 @@ export default function ProjectsScreen() {
         </View>
       )}
 
-      <SearchableFilterBar
-        filters={statusFilters.map(f => ({ id: f.key, label: f.label, count: f.count, icon: f.icon, color: f.color }))}
-        selectedFilter={filter}
-        onFilterChange={(id) => setFilter(id as ProjectStatus | 'all')}
-        searchPlaceholder={t('common.searchProjects')}
-        searchValue={searchQuery}
-        onSearchChange={setSearchQuery}
-      />
-
-      <View style={styles.container}>
       {filteredProjects.length === 0 ? (
         <EmptyState
           icon={<Volleyball size={64} color={Colors.warmGray} />}
@@ -278,7 +279,7 @@ export default function ProjectsScreen() {
           keyExtractor={(item) => item.id}
           numColumns={2}
           columnWrapperStyle={styles.row}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, { paddingBottom: 100 + insets.bottom }]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -291,7 +292,7 @@ export default function ProjectsScreen() {
 
       {projects.length > 0 && (
         <TouchableOpacity
-          style={styles.fab}
+          style={[styles.fab, { bottom: 24 + insets.bottom }]}
           onPress={() => router.push('/add-project')}
           activeOpacity={0.8}
           accessible={true}
@@ -461,11 +462,11 @@ const styles = StyleSheet.create({
   },
   projectImage: {
     width: '100%',
-    height: 140,
+    height: 160,
     backgroundColor: Colors.beige,
   },
   projectInfo: {
-    padding: 10,
+    padding: 12,
   },
   statusBadge: {
     position: 'absolute',
@@ -483,8 +484,8 @@ const styles = StyleSheet.create({
     ...Typography.body,
     color: Colors.charcoal,
     fontWeight: '600' as const,
-    fontSize: 14,
-    lineHeight: 18,
+    fontSize: 15,
+    lineHeight: 20,
   },
   projectStatus: {
     flexDirection: 'row',
@@ -538,9 +539,9 @@ const styles = StyleSheet.create({
 
   // Currently Working On styles
   activeSection: {
-    backgroundColor: Colors.headerBg,
-    paddingTop: 8,
-    paddingBottom: 12,
+    backgroundColor: Colors.beige,
+    paddingTop: 12,
+    paddingBottom: 16,
   },
   activeSectionHeader: {
     flexDirection: 'row',

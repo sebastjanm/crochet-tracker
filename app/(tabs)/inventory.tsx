@@ -9,7 +9,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { router } from 'expo-router';
 import { Plus, Package, Volleyball, Grid3x3, Wrench, HelpCircle } from 'lucide-react-native';
@@ -30,6 +30,7 @@ const isTablet = width >= 768;
 export default function InventoryScreen() {
   const { items, yarnCount, hookCount } = useInventory();
   const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'yarn' | 'hook' | 'other'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -157,7 +158,7 @@ export default function InventoryScreen() {
           data={filteredItems}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, { paddingBottom: 100 + insets.bottom }]}
           numColumns={2}
           columnWrapperStyle={styles.row}
           removeClippedSubviews={true}
@@ -168,7 +169,7 @@ export default function InventoryScreen() {
 
         {items.length > 0 && (
           <TouchableOpacity
-            style={styles.fab}
+            style={[styles.fab, { bottom: 24 + insets.bottom }]}
             onPress={() => router.push('/add-inventory')}
             activeOpacity={0.8}
             accessible={true}

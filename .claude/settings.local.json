@@ -113,10 +113,18 @@
       "Bash(eas update:*)",
       "Bash(eas update:list:*)",
       "Bash(eas channel:list:*)",
-      "WebFetch(domain:docs.powersync.com)",
       "WebFetch(domain:legendapp.com)",
       "Bash(timeout 30 ~/.bun/bin/bunx expo start:*)",
-      "Bash(eas branch:list:*)"
+      "Bash(eas branch:list:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:docs.legendapp.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(~/.bun/bin/bun pm:*)",
+      "Bash(npm search:*)",
+      "Bash(claude mcp add:*)",
+      "Bash(xargs:*)",
+      "Bash(bunx expo-updates:*)",
+      "Bash(eas:*)"
     ],
     "deny": [],
     "ask": []

@@ -9,7 +9,9 @@
     "start:android": "bunx expo start --android",
     "start:web": "bunx expo start --web",
     "lint": "expo lint",
-    "postinstall": "simple-git-hooks"
+    "postinstall": "simple-git-hooks",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "simple-git-hooks": {
     "pre-commit": "bun run lint && bunx tsc --noEmit",
@@ -35,6 +37,7 @@
     "expo-blur": "~15.0.8",
     "expo-camera": "~17.0.10",
     "expo-constants": "~18.0.12",
+    "expo-dev-client": "~6.0.20",
     "expo-font": "~14.0.10",
     "expo-haptics": "~15.0.8",
     "expo-image": "~3.0.11",

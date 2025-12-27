@@ -27,6 +27,7 @@
       }
     },
     "android": {
+      "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -47,7 +48,7 @@
       [
         "expo-router",
         {
-          "origin": "https://rork.com/"
+          "origin": "https://www.artful.space/"
         }
       ],
       [
@@ -83,11 +84,11 @@
       "url": "https://u.expo.dev/3e109c0c-7948-4df6-8908-5e886b950879"
     },
     "runtimeVersion": {
-      "policy": "appVersion"
+      "policy": "fingerprint"
     },
     "extra": {
       "router": {
-        "origin": "https://rork.com/"
+        "origin": "https://www.artful.space/"
       },
       "eas": {
         "projectId": "3e109c0c-7948-4df6-8908-5e886b950879"

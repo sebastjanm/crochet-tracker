@@ -75,12 +75,27 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
   }, [isPro, user?.id]);
 
   /**
-   * Load all projects from SQLite database.
+   * Load projects from SQLite database filtered by current user.
+   * Only loads non-deleted projects belonging to the current user.
    */
   const loadProjects = useCallback(async () => {
+    // If no user is logged in, clear projects and return
+    if (!user?.id) {
+      console.log('[Projects] No user logged in, clearing projects');
+      setProjects([]);
+      setIsLoading(false);
+      return;
+    }
+
     try {
+      // Filter by user_id and exclude deleted records
+      // Also include records with NULL user_id (legacy/orphaned data that belongs to this device)
       const rows = await db.getAllAsync<ProjectRow>(
-        'SELECT * FROM projects ORDER BY updated_at DESC'
+        `SELECT * FROM projects
+         WHERE (user_id = ? OR user_id IS NULL)
+         AND deleted = 0
+         ORDER BY updated_at DESC`,
+        [user.id]
       );
 
       const loadedProjects = rows.map((row) => {
@@ -102,16 +117,19 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
       });
 
       setProjects(loadedProjects);
-      console.log(`[Projects] Loaded ${loadedProjects.length} projects from SQLite`);
+      console.log(`[Projects] Loaded ${loadedProjects.length} projects from SQLite for user ${user.id}`);
     } catch (error) {
       console.error('[Projects] Failed to load projects:', error);
       setProjects([]);
     } finally {
       setIsLoading(false);
     }
-  }, [db]);
+  }, [db, user?.id]);
 
+  // Reload projects when user changes (login/logout)
   useEffect(() => {
+    console.log('[Projects] User changed, reloading projects');
+    setIsLoading(true);
     loadProjects();
   }, [loadProjects]);
 

@@ -236,6 +236,32 @@ export interface Database {
           updated_at?: string;
         };
       };
+      yarn_brands: {
+        Row: {
+          id: string;
+          name: string;           // Normalized: lowercase, trimmed for matching
+          display_name: string;   // Original casing for display
+          user_id: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          display_name: string;
+          user_id: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          display_name?: string;
+          user_id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Enums: {
       project_status: ProjectStatus;
@@ -257,3 +283,7 @@ export type InventoryItemInsert = Database['public']['Tables']['inventory_items'
 export type InventoryItemUpdate = Database['public']['Tables']['inventory_items']['Update'];
 
 export type Profile = Database['public']['Tables']['profiles']['Row'];
+
+export type YarnBrand = Database['public']['Tables']['yarn_brands']['Row'];
+export type YarnBrandInsert = Database['public']['Tables']['yarn_brands']['Insert'];
+export type YarnBrandUpdate = Database['public']['Tables']['yarn_brands']['Update'];

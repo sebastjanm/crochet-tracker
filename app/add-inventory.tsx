@@ -18,6 +18,7 @@ import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { QrCode, Barcode, Minus, Plus } from 'lucide-react-native';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
+import { AutocompleteInput } from '@/components/AutocompleteInput';
 import { ModalHeader } from '@/components/ModalHeader';
 import { ImageGallery } from '@/components/ImageGallery';
 import { SectionHeader } from '@/components/SectionHeader';
@@ -27,6 +28,7 @@ import { WeightCategorySelect } from '@/components/WeightCategorySelect';
 import { DatePicker } from '@/components/DatePicker';
 import { useInventory } from '@/hooks/inventory-context';
 import { useAuth } from '@/hooks/auth-context';
+import { useBrandSuggestions } from '@/hooks/useBrandSuggestions';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, cardShadow, buttonShadow } from '@/constants/pixelRatio';
@@ -38,6 +40,7 @@ export default function AddInventoryScreen() {
   const { addItem } = useInventory();
   const { user } = useAuth();
   const { t } = useLanguage();
+  const { getSuggestions, learnBrand } = useBrandSuggestions();
   const [category, setCategory] = useState<InventoryItem['category']>(
     (params.category as InventoryItem['category']) || 'yarn'
   );
@@ -274,6 +277,12 @@ export default function AddInventoryScreen() {
         otherDetails,
         notes,
       });
+
+      // Learn the brand for future suggestions (yarn only)
+      if (category === 'yarn' && brand.trim()) {
+        await learnBrand(brand.trim());
+      }
+
       router.dismiss();
     } catch (error) {
       Alert.alert(t('common.error'), t('inventory.failedToAddItem'));
@@ -431,11 +440,12 @@ export default function AddInventoryScreen() {
           {/* Yarn: Brand, Color fields in Basic Info */}
           {category === 'yarn' && (
             <>
-              <Input
+              <AutocompleteInput
                 label={t('inventory.brand')}
                 placeholder={t('inventory.brandPlaceholder')}
                 value={brand}
                 onChangeText={setBrand}
+                getSuggestions={getSuggestions}
               />
 
               <View style={styles.row}>

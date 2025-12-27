@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
+import { AutocompleteInput } from '@/components/AutocompleteInput';
 import { ModalHeader } from '@/components/ModalHeader';
 import { ImageGallery } from '@/components/ImageGallery';
 import { SectionHeader } from '@/components/SectionHeader';
@@ -25,6 +26,7 @@ import { Minus, Plus } from 'lucide-react-native';
 import { useInventory } from '@/hooks/inventory-context';
 import { useAuth } from '@/hooks/auth-context';
 import { useLanguage } from '@/hooks/language-context';
+import { useBrandSuggestions } from '@/hooks/useBrandSuggestions';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, cardShadow, buttonShadow, getPixelRatio } from '@/constants/pixelRatio';
@@ -38,6 +40,7 @@ export default function EditInventoryScreen() {
   const { items, updateItem } = useInventory();
   const { user } = useAuth();
   const { t } = useLanguage();
+  const { getSuggestions, learnBrand } = useBrandSuggestions();
 
   const item = items.find(i => i.id === id);
 
@@ -325,6 +328,12 @@ export default function EditInventoryScreen() {
     };
 
     await updateItem(item.id, updatedItem);
+
+    // Learn the brand for future suggestions (yarn only)
+    if (category === 'yarn' && brand.trim()) {
+      await learnBrand(brand.trim());
+    }
+
     router.dismiss();
   };
 
@@ -435,11 +444,12 @@ export default function EditInventoryScreen() {
           {/* Yarn: Brand, Color fields in Basic Info */}
           {category === 'yarn' && (
             <>
-              <Input
+              <AutocompleteInput
                 label={t('inventory.brand')}
                 placeholder={t('inventory.brandPlaceholder')}
                 value={brand}
                 onChangeText={setBrand}
+                getSuggestions={getSuggestions}
               />
 
               <View style={styles.row}>

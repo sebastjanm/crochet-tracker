@@ -80,12 +80,27 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
   }, [isPro, user?.id]);
 
   /**
-   * Load all inventory items from SQLite database.
+   * Load inventory items from SQLite database filtered by current user.
+   * Only loads non-deleted items belonging to the current user.
    */
   const loadInventory = useCallback(async () => {
+    // If no user is logged in, clear inventory and return
+    if (!user?.id) {
+      console.log('[Inventory] No user logged in, clearing inventory');
+      setItems([]);
+      setIsLoading(false);
+      return;
+    }
+
     try {
+      // Filter by user_id and exclude deleted records
+      // Also include records with NULL user_id (legacy/orphaned data that belongs to this device)
       const rows = await db.getAllAsync<InventoryItemRow>(
-        'SELECT * FROM inventory_items ORDER BY last_updated DESC'
+        `SELECT * FROM inventory_items
+         WHERE (user_id = ? OR user_id IS NULL)
+         AND deleted = 0
+         ORDER BY last_updated DESC`,
+        [user.id]
       );
 
       const loadedItems = rows.map((row) => {
@@ -114,16 +129,19 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
       });
 
       setItems(loadedItems);
-      console.log(`[Inventory] Loaded ${loadedItems.length} items from SQLite`);
+      console.log(`[Inventory] Loaded ${loadedItems.length} items from SQLite for user ${user.id}`);
     } catch (error) {
       console.error('[Inventory] Failed to load items:', error);
       setItems([]);
     } finally {
       setIsLoading(false);
     }
-  }, [db]);
+  }, [db, user?.id]);
 
+  // Reload inventory when user changes (login/logout)
   useEffect(() => {
+    console.log('[Inventory] User changed, reloading inventory');
+    setIsLoading(true);
     loadInventory();
   }, [loadInventory]);
 

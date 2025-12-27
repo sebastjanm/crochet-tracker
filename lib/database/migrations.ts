@@ -45,6 +45,11 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
     currentVersion = 4;
   }
 
+  if (currentVersion < 5) {
+    await migrateToV5(db);
+    currentVersion = 5;
+  }
+
   // Enable WAL mode for better concurrent read/write performance
   await db.execAsync('PRAGMA journal_mode = WAL');
 
@@ -275,5 +280,96 @@ async function migrateToV4(db: SQLiteDatabase): Promise<void> {
   `);
 
   console.log('[SQLite] Migration to v4 complete.');
+}
+
+/**
+ * V5: Add yarn_brands table for brand suggestions/autocomplete
+ * - Stores user-learned yarn brands for autocomplete suggestions
+ * - Normalized name for matching, display_name for original casing
+ * - Syncs with Supabase for Pro users
+ */
+async function migrateToV5(db: SQLiteDatabase): Promise<void> {
+  console.log('[SQLite] Running migration to v5 (Yarn Brands)...');
+
+  // Create yarn_brands table
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS yarn_brands (
+      id TEXT PRIMARY KEY NOT NULL,
+      name TEXT NOT NULL,
+      display_name TEXT NOT NULL,
+      user_id TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(name, user_id)
+    );
+
+    -- Indexes for efficient queries
+    CREATE INDEX IF NOT EXISTS idx_yarn_brands_user ON yarn_brands(user_id);
+    CREATE INDEX IF NOT EXISTS idx_yarn_brands_name ON yarn_brands(name);
+    CREATE INDEX IF NOT EXISTS idx_yarn_brands_user_name ON yarn_brands(user_id, name);
+
+    -- Set schema version
+    PRAGMA user_version = 5;
+  `);
+
+  // Seed with common yarn brands (only if table is empty)
+  const countResult = await db.getFirstAsync<{ count: number }>(
+    'SELECT COUNT(*) as count FROM yarn_brands'
+  );
+
+  if (countResult?.count === 0) {
+    console.log('[SQLite] Seeding yarn_brands with common brands...');
+
+    const seedBrands = [
+      'Alize',
+      'Katia',
+      'Drops',
+      'Scheepjes',
+      'Himalaya',
+      'Lang Yarns',
+      'Mondial',
+      'Papatya',
+      'Yarn Art',
+      'Schachenmayr',
+      'Rowan',
+      'DMC',
+      'Rico Design',
+      'Stylecraft',
+      'King Cole',
+      'Paintbox Yarns',
+      'Lion Brand',
+      'Red Heart',
+      'Caron',
+      'Bernat',
+    ];
+
+    const timestamp = new Date().toISOString();
+
+    for (const brand of seedBrands) {
+      const id = generateUUID();
+      const normalizedName = brand.toLowerCase().trim();
+
+      await db.runAsync(
+        `INSERT OR IGNORE INTO yarn_brands (id, name, display_name, user_id, created_at, updated_at)
+         VALUES (?, ?, ?, NULL, ?, ?)`,
+        [id, normalizedName, brand, timestamp, timestamp]
+      );
+    }
+
+    console.log(`[SQLite] Seeded ${seedBrands.length} common yarn brands`);
+  }
+
+  console.log('[SQLite] Migration to v5 complete.');
+}
+
+/**
+ * Generate a UUID for new records
+ */
+function generateUUID(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 }
 

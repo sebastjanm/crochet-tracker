@@ -95,7 +95,7 @@ export default function EditProjectScreen() {
 
   if (!project) {
     return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{t('projects.projectNotFound')}</Text>
           <Button
@@ -315,7 +315,7 @@ export default function EditProjectScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ModalHeader
         title={t('projects.editProject')}
         showHelp={true}
@@ -671,15 +671,14 @@ const styles = StyleSheet.create({
   },
   sectionDivider: {
     height: 1,
-    backgroundColor: Colors.warmGray,
-    marginVertical: 4,
-    opacity: 0.5,
+    backgroundColor: Colors.border,
+    marginVertical: 16,
   },
   textArea: {
     minHeight: 100,
   },
   imageSection: {
-    marginBottom: 0,
+    marginBottom: 16,
   },
   sectionLabel: {
     fontSize: 12,

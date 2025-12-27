@@ -335,14 +335,14 @@ export default function EditInventoryScreen() {
 
   if (!item) {
     return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <Text style={styles.errorText}>Item not found</Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ModalHeader
         title={t('inventory.editItem')}
         showHelp={true}
@@ -924,7 +924,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 12,
-    borderWidth: normalizeBorder(1.5),
+    borderWidth: normalizeBorder(1),
     borderColor: Colors.border,
     alignItems: 'center',
     backgroundColor: Colors.white,
@@ -972,6 +972,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     marginTop: 24,
+    marginBottom: 32,
     gap: 12,
   },
   fieldGroup: {

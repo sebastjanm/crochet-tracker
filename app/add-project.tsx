@@ -295,7 +295,7 @@ export default function AddProjectScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ModalHeader
         title={t('projects.newProject')}
         showHelp={true}
@@ -636,7 +636,7 @@ const styles = StyleSheet.create({
   sectionDivider: {
     height: 1,
     backgroundColor: Colors.border,
-    marginVertical: 24,
+    marginVertical: 16,
   },
   imageSection: {
     marginBottom: 16,

@@ -126,17 +126,42 @@ function LegendStateSyncManager({ children }: { children: React.ReactNode }) {
   const { showToast } = useToast();
   const { t } = useLanguage();
   const appState = useRef(AppState.currentState);
-  const hasInitialized = useRef(false);
+  // Track which user.id we've initialized for (prevents cross-user conflicts)
+  const initializedForUserId = useRef<string | null>(null);
+  // Track if initialization is in progress (prevents race conditions)
+  const isInitializing = useRef(false);
 
   useEffect(() => {
+    const currentUserId = user?.id ?? null;
+
     console.log('[SyncManager] useEffect triggered', {
       isPro,
-      userId: user?.id,
-      hasInitialized: hasInitialized.current,
+      userId: currentUserId,
+      initializedForUserId: initializedForUserId.current,
+      isInitializing: isInitializing.current,
     });
 
     // Initialize or cleanup based on Pro status
-    if (isPro && user?.id) {
+    if (isPro && currentUserId) {
+      // Skip if already initialized for this user or initialization in progress
+      if (initializedForUserId.current === currentUserId) {
+        console.log('[SyncManager] Already initialized for user:', currentUserId);
+        return;
+      }
+
+      // If initialized for different user, cleanup first
+      if (initializedForUserId.current && initializedForUserId.current !== currentUserId) {
+        console.log('[SyncManager] User changed, cleaning up old user:', initializedForUserId.current);
+        clearStores(initializedForUserId.current);
+        initializedForUserId.current = null;
+      }
+
+      // Skip if initialization is already in progress
+      if (isInitializing.current) {
+        console.log('[SyncManager] Initialization already in progress, skipping');
+        return;
+      }
+
       console.log('[SyncManager] Setting up image callbacks for Pro user');
 
       // Create image upload callbacks
@@ -160,30 +185,37 @@ function LegendStateSyncManager({ children }: { children: React.ReactNode }) {
         },
       };
 
-      // Initialize image sync queue OR update callbacks
-      // The queue's initialize() method handles both cases:
-      // - First call: Full initialization
-      // - Subsequent calls: Updates callbacks only (doesn't re-initialize queue)
-      // This ensures callbacks always have fresh references to context methods
-      console.log('[SyncManager] Initializing/updating image sync queue for Pro user:', user.id);
+      // Initialize image sync queue
+      // Set flags BEFORE async call to prevent race conditions
+      console.log('[SyncManager] Initializing image sync queue for Pro user:', currentUserId);
+      isInitializing.current = true;
+      const initializingForUser = currentUserId; // Capture user.id for closure
 
-      imageSyncQueue.initialize(user.id, imageCallbacks)
+      imageSyncQueue.initialize(currentUserId, imageCallbacks)
         .then(() => {
-          if (!hasInitialized.current) {
-            hasInitialized.current = true;
-            console.log('[SyncManager] Image sync queue initialized successfully');
+          // Only update state if we're still initializing for the same user
+          if (isInitializing.current && initializingForUser === currentUserId) {
+            initializedForUserId.current = currentUserId;
+            isInitializing.current = false;
+            console.log('[SyncManager] Image sync queue initialized for user:', currentUserId);
           } else {
-            console.log('[SyncManager] Image sync queue callbacks updated');
+            console.log('[SyncManager] Initialization completed but user changed, ignoring');
           }
         })
         .catch((error) => {
+          // Only reset flags if we're still initializing for the same user
+          if (isInitializing.current && initializingForUser === currentUserId) {
+            isInitializing.current = false;
+          }
           console.error('[SyncManager] Image sync queue initialization failed:', error);
         });
     } else {
       // Cleanup when user logs out or is no longer Pro
-      if (hasInitialized.current) {
-        clearStores(user?.id);
-        hasInitialized.current = false;
+      if (initializedForUserId.current) {
+        console.log('[SyncManager] Cleaning up for user:', initializedForUserId.current);
+        clearStores(initializedForUserId.current);
+        initializedForUserId.current = null;
+        isInitializing.current = false;
         console.log('[SyncManager] Cleaned up Legend-State stores (user logged out or not Pro)');
       }
     }

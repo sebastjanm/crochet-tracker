@@ -71,9 +71,9 @@ export const ImageGallery = memo(function ImageGallery({
   }, []);
 
   const handleAddImages = useCallback(async () => {
-    const newImage = await showImagePickerOptions();
-    if (newImage && onImagesChange) {
-      const updatedImages = [...images, newImage].slice(0, maxImages);
+    const result = await showImagePickerOptions();
+    if (result.success && result.data && onImagesChange) {
+      const updatedImages = [...images, result.data].slice(0, maxImages);
       onImagesChange(updatedImages);
     }
   }, [images, maxImages, onImagesChange, showImagePickerOptions]);

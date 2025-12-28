@@ -1,7 +1,29 @@
-import { useState } from 'react';
+/**
+ * Image Picker Hook
+ *
+ * Provides image selection from gallery and camera with:
+ * - Automatic copy to permanent storage (prevents cache loss)
+ * - Consistent { success, data, error } return pattern
+ * - Permission handling with user-friendly prompts
+ *
+ * @example
+ * ```tsx
+ * const { pickImages, takePhoto, isPickingImage } = useImagePicker();
+ *
+ * const result = await pickImages();
+ * if (result.success) {
+ *   setImages(result.data); // string[]
+ * } else {
+ *   showToast(result.error.message, 'error');
+ * }
+ * ```
+ */
+
+import { useState, useCallback } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { File as ExpoFile, Directory, Paths } from 'expo-file-system';
 import { Alert } from 'react-native';
+import type { ActionResult } from '@/types';
 
 /**
  * Copy a picked image from temp cache to permanent storage.
@@ -10,7 +32,7 @@ import { Alert } from 'react-native';
  *
  * Uses SDK 54 expo-file-system API with File/Directory/Paths.
  */
-async function copyToPermanentStorage(tempUri: string): Promise<string> {
+async function copyToPermanentStorage(tempUri: string): Promise<ActionResult<string>> {
   try {
     // Create images directory in document storage
     const imagesDir = new Directory(Paths.document, 'images');
@@ -29,11 +51,12 @@ async function copyToPermanentStorage(tempUri: string): Promise<string> {
     sourceFile.copy(destFile);
 
     if (__DEV__) console.log('[ImagePicker] Copied to permanent storage:', destFile.uri);
-    return destFile.uri;
+    return { success: true, data: destFile.uri };
   } catch (error) {
-    if (__DEV__) console.error('[ImagePicker] Failed to copy to permanent storage:', error);
+    const err = error instanceof Error ? error : new Error(String(error));
+    if (__DEV__) console.error('[ImagePicker] Failed to copy to permanent storage:', err);
     // Return original URI as fallback (may fail later if cache is cleared)
-    return tempUri;
+    return { success: true, data: tempUri };
   }
 }
 
@@ -44,14 +67,20 @@ async function copyToPermanentStorage(tempUri: string): Promise<string> {
 export function useImagePicker() {
   const [isPickingImage, setIsPickingImage] = useState(false);
 
-  const pickImagesFromGallery = async (): Promise<string[]> => {
+  /**
+   * Pick multiple images from gallery.
+   * Returns { success: true, data: string[] } or { success: false, error: Error }
+   */
+  const pickImagesFromGallery = useCallback(async (): Promise<ActionResult<string[]>> => {
     try {
       setIsPickingImage(true);
 
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Please grant permission to access your photos');
-        return [];
+        return {
+          success: false,
+          error: new Error('Permission to access photos was denied'),
+        };
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -62,31 +91,48 @@ export function useImagePicker() {
         base64: false,
       });
 
-      if (!result.canceled && result.assets) {
-        // Copy all picked images to permanent storage
-        const permanentUris = await Promise.all(
-          result.assets.map(asset => copyToPermanentStorage(asset.uri))
-        );
-        return permanentUris;
+      if (result.canceled) {
+        return { success: true, data: [] }; // User cancelled - not an error
       }
-      return [];
+
+      if (!result.assets || result.assets.length === 0) {
+        return { success: true, data: [] };
+      }
+
+      // Copy all picked images to permanent storage
+      const copyResults = await Promise.all(
+        result.assets.map(asset => copyToPermanentStorage(asset.uri))
+      );
+
+      // Collect successful copies
+      const permanentUris = copyResults
+        .filter((r): r is { success: true; data: string } => r.success)
+        .map(r => r.data);
+
+      return { success: true, data: permanentUris };
     } catch (error) {
-      if (__DEV__) console.error('Error picking images:', error);
-      Alert.alert('Error', 'Failed to pick images');
-      return [];
+      const err = error instanceof Error ? error : new Error(String(error));
+      if (__DEV__) console.error('[ImagePicker] Error picking images:', err);
+      return { success: false, error: err };
     } finally {
       setIsPickingImage(false);
     }
-  };
+  }, []);
 
-  const takePhotoWithCamera = async (): Promise<string | null> => {
+  /**
+   * Take a photo with the camera.
+   * Returns { success: true, data: string } or { success: false, error: Error }
+   */
+  const takePhotoWithCamera = useCallback(async (): Promise<ActionResult<string | null>> => {
     try {
       setIsPickingImage(true);
 
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Please grant permission to use the camera');
-        return null;
+        return {
+          success: false,
+          error: new Error('Permission to use camera was denied'),
+        };
       }
 
       const result = await ImagePicker.launchCameraAsync({
@@ -95,22 +141,35 @@ export function useImagePicker() {
         base64: false,
       });
 
-      if (!result.canceled && result.assets && result.assets[0]) {
-        // Copy to permanent storage
-        return await copyToPermanentStorage(result.assets[0].uri);
+      if (result.canceled) {
+        return { success: true, data: null }; // User cancelled - not an error
       }
-      return null;
+
+      if (!result.assets || result.assets.length === 0) {
+        return { success: true, data: null };
+      }
+
+      // Copy to permanent storage
+      const copyResult = await copyToPermanentStorage(result.assets[0].uri);
+      if (copyResult.success) {
+        return { success: true, data: copyResult.data };
+      }
+
+      return copyResult as ActionResult<string | null>;
     } catch (error) {
-      if (__DEV__) console.error('Error taking photo:', error);
-      Alert.alert('Error', 'Failed to take photo');
-      return null;
+      const err = error instanceof Error ? error : new Error(String(error));
+      if (__DEV__) console.error('[ImagePicker] Error taking photo:', err);
+      return { success: false, error: err };
     } finally {
       setIsPickingImage(false);
     }
-  };
+  }, []);
 
-
-  const showImagePickerOptions = async (): Promise<string | null> => {
+  /**
+   * Show options dialog and pick a single image (from gallery or camera).
+   * Returns { success: true, data: string | null } or { success: false, error: Error }
+   */
+  const showImagePickerOptions = useCallback(async (): Promise<ActionResult<string | null>> => {
     return new Promise((resolve) => {
       Alert.alert(
         'Add Photo',
@@ -119,29 +178,39 @@ export function useImagePicker() {
           {
             text: 'Take Photo',
             onPress: async () => {
-              const photo = await takePhotoWithCamera();
-              resolve(photo);
+              const result = await takePhotoWithCamera();
+              resolve(result);
             }
           },
           {
             text: 'Choose from Gallery',
             onPress: async () => {
-              const photos = await pickImagesFromGallery();
-              // Return first photo from gallery selection
-              resolve(photos.length > 0 ? photos[0] : null);
+              const result = await pickImagesFromGallery();
+              if (result.success) {
+                resolve({
+                  success: true,
+                  data: result.data.length > 0 ? result.data[0] : null
+                });
+              } else {
+                resolve(result as ActionResult<string | null>);
+              }
             }
           },
           {
             text: 'Cancel',
             style: 'cancel',
-            onPress: () => resolve(null)
+            onPress: () => resolve({ success: true, data: null })
           }
         ]
       );
     });
-  };
+  }, [takePhotoWithCamera, pickImagesFromGallery]);
 
-  const showImagePickerOptionsMultiple = async (): Promise<string[]> => {
+  /**
+   * Show options dialog and pick multiple images.
+   * Returns { success: true, data: string[] } or { success: false, error: Error }
+   */
+  const showImagePickerOptionsMultiple = useCallback(async (): Promise<ActionResult<string[]>> => {
     return new Promise((resolve) => {
       Alert.alert(
         'Add Photos',
@@ -150,32 +219,44 @@ export function useImagePicker() {
           {
             text: 'Take Photo',
             onPress: async () => {
-              const photo = await takePhotoWithCamera();
-              resolve(photo ? [photo] : []);
+              const result = await takePhotoWithCamera();
+              if (result.success) {
+                resolve({
+                  success: true,
+                  data: result.data ? [result.data] : []
+                });
+              } else {
+                resolve(result as ActionResult<string[]>);
+              }
             }
           },
           {
             text: 'Choose from Gallery',
             onPress: async () => {
-              const photos = await pickImagesFromGallery();
-              resolve(photos);
+              const result = await pickImagesFromGallery();
+              resolve(result);
             }
           },
           {
             text: 'Cancel',
             style: 'cancel',
-            onPress: () => resolve([])
+            onPress: () => resolve({ success: true, data: [] })
           }
         ]
       );
     });
-  };
+  }, [takePhotoWithCamera, pickImagesFromGallery]);
 
   return {
+    /** Whether an image picker operation is in progress */
     isPickingImage,
+    /** Pick multiple images from gallery */
     pickImagesFromGallery,
+    /** Take a photo with camera */
     takePhotoWithCamera,
+    /** Show picker dialog for single image */
     showImagePickerOptions,
+    /** Show picker dialog for multiple images */
     showImagePickerOptionsMultiple,
   };
 }

@@ -106,8 +106,9 @@ export default function ProjectInspirationScreen() {
   };
 
   const handleAddInspirationImage = async (inspirationId: string) => {
-    const uri = await showImagePickerOptions();
-    if (uri) {
+    const result = await showImagePickerOptions();
+    if (result.success && result.data) {
+      const uri = result.data;
       const updatedInspirationSources = inspirationSources.map((source) =>
         source.id === inspirationId
           ? { ...source, images: [...(source.images || []), uri] }

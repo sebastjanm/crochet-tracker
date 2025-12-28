@@ -1,5 +1,8 @@
 import type { ImageSource } from 'expo-image';
 
+// Re-export async result types for consistent error handling
+export * from './async';
+
 export type ProjectStatus = 'to-do' | 'in-progress' | 'on-hold' | 'completed' | 'frogged';
 
 // Image can be a URL string or a local require() asset

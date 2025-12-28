@@ -73,8 +73,9 @@ export default function AddProjectScreen(): React.JSX.Element {
         {
           text: t('projects.takePhoto'),
           onPress: async () => {
-            const uri = await takePhotoWithCamera();
-            if (uri) {
+            const result = await takePhotoWithCamera();
+            if (result.success && result.data) {
+              const uri = result.data;
               setImages(prev => [...prev, uri]);
             }
           },
@@ -82,9 +83,9 @@ export default function AddProjectScreen(): React.JSX.Element {
         {
           text: t('projects.chooseFromLibrary'),
           onPress: async () => {
-            const uris = await showImagePickerOptionsMultiple();
-            if (uris.length > 0) {
-              setImages(prev => [...prev, ...uris]);
+            const result = await showImagePickerOptionsMultiple();
+            if (result.success && result.data.length > 0) {
+              setImages(prev => [...prev, ...result.data]);
             }
           },
         },
@@ -113,9 +114,9 @@ export default function AddProjectScreen(): React.JSX.Element {
 
   /** Adds pattern images from library */
   const handleAddPatternImage = useCallback(async () => {
-    const uris = await showImagePickerOptionsMultiple();
-    if (uris.length > 0) {
-      setPatternImages(prev => [...prev, ...uris]);
+    const result = await showImagePickerOptionsMultiple();
+    if (result.success && result.data.length > 0) {
+      setPatternImages(prev => [...prev, ...result.data]);
     }
   }, [showImagePickerOptionsMultiple]);
 

@@ -4,11 +4,14 @@
  * Provides real-time network connectivity information using expo-network.
  * Used for intelligent sync decisions (online/offline, WiFi/cellular).
  *
+ * Returns { data, error, status } pattern for consistent error handling.
+ *
  * @see https://docs.expo.dev/versions/latest/sdk/network/
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import * as Network from 'expo-network';
+import type { ActionResult } from '@/types';
 
 export interface NetworkState {
   /** Whether the device has an active internet connection */
@@ -23,8 +26,10 @@ export interface NetworkState {
   type: Network.NetworkStateType | null;
   /** Whether airplane mode is enabled (Android only) */
   isAirplaneMode: boolean;
+  /** Error from last network check (null if successful) */
+  error: Error | null;
   /** Refresh network state manually */
-  refresh: () => Promise<void>;
+  refresh: () => Promise<ActionResult<void>>;
 }
 
 /**
@@ -33,7 +38,11 @@ export interface NetworkState {
  * @example
  * ```tsx
  * function SyncButton() {
- *   const { isConnected, isWifi, isCellular } = useNetworkState();
+ *   const { isConnected, isWifi, isCellular, error, refresh } = useNetworkState();
+ *
+ *   if (error) {
+ *     return <Text>Failed to check connection: {error.message}</Text>;
+ *   }
  *
  *   if (!isConnected) {
  *     return <Text>Offline - changes saved locally</Text>;
@@ -55,9 +64,10 @@ export function useNetworkState(): NetworkState {
     isLoading: true,
     type: null,
     isAirplaneMode: false,
+    error: null,
   });
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (): Promise<ActionResult<void>> => {
     try {
       const networkState = await Network.getNetworkStateAsync();
 
@@ -68,13 +78,21 @@ export function useNetworkState(): NetworkState {
         isLoading: false,
         type: networkState.type ?? null,
         isAirplaneMode: false, // Will be updated by listener if available
+        error: null,
       });
+
+      return { success: true, data: undefined };
     } catch (error) {
-      if (__DEV__) console.warn('[Network] Failed to get network state:', error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      if (__DEV__) console.warn('[Network] Failed to get network state:', err);
+
       setState((prev) => ({
         ...prev,
         isLoading: false,
+        error: err,
       }));
+
+      return { success: false, error: err };
     }
   }, []);
 
@@ -91,6 +109,7 @@ export function useNetworkState(): NetworkState {
         isLoading: false,
         type: networkState.type ?? null,
         isAirplaneMode: false,
+        error: null, // Clear error on successful update
       });
     });
 
@@ -131,8 +150,12 @@ export function canSync(
  * Get a user-friendly description of the current network state.
  */
 export function getNetworkStatusMessage(
-  state: Pick<NetworkState, 'isConnected' | 'isWifi' | 'isCellular' | 'isLoading'>
+  state: Pick<NetworkState, 'isConnected' | 'isWifi' | 'isCellular' | 'isLoading' | 'error'>
 ): string {
+  if (state.error) {
+    return 'Unable to check connection';
+  }
+
   if (state.isLoading) {
     return 'Checking connection...';
   }

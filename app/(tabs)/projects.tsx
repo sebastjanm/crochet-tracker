@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -30,7 +30,11 @@ const { width } = Dimensions.get('window');
 const isSmallDevice = width < 375;
 const isTablet = width >= 768;
 
-export default function ProjectsScreen() {
+/**
+ * Projects Screen - Main projects list with filtering, search, and "currently working on" feature.
+ * Displays projects in a grid layout with status indicators and quick actions.
+ */
+export default function ProjectsScreen(): React.JSX.Element {
   const {
     projects,
     toDoCount,
@@ -52,24 +56,30 @@ export default function ProjectsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
-  const filteredProjects = projects
-    .filter(project => filter === 'all' || project.status === filter)
-    .filter(project => {
-      if (!searchQuery) return true;
-      const query = searchQuery.toLowerCase();
-      return (
-        project.title?.toLowerCase().includes(query) ||
-        project.description?.toLowerCase().includes(query) ||
-        project.notes?.toLowerCase().includes(query)
-      );
-    });
+  /** Memoized filtered projects based on status filter and search query */
+  const filteredProjects = useMemo(() => {
+    const query = searchQuery.toLowerCase();
+    return projects
+      .filter(project => filter === 'all' || project.status === filter)
+      .filter(project => {
+        if (!query) return true;
+        return (
+          project.title?.toLowerCase().includes(query) ||
+          project.description?.toLowerCase().includes(query) ||
+          project.notes?.toLowerCase().includes(query)
+        );
+      });
+  }, [projects, filter, searchQuery]);
 
-  const onRefresh = React.useCallback(() => {
+  /** Pull-to-refresh handler - triggers visual feedback */
+  const onRefresh = useCallback(() => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
+    // Legend-State handles sync automatically; this provides visual feedback
+    setTimeout(() => setRefreshing(false), 800);
   }, []);
 
-  const handleLongPress = async (project: Project) => {
+  /** Handles long press to toggle "currently working on" status */
+  const handleLongPress = useCallback(async (project: Project) => {
     const success = await toggleCurrentlyWorkingOn(project.id);
     if (!success) {
       showToast(t('projects.maxActiveProjects'), 'warning');
@@ -80,7 +90,7 @@ export default function ProjectsScreen() {
         'success'
       );
     }
-  };
+  }, [toggleCurrentlyWorkingOn, showToast, t]);
 
   const getStatusIcon = (status: ProjectStatus) => {
     switch (status) {
@@ -112,7 +122,8 @@ export default function ProjectsScreen() {
     }
   };
 
-  const renderProject = ({ item }: { item: Project }) => {
+  /** Renders a single project card in the grid */
+  const renderProject = useCallback(({ item }: { item: Project }) => {
     const defaultImageIndex = item.defaultImageIndex ?? 0;
     const displayImage = item.images[defaultImageIndex] || item.images[0];
     const isActive = item.isCurrentlyWorkingOn === true;
@@ -159,21 +170,24 @@ export default function ProjectsScreen() {
         </View>
       </TouchableOpacity>
     );
-  };
+  }, [handleLongPress]);
 
-  const getProjectTypeLabel = (type?: string) => {
+  /** Gets the translated label for a project type */
+  const getProjectTypeLabel = useCallback((type?: string) => {
     if (!type) return t('projects.projectTypes.other');
     return t(`projects.projectTypes.${type}`) || t('projects.projectTypes.other');
-  };
+  }, [t]);
 
-  const formatStartDate = (date?: Date | string) => {
+  /** Formats a date for display in project cards */
+  const formatStartDate = useCallback((date?: Date | string) => {
     if (!date) return null;
     const d = typeof date === 'string' ? new Date(date) : date;
     if (isNaN(d.getTime())) return null;
     return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-  };
+  }, []);
 
-  const renderActiveProject = ({ item }: { item: Project }) => {
+  /** Renders a project card in the "currently working on" horizontal list */
+  const renderActiveProject = useCallback(({ item }: { item: Project }) => {
     const defaultImageIndex = item.defaultImageIndex ?? 0;
     const displayImage = item.images[defaultImageIndex] || item.images[0];
     const startDateFormatted = formatStartDate(item.startDate);
@@ -220,16 +234,17 @@ export default function ProjectsScreen() {
         </View>
       </TouchableOpacity>
     );
-  };
+  }, [handleLongPress, getProjectTypeLabel, formatStartDate]);
 
-  const statusFilters = [
+  /** Memoized status filters with icons and counts */
+  const statusFilters = useMemo(() => [
     { key: 'all', label: t('projects.all'), count: projects.length, icon: <Volleyball size={18} color={filter === 'all' ? Colors.white : Colors.deepSage} />, color: Colors.deepSage },
     { key: 'to-do', label: t('projects.toDo'), count: toDoCount, icon: <Lightbulb size={18} color={filter === 'to-do' ? Colors.white : Colors.filterToDo} />, color: Colors.filterToDo },
     { key: 'in-progress', label: t('projects.inProgress'), count: inProgressCount, icon: <Clock size={18} color={filter === 'in-progress' ? Colors.white : Colors.filterInProgress} />, color: Colors.filterInProgress },
     { key: 'on-hold', label: t('projects.onHold'), count: onHoldCount, icon: <PauseCircle size={18} color={filter === 'on-hold' ? Colors.white : Colors.filterOnHold} />, color: Colors.filterOnHold },
     { key: 'completed', label: t('projects.completed'), count: completedCount, icon: <CheckCircle size={18} color={filter === 'completed' ? Colors.white : Colors.filterCompleted} />, color: Colors.filterCompleted },
     { key: 'frogged', label: t('projects.frogged'), count: froggedCount, icon: <RotateCcw size={18} color={filter === 'frogged' ? Colors.white : Colors.filterFrogged} />, color: Colors.filterFrogged },
-  ];
+  ], [t, filter, projects.length, toDoCount, inProgressCount, onHoldCount, completedCount, froggedCount]);
 
   return (
     <View style={styles.backgroundContainer}>
@@ -422,78 +437,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.beige,
   },
-  stats: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: Colors.white,
-    padding: 22,
-    borderRadius: 18,
-    alignItems: 'center',
-    borderWidth: 2.5,
-    borderColor: Colors.sage,
-    minHeight: 90,
-    ...Platform.select({
-      ios: {
-        shadowColor: Colors.sage,
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.12,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 4,
-      },
-      default: {},
-    }),
-  },
-  statCardActive: {
-    backgroundColor: Colors.sage,
-    borderColor: Colors.deepSage,
-    borderWidth: 3,
-    ...Platform.select({
-      ios: {
-        shadowColor: Colors.sage,
-        shadowOffset: { width: 0, height: 5 },
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
-        transform: [{ scale: 1.03 }],
-      },
-      android: {
-        elevation: 7,
-      },
-      default: {},
-    }),
-  },
-  statNumber: {
-    ...Typography.title1,
-    color: Colors.deepSage,
-    marginBottom: 8,
-    fontWeight: '800' as const,
-    fontSize: 32,
-  },
-  statNumberActive: {
-    color: Colors.white,
-    textShadowColor: 'rgba(0,0,0,0.1)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  statLabel: {
-    ...Typography.caption,
-    color: Colors.deepSage,
-    fontWeight: '700' as const,
-    fontSize: 15,
-    textAlign: 'center',
-    letterSpacing: -0.1,
-  },
-  statLabelActive: {
-    color: Colors.white,
-    fontWeight: '700' as const,
-    textShadowColor: 'rgba(0,0,0,0.1)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 1,
-  },
   list: {
     padding: 16,
     paddingBottom: 100,
@@ -529,33 +472,12 @@ const styles = StyleSheet.create({
   projectInfo: {
     padding: 12,
   },
-  statusBadge: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backdropFilter: 'blur(10px)',
-  },
   projectTitle: {
     ...Typography.body,
     color: Colors.charcoal,
     fontWeight: '600' as const,
     fontSize: 15,
     lineHeight: 20,
-  },
-  projectStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  statusText: {
-    ...Typography.caption,
-    color: Colors.warmGray,
   },
   fab: {
     position: 'absolute',

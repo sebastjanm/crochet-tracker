@@ -1,4 +1,4 @@
-import React from 'react';
+import { useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -23,14 +23,11 @@ import {
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { useLanguage } from '@/hooks/language-context';
-import { normalizeBorder, cardShadow, normalizeBorderOpacity, getPixelRatio } from '@/constants/pixelRatio';
+import { normalizeBorder, cardShadow, normalizeBorderOpacity } from '@/constants/pixelRatio';
 
 const { width } = Dimensions.get('window');
 const isSmallDevice = width < 375;
 const isTablet = width >= 768;
-
-// DEBUG: Log pixel ratio on load to verify detection
-console.log('🔍 DEBUG: Device pixel ratio =', getPixelRatio());
 
 // Calculate card dimensions for perfect 2×3 grid
 const getCardDimensions = () => {
@@ -48,10 +45,15 @@ const getCardDimensions = () => {
 
 const { cardWidth, cardHeight, gridGap, containerPadding } = getCardDimensions();
 
-export default function ToolsScreen() {
+/**
+ * Tools Screen - Hub for AI-powered tools and utilities.
+ * Features a 2x3 grid of tool cards with gradients and icons.
+ */
+export default function ToolsScreen(): React.JSX.Element {
   const { t } = useLanguage();
 
-  const tools = [
+  /** Memoized tools configuration with icons and routes */
+  const tools = useMemo(() => [
     {
       id: 'unit-conversion',
       title: t('tools.unitConversion'),
@@ -107,22 +109,20 @@ export default function ToolsScreen() {
       route: null,
       isPlaceholder: true,
     },
-  ];
+  ], [t]);
 
-  const handleToolPress = (tool: typeof tools[0]) => {
+  /** Handles navigation when a tool card is pressed */
+  const handleToolPress = useCallback((tool: typeof tools[number]) => {
     if (tool.isPlaceholder) {
-      // Could show a toast or modal about upcoming features
-      console.log('More tools coming soon!');
+      // TODO: Could show a toast or modal about upcoming features
       return;
     }
 
     if (tool.route) {
-      router.push(tool.route as any);
-    } else {
-      // Tool not implemented yet
-      console.log(`${tool.title} coming soon!`);
+      router.push(tool.route as Parameters<typeof router.push>[0]);
     }
-  };
+    // Non-implemented tools simply do nothing until routes are added
+  }, [tools]);
 
   return (
     <View style={styles.backgroundContainer}>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -27,34 +27,46 @@ const { width } = Dimensions.get('window');
 const isSmallDevice = width < 375;
 const isTablet = width >= 768;
 
-export default function InventoryScreen() {
+/**
+ * Inventory Screen - Manages yarn, hooks, and other crafting supplies.
+ * Displays items in a grid layout with category filtering and search.
+ */
+export default function InventoryScreen(): React.JSX.Element {
   const { items, yarnCount, hookCount } = useInventory();
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'yarn' | 'hook' | 'other'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredItems = items
-    .filter(item => selectedCategory === 'all' || item.category === selectedCategory)
-    .filter(item => {
-      if (!searchQuery) return true;
-      const query = searchQuery.toLowerCase();
-      return (
-        item.name?.toLowerCase().includes(query) ||
-        item.yarnDetails?.brand?.name?.toLowerCase().includes(query) ||
-        item.hookDetails?.brand?.toLowerCase().includes(query) ||
-        item.description?.toLowerCase().includes(query)
-      );
-    });
+  /** Memoized filtered items based on category and search query */
+  const filteredItems = useMemo(() => {
+    const query = searchQuery.toLowerCase();
+    return items
+      .filter(item => selectedCategory === 'all' || item.category === selectedCategory)
+      .filter(item => {
+        if (!query) return true;
+        return (
+          item.name?.toLowerCase().includes(query) ||
+          item.yarnDetails?.brand?.name?.toLowerCase().includes(query) ||
+          item.hookDetails?.brand?.toLowerCase().includes(query) ||
+          item.description?.toLowerCase().includes(query)
+        );
+      });
+  }, [items, selectedCategory, searchQuery]);
 
-  const categories = [
+  /** Count of "other" category items */
+  const otherCount = useMemo(() => items.filter(i => i.category === 'other').length, [items]);
+
+  /** Memoized category filters with icons and counts */
+  const categories = useMemo(() => [
     { id: 'all', label: t('inventory.all'), count: items.length, icon: <Grid3x3 size={18} color={selectedCategory === 'all' ? Colors.white : Colors.deepSage} />, color: Colors.deepSage },
     { id: 'yarn', label: t('inventory.yarn'), count: yarnCount, icon: <Volleyball size={18} color={selectedCategory === 'yarn' ? Colors.white : Colors.filterYarn} />, color: Colors.filterYarn },
     { id: 'hook', label: t('inventory.hooks'), count: hookCount, icon: <Wrench size={18} color={selectedCategory === 'hook' ? Colors.white : Colors.sage} />, color: Colors.sage },
-    { id: 'other', label: t('inventory.other'), count: items.filter(i => i.category === 'other').length, icon: <Package size={18} color={selectedCategory === 'other' ? Colors.white : Colors.filterOther} />, color: Colors.filterOther },
-  ];
+    { id: 'other', label: t('inventory.other'), count: otherCount, icon: <Package size={18} color={selectedCategory === 'other' ? Colors.white : Colors.filterOther} />, color: Colors.filterOther },
+  ], [t, selectedCategory, items.length, yarnCount, hookCount, otherCount]);
 
-  const renderItem = ({ item }: { item: InventoryItem }) => {
+  /** Renders a single inventory item card */
+  const renderItem = useCallback(({ item }: { item: InventoryItem }) => {
     const displayName = item.name || 'Untitled';
     const brandName = item.yarnDetails?.brand?.name || item.hookDetails?.brand || '';
 
@@ -98,7 +110,7 @@ export default function InventoryScreen() {
         </View>
       </TouchableOpacity>
     );
-  };
+  }, []);
 
   return (
     <View style={styles.backgroundContainer}>
@@ -309,12 +321,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     marginBottom: 4,
-  },
-  itemQuantity: {
-    ...Typography.caption,
-    color: Colors.sage,
-    fontWeight: '600' as const,
-    fontSize: 12,
   },
   fab: {
     position: 'absolute',

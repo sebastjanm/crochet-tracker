@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useMemo, useCallback, Fragment } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  Platform,
   Dimensions,
   ActivityIndicator,
 } from 'react-native';
@@ -42,7 +41,7 @@ import { imageSyncQueue } from '@/lib/legend-state';
 import { useToast } from '@/components/Toast';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
-import { normalizeBorder, cardShadow } from '@/constants/pixelRatio';
+import { normalizeBorder } from '@/constants/pixelRatio';
 import { ACCESSIBLE_COLORS } from '@/constants/accessibility';
 import { loadAllMockData, clearAllData, getCurrentDataCounts } from '@/scripts/loadMockData';
 
@@ -50,7 +49,11 @@ const { width } = Dimensions.get('window');
 const isSmallDevice = width < 375;
 const isTablet = width >= 768;
 
-export default function ProfileScreen() {
+/**
+ * Profile Screen - User settings, stats, and account management.
+ * Includes cloud sync controls for Pro users and developer tools.
+ */
+export default function ProfileScreen(): React.JSX.Element {
   const { user, logout, updateUser, refreshUser, isPro } = useAuth();
   const { projects, completedCount, inProgressCount, refreshProjects } = useProjects();
   const { items, refreshItems } = useInventory();
@@ -146,9 +149,9 @@ export default function ProfileScreen() {
         showToast(t('profile.noImagesToSync'), 'info');
       }
 
-      console.log('[Profile] Image sync status:', status);
+      if (__DEV__) console.log('[Profile] Image sync status:', status);
     } catch (error) {
-      console.error('[Profile] Image sync error:', error);
+      if (__DEV__) console.error('[Profile] Image sync error:', error);
       showToast(
         error instanceof Error ? error.message : t('profile.syncFailed'),
         'error'
@@ -157,8 +160,6 @@ export default function ProfileScreen() {
       setIsSyncingImages(false);
     }
   };
-
-  const userName = user?.name?.split(' ')[0] || t('profile.defaultName');
 
   const handleLogout = () => {
     Alert.alert(
@@ -178,7 +179,8 @@ export default function ProfileScreen() {
     );
   };
 
-  const handleLanguageChange = () => {
+  /** Shows language selection dialog */
+  const handleLanguageChange = useCallback(() => {
     Alert.alert(
       t('profile.language'),
       t('profile.selectLanguage'),
@@ -190,9 +192,10 @@ export default function ProfileScreen() {
         { text: t('common.cancel'), style: 'cancel' },
       ]
     );
-  };
+  }, [t, changeLanguage]);
 
-  const handleCurrencyChange = () => {
+  /** Shows currency selection dialog */
+  const handleCurrencyChange = useCallback(() => {
     Alert.alert(
       t('profile.currency'),
       t('profile.selectCurrency'),
@@ -204,7 +207,7 @@ export default function ProfileScreen() {
         { text: t('common.cancel'), style: 'cancel' },
       ]
     );
-  };
+  }, [t, updateUser]);
 
   const handleAvatarSelect = async (avatarName: string) => {
     await updateUser({ avatar: avatarName });
@@ -236,9 +239,9 @@ export default function ProfileScreen() {
                 'Mock data loaded and refreshed!\n\n• 1 User (Breda Crochet)\n• 6 Projects\n• 12 Inventory Items (7 yarns, 5 hooks)',
                 [{ text: 'OK' }]
               );
-            } catch (error) {
-              Alert.alert('Error', 'Failed to load mock data. Check console for details.');
-              console.error('Mock data loading error:', error);
+            } catch (err) {
+              if (__DEV__) console.error('Mock data loading error:', err);
+              Alert.alert('Error', 'Failed to load mock data.');
             } finally {
               setIsLoadingMockData(false);
             }
@@ -270,9 +273,9 @@ export default function ProfileScreen() {
               ]);
 
               Alert.alert('Success', 'All data cleared.');
-            } catch (error) {
+            } catch (err) {
+              if (__DEV__) console.error('Clear data error:', err);
               Alert.alert('Error', 'Failed to clear data.');
-              console.error('Clear data error:', error);
             } finally {
               setIsLoadingMockData(false);
             }
@@ -290,7 +293,7 @@ export default function ProfileScreen() {
         `User: ${counts.hasUser ? 'Loaded' : 'Not loaded'}\nProjects: ${counts.projectCount}\nInventory: ${counts.inventoryCount}`,
         [{ text: 'OK' }]
       );
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Failed to get data counts.');
     }
   };
@@ -302,8 +305,10 @@ export default function ProfileScreen() {
     const status = imageSyncQueue.getStatus();
     const failed = imageSyncQueue.getFailedItems();
 
-    console.log('[Profile] Image Queue Status:', status);
-    console.log('[Profile] Failed Items:', failed);
+    if (__DEV__) {
+      console.log('[Profile] Image Queue Status:', status);
+      console.log('[Profile] Failed Items:', failed);
+    }
 
     // Count local vs cloud images in projects
     let projectLocalImages = 0;
@@ -362,7 +367,8 @@ export default function ProfileScreen() {
     );
   };
 
-  const menuItems = [
+  /** Memoized menu items configuration */
+  const menuItems = useMemo(() => [
     {
       icon: <Globe size={20} color={Colors.charcoal} />,
       label: t('profile.language'),
@@ -396,9 +402,9 @@ export default function ProfileScreen() {
     {
       icon: <HelpCircle size={20} color={Colors.charcoal} />,
       label: t('profile.about'),
-      onPress: () => router.push('/about' as any),
+      onPress: () => router.push('/about' as Parameters<typeof router.push>[0]),
     },
-  ];
+  ], [t, language, user?.currency, handleLanguageChange, handleCurrencyChange]);
 
   return (
     <View style={styles.backgroundContainer}>
@@ -563,7 +569,7 @@ export default function ProfileScreen() {
           <Text style={styles.sectionTitle}>{t('profile.settings')}</Text>
           <Card>
             {menuItems.map((item, index) => (
-              <React.Fragment key={index}>
+              <Fragment key={index}>
                 {index > 0 && <View style={styles.menuDivider} />}
                 <TouchableOpacity
                   style={styles.menuItem}
@@ -579,7 +585,7 @@ export default function ProfileScreen() {
                   {item.value && <Text style={styles.menuValue}>{item.value}</Text>}
                   <ChevronRight size={20} color={Colors.warmGray} />
                 </TouchableOpacity>
-              </React.Fragment>
+              </Fragment>
             ))}
           </Card>
         </View>
@@ -771,10 +777,6 @@ const styles = StyleSheet.create({
     minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  header: {
-    alignItems: 'center',
-    paddingVertical: 24,
   },
   profileInfo: {
     alignItems: 'center',

@@ -1,6 +1,6 @@
 import { Tabs, router } from "expo-router";
 import { Volleyball, Box, User, Wrench } from "lucide-react-native";
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { Platform, View, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
@@ -8,7 +8,11 @@ import { useAuth } from "@/hooks/auth-context";
 import { useLanguage } from "@/hooks/language-context";
 import { normalizeBorder } from "@/constants/pixelRatio";
 
-export default function TabLayout() {
+/**
+ * Tab Layout - Main navigation for authenticated users.
+ * Redirects to login if not authenticated.
+ */
+export default function TabLayout(): React.JSX.Element | null {
   const { isAuthenticated, isLoading } = useAuth();
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
@@ -74,9 +78,9 @@ export default function TabLayout() {
           title: t('tabs.projects'),
           headerShown: false,
           tabBarIcon: ({ color, focused }) => (
-            <Volleyball 
-              color={focused ? Colors.deepTeal : Colors.warmGray} 
-              size={26} 
+            <Volleyball
+              color={color}
+              size={26}
               strokeWidth={focused ? 3 : 2}
             />
           ),
@@ -90,7 +94,7 @@ export default function TabLayout() {
           headerShown: false,
           tabBarIcon: ({ color, focused }) => (
             <Box
-              color={focused ? Colors.deepTeal : Colors.warmGray}
+              color={color}
               size={26}
               strokeWidth={focused ? 3 : 2}
             />
@@ -105,7 +109,7 @@ export default function TabLayout() {
           headerShown: false,
           tabBarIcon: ({ color, focused }) => (
             <Wrench
-              color={focused ? Colors.deepTeal : Colors.warmGray}
+              color={color}
               size={26}
               strokeWidth={focused ? 3 : 2}
             />
@@ -120,7 +124,7 @@ export default function TabLayout() {
           headerShown: false,
           tabBarIcon: ({ color, focused }) => (
             <User
-              color={focused ? Colors.deepTeal : Colors.warmGray}
+              color={color}
               size={26}
               strokeWidth={focused ? 3 : 2}
             />

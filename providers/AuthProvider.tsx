@@ -13,34 +13,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { User, UserRole } from '@/types';
-import type { Session, AuthError } from '@supabase/supabase-js';
+import type { Session } from '@supabase/supabase-js';
 
 // Cache key for persisting user profile locally
 const USER_CACHE_KEY = 'cached_user_profile';
-
-// ============================================================================
-// TYPES
-// ============================================================================
-
-interface AuthState {
-  user: User | null;
-  session: Session | null;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-  isPro: boolean;
-  isAdmin: boolean;
-}
-
-interface LoginResult {
-  user: User | null;
-  error: AuthError | null;
-}
-
-interface RegisterResult {
-  user: User | null;
-  error: AuthError | null;
-  confirmEmail: boolean;
-}
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -277,11 +253,8 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
         if (mounted) {
           await handleSessionChange(newSession);
-
           // Ensure loading is false after any auth event
-          if (isLoading) {
-            setIsLoading(false);
-          }
+          setIsLoading(false);
         }
       }
     );

@@ -254,7 +254,7 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
       }
     });
     return filtered;
-  }, [items, selectedCategory, searchQuery, sortBy]);
+  }, [items, selectedCategory, searchQuery, sortBy, searchItems]);
 
   const statistics = useMemo(() => {
     const yarnItems = items.filter((i: InventoryItem) => i.category === 'yarn');

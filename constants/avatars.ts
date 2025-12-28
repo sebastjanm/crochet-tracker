@@ -14,7 +14,6 @@ export const CUTE_AVATARS: AvatarStyle[] = [
   { backgroundColor: '#F0E68C', emoji: '🐥', name: 'Chick' },
   { backgroundColor: '#FFA07A', emoji: '🦊', name: 'Fox' },
   { backgroundColor: '#20B2AA', emoji: '🐨', name: 'Koala' },
-  { backgroundColor: '#FF69B4', emoji: '🐷', name: 'Piggy' },
   { backgroundColor: '#9370DB', emoji: '🐙', name: 'Octopus' },
   { backgroundColor: '#32CD32', emoji: '🐢', name: 'Turtle' },
   { backgroundColor: '#FF6347', emoji: '🦀', name: 'Crab' },

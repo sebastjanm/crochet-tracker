@@ -13,8 +13,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { router } from 'expo-router';
 import { Plus, Package, Volleyball, Grid3x3, Wrench, HelpCircle } from 'lucide-react-native';
-import { Button } from '@/components/Button';
-import { EmptyState } from '@/components/EmptyState';
+import { NoInventoryState } from '@/components/NoInventoryState';
 import { SearchableFilterBar } from '@/components/SearchableFilterBar';
 import { InventoryListSkeleton } from '@/components/Skeleton';
 import { useInventory } from '@/providers/InventoryProvider';
@@ -155,19 +154,7 @@ export default function InventoryScreen(): React.JSX.Element {
       {isLoading ? (
         <InventoryListSkeleton count={6} />
       ) : filteredItems.length === 0 ? (
-        <EmptyState
-          icon={<Package size={64} color={Colors.warmGray} />}
-          title={selectedCategory === 'all' && !searchQuery ? t('inventory.noItems') : t('inventory.noItemsInCategory')}
-          description={selectedCategory === 'all' && !searchQuery ? t('inventory.addYourSupplies') : t('inventory.tryDifferentFilter')}
-          action={
-            <Button
-              title={selectedCategory === 'all' && !searchQuery ? t('inventory.addFirstItem') : t('inventory.addItem')}
-              icon={<Plus size={20} color={Colors.white} />}
-              onPress={() => router.push('/add-inventory')}
-              size="large"
-            />
-          }
-        />
+        <NoInventoryState isFiltered={selectedCategory !== 'all' || !!searchQuery} />
       ) : (
         <FlashList
           key={selectedCategory}

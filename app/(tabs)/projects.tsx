@@ -13,8 +13,7 @@ import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Plus, Clock, CheckCircle, Lightbulb, Volleyball, HelpCircle, PauseCircle, RotateCcw, Zap } from 'lucide-react-native';
-import { Button } from '@/components/Button';
-import { EmptyState } from '@/components/EmptyState';
+import { NoProjectsState } from '@/components/NoProjectsState';
 import { SearchableFilterBar } from '@/components/SearchableFilterBar';
 import { Avatar } from '@/components/Avatar';
 import { useToast } from '@/components/Toast';
@@ -321,19 +320,7 @@ export default function ProjectsScreen(): React.JSX.Element {
           )}
 
           {filteredProjects.length === 0 ? (
-            <EmptyState
-              icon={<Volleyball size={64} color={Colors.warmGray} />}
-              title={filter === 'all' && !searchQuery ? t('projects.noProjects') : t('projects.noProjectsInCategory')}
-              description={filter === 'all' && !searchQuery ? t('projects.startFirstProject') : t('projects.tryDifferentFilter')}
-              action={
-                <Button
-                  title={filter === 'all' && !searchQuery ? t('projects.addFirstProject') : t('projects.addProject')}
-                  icon={<Plus size={20} color={Colors.white} />}
-                  onPress={() => router.push('/add-project')}
-                  size="large"
-                />
-              }
-            />
+            <NoProjectsState isFiltered={filter !== 'all' || !!searchQuery} />
           ) : (
             <FlashList
               data={filteredProjects}

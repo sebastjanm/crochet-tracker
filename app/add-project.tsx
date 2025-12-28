@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -64,7 +64,8 @@ export default function AddProjectScreen(): React.JSX.Element {
   const [yarnPickerVisible, setYarnPickerVisible] = useState(false);
   const [hookPickerVisible, setHookPickerVisible] = useState(false);
 
-  const handleAddPhoto = () => {
+  /** Opens photo source selection dialog */
+  const handleAddPhoto = useCallback(() => {
     Alert.alert(
       t('projects.choosePhotoSource'),
       undefined,
@@ -74,7 +75,7 @@ export default function AddProjectScreen(): React.JSX.Element {
           onPress: async () => {
             const uri = await takePhotoWithCamera();
             if (uri) {
-              setImages([...images, uri]);
+              setImages(prev => [...prev, uri]);
             }
           },
         },
@@ -83,7 +84,7 @@ export default function AddProjectScreen(): React.JSX.Element {
           onPress: async () => {
             const uris = await showImagePickerOptionsMultiple();
             if (uris.length > 0) {
-              setImages([...images, ...uris]);
+              setImages(prev => [...prev, ...uris]);
             }
           },
         },
@@ -93,37 +94,38 @@ export default function AddProjectScreen(): React.JSX.Element {
         },
       ]
     );
-  };
+  }, [t, takePhotoWithCamera, showImagePickerOptionsMultiple]);
 
-  const removeImage = (index: number) => {
-    const newImages = images.filter((_, i) => i !== index);
-    setImages(newImages);
-    
-    // Adjust default index if needed
-    if (defaultImageIndex === index) {
-      setDefaultImageIndex(0);
-    } else if (defaultImageIndex > index) {
-      setDefaultImageIndex(defaultImageIndex - 1);
-    }
-  };
+  /** Removes an image and adjusts default index */
+  const removeImage = useCallback((index: number) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
+    setDefaultImageIndex(prev => {
+      if (prev === index) return 0;
+      if (prev > index) return prev - 1;
+      return prev;
+    });
+  }, []);
 
-  const setAsDefault = (index: number) => {
+  /** Sets the default image for the project */
+  const setAsDefault = useCallback((index: number) => {
     setDefaultImageIndex(index);
-  };
+  }, []);
 
-  // Pattern handlers
-  const handleAddPatternImage = async () => {
+  /** Adds pattern images from library */
+  const handleAddPatternImage = useCallback(async () => {
     const uris = await showImagePickerOptionsMultiple();
     if (uris.length > 0) {
-      setPatternImages([...patternImages, ...uris]);
+      setPatternImages(prev => [...prev, ...uris]);
     }
-  };
+  }, [showImagePickerOptionsMultiple]);
 
-  const removePatternImage = (index: number) => {
-    setPatternImages(patternImages.filter((_, i) => i !== index));
-  };
+  /** Removes a pattern image by index */
+  const removePatternImage = useCallback((index: number) => {
+    setPatternImages(prev => prev.filter((_, i) => i !== index));
+  }, []);
 
-  const handleAddPattern = () => {
+  /** Opens pattern source selection dialog */
+  const handleAddPattern = useCallback(() => {
     Alert.alert(
       t('projects.choosePatternSource'),
       undefined,
@@ -141,8 +143,7 @@ export default function AddProjectScreen(): React.JSX.Element {
               (text) => {
                 if (text) setPatternPdf(text);
               },
-              'plain-text',
-              patternPdf
+              'plain-text'
             );
           },
         },
@@ -155,8 +156,7 @@ export default function AddProjectScreen(): React.JSX.Element {
               (text) => {
                 if (text) setPatternUrl(text);
               },
-              'plain-text',
-              patternUrl
+              'plain-text'
             );
           },
         },
@@ -166,9 +166,10 @@ export default function AddProjectScreen(): React.JSX.Element {
         },
       ]
     );
-  };
+  }, [t, handleAddPatternImage]);
 
-  const handleAddYarn = () => {
+  /** Opens yarn selection dialog */
+  const handleAddYarn = useCallback(() => {
     Alert.alert(
       t('projects.addYarn'),
       undefined,
@@ -208,9 +209,10 @@ export default function AddProjectScreen(): React.JSX.Element {
         },
       ]
     );
-  };
+  }, [t]);
 
-  const handleAddHook = () => {
+  /** Opens hook selection dialog */
+  const handleAddHook = useCallback(() => {
     Alert.alert(
       t('projects.addHook'),
       undefined,
@@ -250,23 +252,27 @@ export default function AddProjectScreen(): React.JSX.Element {
         },
       ]
     );
-  };
+  }, [t]);
 
-  const handleRemoveYarn = (id: string) => {
-    setYarnMaterials(yarnMaterials.filter((yarn) => yarn.itemId !== id));
-  };
+  /** Removes a yarn from materials */
+  const handleRemoveYarn = useCallback((id: string) => {
+    setYarnMaterials(prev => prev.filter((yarn) => yarn.itemId !== id));
+  }, []);
 
-  const handleYarnQuantityChange = (id: string, quantity: number) => {
-    setYarnMaterials(yarnMaterials.map((yarn) =>
+  /** Updates yarn quantity in materials */
+  const handleYarnQuantityChange = useCallback((id: string, quantity: number) => {
+    setYarnMaterials(prev => prev.map((yarn) =>
       yarn.itemId === id ? { ...yarn, quantity } : yarn
     ));
-  };
+  }, []);
 
-  const handleRemoveHook = (id: string) => {
-    setHookUsedIds(hookUsedIds.filter((hookId) => hookId !== id));
-  };
+  /** Removes a hook from the project */
+  const handleRemoveHook = useCallback((id: string) => {
+    setHookUsedIds(prev => prev.filter((hookId) => hookId !== id));
+  }, []);
 
-  const handleSubmit = async () => {
+  /** Submits the new project */
+  const handleSubmit = useCallback(async () => {
     if (!title.trim()) {
       Alert.alert(t('common.error'), t('projects.enterProjectTitle'));
       return;
@@ -296,7 +302,11 @@ export default function AddProjectScreen(): React.JSX.Element {
     } finally {
       setLoading(false);
     }
-  };
+  }, [
+    title, description, notes, inspirationUrl, images, defaultImageIndex,
+    patternImages, patternPdf, patternUrl, status, projectType, startDate,
+    yarnMaterials, hookUsedIds, addProject, t
+  ]);
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>

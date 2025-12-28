@@ -54,7 +54,7 @@ import { getImageSource } from '@/types';
 export default function ProjectDetailScreen(): React.JSX.Element {
   const { id } = useLocalSearchParams();
   const { getProjectById, deleteProject, updateProject } = useProjects();
-  const { getItemById, getItemsByCategory } = useInventory();
+  const { getItemById } = useInventory();
   const { t } = useLanguage();
   const { user } = useAuth();
   

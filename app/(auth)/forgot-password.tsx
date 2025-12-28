@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, Link } from 'expo-router';
+import { Link } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
 import { YarnBallLogo } from '@/components/YarnBallLogo';
 import { Button } from '@/components/Button';
@@ -19,24 +19,27 @@ import { useLanguage } from '@/hooks/language-context';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 
-export default function ForgotPasswordScreen() {
+/** Email validation regex pattern */
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * ForgotPasswordScreen - Password reset request form.
+ * Sends reset email via Supabase auth.
+ */
+export default function ForgotPasswordScreen(): React.JSX.Element {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const { resetPassword } = useAuth();
   const { t } = useLanguage();
 
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  const handleResetPassword = async () => {
+  /** Handles password reset request with validation */
+  const handleResetPassword = useCallback(async () => {
     if (!email) {
       Alert.alert(t('common.error'), t('auth.emailRequired'));
       return;
     }
-    if (!validateEmail(email)) {
+    if (!EMAIL_REGEX.test(email)) {
       Alert.alert(t('common.error'), t('auth.emailInvalid'));
       return;
     }
@@ -46,12 +49,12 @@ export default function ForgotPasswordScreen() {
       await resetPassword(email);
       setEmailSent(true);
       Alert.alert(t('common.success'), t('auth.resetPasswordSuccess'));
-    } catch (error) {
-      Alert.alert(t('common.error'), 'Failed to send reset email');
+    } catch {
+      Alert.alert(t('common.error'), t('auth.resetPasswordFailed'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [email, resetPassword, t]);
 
   return (
     <SafeAreaView style={styles.container}>

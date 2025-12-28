@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -23,7 +23,14 @@ const { width } = Dimensions.get('window');
 const isSmallDevice = width < 375;
 const isTablet = width >= 768;
 
-export default function RegisterScreen() {
+/** Email validation regex pattern */
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * RegisterScreen - New user registration with email confirmation.
+ * Validates input and handles Supabase auth errors.
+ */
+export default function RegisterScreen(): React.JSX.Element {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,12 +38,8 @@ export default function RegisterScreen() {
   const { register } = useAuth();
   const { t } = useLanguage();
 
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  const handleRegister = async () => {
+  /** Handles registration form submission with validation */
+  const handleRegister = useCallback(async () => {
     if (!name.trim()) {
       Alert.alert(t('common.error'), t('auth.nameRequired'));
       return;
@@ -45,7 +48,7 @@ export default function RegisterScreen() {
       Alert.alert(t('common.error'), t('auth.emailRequired'));
       return;
     }
-    if (!validateEmail(email)) {
+    if (!EMAIL_REGEX.test(email)) {
       Alert.alert(t('common.error'), t('auth.emailInvalid'));
       return;
     }
@@ -85,7 +88,7 @@ export default function RegisterScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [name, email, password, register, t]);
 
   return (
     <SafeAreaView style={styles.container}>

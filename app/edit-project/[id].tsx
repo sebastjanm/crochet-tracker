@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -35,7 +35,11 @@ import { normalizeBorder, buttonShadow } from '@/constants/pixelRatio';
 import { ProjectStatus, ProjectType, ProjectImage, ProjectYarn, getImageSource } from '@/types';
 import { getProjectTypeOptions } from '@/constants/projectTypes';
 
-export default function EditProjectScreen() {
+/**
+ * EditProjectScreen - Edit form for existing projects.
+ * Supports photos, materials, patterns, and status updates.
+ */
+export default function EditProjectScreen(): React.JSX.Element {
   const { id } = useLocalSearchParams();
   const { getProjectById, updateProject } = useProjects();
   const { items: inventory } = useInventory();
@@ -90,22 +94,8 @@ export default function EditProjectScreen() {
     }
   }, [project]);
 
-  if (!project) {
-    return (
-      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{t('projects.projectNotFound')}</Text>
-          <Button
-            title={t('projects.goBack')}
-            onPress={() => router.dismiss()}
-            style={styles.errorButton}
-          />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  const handleAddPhoto = () => {
+  /** Opens photo source selection dialog */
+  const handleAddPhoto = useCallback(() => {
     Alert.alert(
       t('projects.choosePhotoSource'),
       undefined,
@@ -115,7 +105,7 @@ export default function EditProjectScreen() {
           onPress: async () => {
             const uri = await takePhotoWithCamera();
             if (uri) {
-              setImages([...images, uri]);
+              setImages(prev => [...prev, uri]);
             }
           },
         },
@@ -124,7 +114,7 @@ export default function EditProjectScreen() {
           onPress: async () => {
             const uris = await showImagePickerOptionsMultiple();
             if (uris.length > 0) {
-              setImages([...images, ...uris]);
+              setImages(prev => [...prev, ...uris]);
             }
           },
         },
@@ -134,36 +124,38 @@ export default function EditProjectScreen() {
         },
       ]
     );
-  };
+  }, [t, takePhotoWithCamera, showImagePickerOptionsMultiple]);
 
-  const removeImage = (index: number) => {
-    const newImages = images.filter((_, i) => i !== index);
-    setImages(newImages);
+  /** Removes an image and adjusts default index */
+  const removeImage = useCallback((index: number) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
+    setDefaultImageIndex(prev => {
+      if (prev === index) return 0;
+      if (prev > index) return prev - 1;
+      return prev;
+    });
+  }, []);
 
-    if (defaultImageIndex === index) {
-      setDefaultImageIndex(0);
-    } else if (defaultImageIndex > index) {
-      setDefaultImageIndex(defaultImageIndex - 1);
-    }
-  };
-
-  const setAsDefault = (index: number) => {
+  /** Sets the default image for the project */
+  const setAsDefault = useCallback((index: number) => {
     setDefaultImageIndex(index);
-  };
+  }, []);
 
-  // Pattern handlers
-  const handleAddPatternImage = async () => {
+  /** Adds pattern images from library */
+  const handleAddPatternImage = useCallback(async () => {
     const uris = await showImagePickerOptionsMultiple();
     if (uris.length > 0) {
-      setPatternImages([...patternImages, ...uris]);
+      setPatternImages(prev => [...prev, ...uris]);
     }
-  };
+  }, [showImagePickerOptionsMultiple]);
 
-  const removePatternImage = (index: number) => {
-    setPatternImages(patternImages.filter((_, i) => i !== index));
-  };
+  /** Removes a pattern image by index */
+  const removePatternImage = useCallback((index: number) => {
+    setPatternImages(prev => prev.filter((_, i) => i !== index));
+  }, []);
 
-  const handleAddPattern = () => {
+  /** Opens pattern source selection dialog */
+  const handleAddPattern = useCallback(() => {
     Alert.alert(
       t('projects.choosePatternSource'),
       undefined,
@@ -181,8 +173,7 @@ export default function EditProjectScreen() {
               (text) => {
                 if (text) setPatternPdf(text);
               },
-              'plain-text',
-              patternPdf
+              'plain-text'
             );
           },
         },
@@ -195,8 +186,7 @@ export default function EditProjectScreen() {
               (text) => {
                 if (text) setPatternUrl(text);
               },
-              'plain-text',
-              patternUrl
+              'plain-text'
             );
           },
         },
@@ -206,9 +196,10 @@ export default function EditProjectScreen() {
         },
       ]
     );
-  };
+  }, [t, handleAddPatternImage]);
 
-  const handleAddYarn = () => {
+  /** Opens yarn selection dialog */
+  const handleAddYarn = useCallback(() => {
     Alert.alert(
       t('projects.addYarn'),
       undefined,
@@ -233,9 +224,10 @@ export default function EditProjectScreen() {
         },
       ]
     );
-  };
+  }, [t]);
 
-  const handleAddHook = () => {
+  /** Opens hook selection dialog */
+  const handleAddHook = useCallback(() => {
     Alert.alert(
       t('projects.addHook'),
       undefined,
@@ -260,23 +252,28 @@ export default function EditProjectScreen() {
         },
       ]
     );
-  };
+  }, [t]);
 
-  const handleRemoveYarn = (id: string) => {
-    setYarnMaterials(yarnMaterials.filter((yarn) => yarn.itemId !== id));
-  };
+  /** Removes a yarn from materials */
+  const handleRemoveYarn = useCallback((id: string) => {
+    setYarnMaterials(prev => prev.filter((yarn) => yarn.itemId !== id));
+  }, []);
 
-  const handleYarnQuantityChange = (id: string, quantity: number) => {
-    setYarnMaterials(yarnMaterials.map((yarn) =>
+  /** Updates yarn quantity in materials */
+  const handleYarnQuantityChange = useCallback((id: string, quantity: number) => {
+    setYarnMaterials(prev => prev.map((yarn) =>
       yarn.itemId === id ? { ...yarn, quantity } : yarn
     ));
-  };
+  }, []);
 
-  const handleRemoveHook = (id: string) => {
-    setHookUsedIds(hookUsedIds.filter((hookId) => hookId !== id));
-  };
+  /** Removes a hook from the project */
+  const handleRemoveHook = useCallback((id: string) => {
+    setHookUsedIds(prev => prev.filter((hookId) => hookId !== id));
+  }, []);
 
-  const handleSubmit = async () => {
+  /** Submits updated project data */
+  const handleSubmit = useCallback(async () => {
+    if (!project) return;
     if (!title.trim()) {
       Alert.alert(t('common.error'), t('projects.enterProjectTitle'));
       return;
@@ -300,16 +297,38 @@ export default function EditProjectScreen() {
         yarnMaterials,
         hookUsedIds,
       };
-      console.log('📤 Submitting update with yarnMaterials:', yarnMaterials);
-      console.log('📤 Submitting update with hookUsedIds:', hookUsedIds);
+      if (__DEV__) {
+        console.log('📤 Submitting update with yarnMaterials:', yarnMaterials);
+        console.log('📤 Submitting update with hookUsedIds:', hookUsedIds);
+      }
       await updateProject(project.id, updateData);
       router.back();
-    } catch (error) {
+    } catch {
       Alert.alert(t('common.error'), t('projects.failedToUpdate'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [
+    project, title, description, notes, inspirationUrl, images, defaultImageIndex,
+    patternImages, patternPdf, patternUrl, status, projectType, startDate,
+    yarnMaterials, hookUsedIds, updateProject, t
+  ]);
+
+  // Early return for missing project - AFTER all hooks
+  if (!project) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{t('projects.projectNotFound')}</Text>
+          <Button
+            title={t('projects.goBack')}
+            onPress={() => router.dismiss()}
+            style={styles.errorButton}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -396,7 +415,7 @@ export default function EditProjectScreen() {
                       transition={200}
                       cachePolicy="memory-disk"
                       onError={(error) => {
-                        console.warn('Image load error:', error);
+                        if (__DEV__) console.warn('Image load error:', error);
                       }}
                     />
                     {index === defaultImageIndex && (
@@ -661,9 +680,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.border,
     marginVertical: 16,
   },
-  textArea: {
-    minHeight: 100,
-  },
   imageSection: {
     marginBottom: 16,
   },
@@ -691,166 +707,12 @@ const styles = StyleSheet.create({
     color: Colors.charcoal,
     flex: 1,
   },
-  imageButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  imageButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: Colors.white,
-    borderWidth: normalizeBorder(1.5),
-    borderColor: Colors.sage,
-    borderRadius: 14,
-    paddingVertical: 16,
-    minHeight: 54,
-    ...Platform.select({
-      ...buttonShadow,
-      default: {},
-    }),
-  },
-  imageButtonText: {
-    ...Typography.body,
-    color: Colors.sage,
-    fontWeight: '600' as const,
-    fontSize: 16,
-  },
   footer: {
     marginTop: 24,
     marginBottom: 32,
   },
   statusSection: {
     marginBottom: 16,
-  },
-  materialsSection: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    ...Typography.title3,
-    color: Colors.charcoal,
-    fontWeight: '600' as const,
-    marginBottom: 16,
-    fontSize: 18,
-  },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: Colors.deepSage,
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    marginBottom: 16,
-    minHeight: 50,
-  },
-  addButtonText: {
-    ...Typography.body,
-    color: Colors.white,
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  savedWorkEntry: {
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: normalizeBorder(1),
-    borderColor: Colors.border,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-  },
-  savedWorkEntryText: {
-    ...Typography.body,
-    color: Colors.charcoal,
-    fontSize: 15,
-    lineHeight: 22,
-    flex: 1,
-    marginRight: 12,
-  },
-  workEntryDeleteButton: {
-    padding: 4,
-    marginTop: -4,
-  },
-  workEntryForm: {
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: normalizeBorder(1.5),
-    borderColor: Colors.sage,
-  },
-  formButtons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 12,
-    marginTop: 12,
-  },
-  cancelButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: normalizeBorder(1),
-    borderColor: Colors.border,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  cancelButtonText: {
-    ...Typography.body,
-    color: Colors.charcoal,
-    fontSize: 15,
-    fontWeight: '500' as const,
-  },
-  saveButton: {
-    backgroundColor: Colors.sage,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  saveButtonDisabled: {
-    backgroundColor: Colors.warmGray,
-    opacity: 0.5,
-  },
-  saveButtonText: {
-    ...Typography.body,
-    color: Colors.white,
-    fontSize: 15,
-    fontWeight: '600' as const,
-  },
-  workEntryTitle: {
-    ...Typography.title3,
-    color: Colors.charcoal,
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  inspirationCard: {
-    backgroundColor: Colors.beige,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: normalizeBorder(1),
-    borderColor: Colors.deepSage,
-  },
-  inspirationHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  inspirationTitle: {
-    ...Typography.title3,
-    color: Colors.deepSage,
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  inspirationImagesSection: {
-    marginTop: 12,
   },
   statusScrollContent: {
     paddingVertical: 4,
@@ -919,40 +781,5 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.sage,
     borderRadius: 12,
     padding: 4,
-  },
-  addImageButton: {
-    width: 120,
-    height: 120,
-    borderRadius: 12,
-    borderWidth: normalizeBorder(2),
-    borderColor: Colors.sage,
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.white,
-    gap: 4,
-  },
-  addImageText: {
-    ...Typography.caption,
-    color: Colors.sage,
-    fontWeight: '600' as const,
-  },
-  addPhotoButton: {
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    borderWidth: normalizeBorder(2),
-    borderColor: Colors.sage,
-    borderStyle: 'dashed',
-    padding: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    minHeight: 120,
-  },
-  addPhotoButtonText: {
-    ...Typography.body,
-    color: Colors.sage,
-    fontWeight: '600' as const,
-    fontSize: 16,
   },
 });

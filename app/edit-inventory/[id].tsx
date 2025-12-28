@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,6 @@ import {
   Alert,
   Platform,
   KeyboardAvoidingView,
-  Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -29,13 +28,14 @@ import { useLanguage } from '@/hooks/language-context';
 import { useBrandSuggestions } from '@/hooks/useBrandSuggestions';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
-import { normalizeBorder, cardShadow, buttonShadow, getPixelRatio } from '@/constants/pixelRatio';
+import { normalizeBorder, cardShadow, buttonShadow } from '@/constants/pixelRatio';
 import { InventoryItem, YarnDetails, HookDetails, YarnWeightName, ProjectImage } from '@/types';
 
-// DEBUG: Log pixel ratio on load
-console.log('🔍 DEBUG [edit-inventory]: Device pixel ratio =', getPixelRatio());
-
-export default function EditInventoryScreen() {
+/**
+ * EditInventoryScreen - Edit form for inventory items (yarn, hooks, other).
+ * Supports category-specific fields and brand autocomplete.
+ */
+export default function EditInventoryScreen(): React.JSX.Element {
   const { id } = useLocalSearchParams();
   const { items, updateItem } = useInventory();
   const { user } = useAuth();
@@ -203,7 +203,8 @@ export default function EditInventoryScreen() {
     }
   }, [category]);
 
-  const handleSave = async () => {
+  /** Handles form submission with validation and saves the item */
+  const handleSave = useCallback(async () => {
     // Validate name based on category
     if (category === 'yarn' && !yarnName.trim()) {
       Alert.alert(t('common.error'), t('inventory.pleaseEnterYarnName'));
@@ -335,8 +336,15 @@ export default function EditInventoryScreen() {
     }
 
     router.dismiss();
-  };
-
+  }, [
+    category, yarnName, hookName, otherName, item, quantity, description, unit,
+    images, notes, brand, yarnLine, color, colorCode, colorFamily, fiber,
+    weightCategory, ballWeight, length, recommendedHookSize, yarnNeedleSizeMm,
+    storage, store, purchaseDate, purchasePrice, hookBrand, hookModel, hookSizeMm,
+    hookHandleType, hookMaterial, hookStore, hookPurchaseDate, hookPurchasePrice,
+    hookSize, otherType, otherBrand, otherModel, otherMaterial, otherStore,
+    otherPurchaseDate, otherPurchasePrice, user?.currency, updateItem, learnBrand, t,
+  ]);
 
   if (!item) {
     return (
@@ -903,12 +911,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontWeight: '500' as const,
   },
-  sectionHint: {
-    ...Typography.caption,
-    color: Colors.warmGray,
-    marginBottom: 12,
-    fontSize: 13,
-  },
   categoryButtons: {
     flexDirection: 'row',
     gap: 10,
@@ -955,11 +957,6 @@ const styles = StyleSheet.create({
   halfInput: {
     flex: 1,
   },
-  textArea: {
-    minHeight: 100,
-    textAlignVertical: 'top',
-    paddingTop: 12,
-  },
   imageSection: {
     marginTop: 24,
     marginBottom: 16,
@@ -972,49 +969,6 @@ const styles = StyleSheet.create({
   fieldGroup: {
     marginBottom: 16,
   },
-  handleTypeButtons: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  handleTypeButton: {
-    flex: 1,
-    minWidth: '45%',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    borderWidth: normalizeBorder(1.5),
-    borderColor: Colors.border,
-    backgroundColor: Colors.white,
-    minHeight: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...Platform.select({
-      ...cardShadow,
-      default: {},
-    }),
-  },
-  handleTypeButtonActive: {
-    backgroundColor: Colors.sage,
-    borderColor: Colors.deepSage,
-    borderWidth: normalizeBorder(2),
-    ...Platform.select({
-      ...buttonShadow,
-      default: {},
-    }),
-  },
-  handleTypeButtonText: {
-    ...Typography.body,
-    color: Colors.charcoal,
-    fontSize: 14,
-    fontWeight: '500' as const,
-    textAlign: 'center',
-  },
-  handleTypeButtonTextActive: {
-    color: Colors.white,
-    fontWeight: '600' as const,
-  },
-  // Quantity stepper styles
   quantitySection: {
     marginBottom: 20,
   },

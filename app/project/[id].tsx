@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import {
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
+import { useLocalSearchParams, router } from 'expo-router';
 import {
   Trash2,
   Link,
@@ -44,10 +44,14 @@ import { useAuth } from '@/hooks/auth-context';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, normalizeBorderOpacity } from '@/constants/pixelRatio';
-import type { ProjectStatus, Project } from '@/types';
+import type { ProjectStatus } from '@/types';
 import { getImageSource } from '@/types';
 
-export default function ProjectDetailScreen() {
+/**
+ * ProjectDetailScreen - Displays project details with materials and PRO features.
+ * Shows images, status, yarn/hooks used, pattern resources, and journal access.
+ */
+export default function ProjectDetailScreen(): React.JSX.Element {
   const { id } = useLocalSearchParams();
   const { getProjectById, deleteProject, updateProject } = useProjects();
   const { getItemById, getItemsByCategory } = useInventory();
@@ -82,6 +86,58 @@ export default function ProjectDetailScreen() {
     }
   }, [project?.notes]);
 
+  /** Confirms and deletes the project */
+  const handleDelete = useCallback(() => {
+    if (!project) return;
+    if (__DEV__) console.log('Delete button pressed');
+    Alert.alert(
+      t('projects.deleteProject'),
+      t('projects.deleteConfirm'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            if (__DEV__) console.log('Deleting project:', project.id);
+            await deleteProject(project.id);
+            if (__DEV__) console.log('Project deleted, navigating back');
+            router.back();
+          },
+        },
+      ]
+    );
+  }, [t, project, deleteProject]);
+
+  /** Toggles pattern adjustments section expansion */
+  const togglePatternAdjustments = useCallback(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    if (isPatternAdjustmentsExpanded) {
+      // Collapsing - reset text to original value
+      setPatternAdjustmentsText(project?.notes || '');
+    }
+    setIsPatternAdjustmentsExpanded(prev => !prev);
+  }, [isPatternAdjustmentsExpanded, project?.notes]);
+
+  /** Saves pattern adjustments to project */
+  const handleSavePatternAdjustments = useCallback(async () => {
+    if (!project) return;
+
+    setIsSavingPatternAdjustments(true);
+    try {
+      await updateProject(project.id, { notes: patternAdjustmentsText });
+      // Legend-State reactive store auto-updates UI - no manual refresh needed
+      // Collapse with animation
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setIsPatternAdjustmentsExpanded(false);
+    } catch {
+      Alert.alert(t('common.error'), t('projects.failedToUpdate'));
+    } finally {
+      setIsSavingPatternAdjustments(false);
+    }
+  }, [project, patternAdjustmentsText, updateProject, t]);
+
+  // Early return for missing project - AFTER all hooks
   if (!project) {
     return (
       <SafeAreaView style={styles.container}>
@@ -96,53 +152,6 @@ export default function ProjectDetailScreen() {
       </SafeAreaView>
     );
   }
-
-  const handleDelete = () => {
-    console.log('Delete button pressed');
-    Alert.alert(
-      t('projects.deleteProject'),
-      t('projects.deleteConfirm'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('common.delete'),
-          style: 'destructive',
-          onPress: async () => {
-            console.log('Deleting project:', project.id);
-            await deleteProject(project.id);
-            console.log('Project deleted, navigating back');
-            router.back();
-          },
-        },
-      ]
-    );
-  };
-
-  const togglePatternAdjustments = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    if (isPatternAdjustmentsExpanded) {
-      // Collapsing - reset text to original value
-      setPatternAdjustmentsText(project?.notes || '');
-    }
-    setIsPatternAdjustmentsExpanded(!isPatternAdjustmentsExpanded);
-  };
-
-  const handleSavePatternAdjustments = async () => {
-    if (!project) return;
-
-    setIsSavingPatternAdjustments(true);
-    try {
-      await updateProject(project.id, { notes: patternAdjustmentsText });
-      // Legend-State reactive store auto-updates UI - no manual refresh needed
-      // Collapse with animation
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      setIsPatternAdjustmentsExpanded(false);
-    } catch (error) {
-      Alert.alert(t('common.error'), t('projects.failedToUpdate'));
-    } finally {
-      setIsSavingPatternAdjustments(false);
-    }
-  };
 
   const getStatusColor = (status: ProjectStatus): string => {
     switch (status) {
@@ -397,7 +406,7 @@ export default function ProjectDetailScreen() {
                       const quantity = typeof yarnEntry === 'string' ? 1 : yarnEntry.quantity;
                       const yarn = getItemById(yarnId);
                       if (!yarn) {
-                        console.warn(`Yarn ${yarnId} not found in inventory!`);
+                        if (__DEV__) console.warn(`Yarn ${yarnId} not found in inventory!`);
                         return null;
                       }
                       return (
@@ -454,7 +463,7 @@ export default function ProjectDetailScreen() {
                   {project.hookUsedIds.map((hookId, index) => {
                     const hook = getItemById(hookId);
                     if (!hook) {
-                      console.warn(`Hook ${hookId} not found in inventory!`);
+                      if (__DEV__) console.warn(`Hook ${hookId} not found in inventory!`);
                       return null;
                     }
                     const isLast = index === project.hookUsedIds!.length - 1;
@@ -733,41 +742,6 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
-  sectionDivider: {
-    height: 1,
-    backgroundColor: Colors.warmGray,
-    marginVertical: 4,
-    opacity: 0.5,
-  },
-  photosScroll: {
-    marginBottom: 16,
-  },
-  photosContent: {
-    paddingVertical: 12,
-    gap: 12,
-  },
-  photoPreview: {
-    width: 100,
-    height: 133,
-    borderRadius: 12,
-    marginRight: 12,
-    position: 'relative',
-    overflow: 'hidden',
-    backgroundColor: Colors.beige,
-  },
-  photoPreviewImage: {
-    width: '100%',
-    height: '100%',
-  },
-  defaultBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: Colors.sage,
-    borderRadius: 12,
-    padding: 4,
-  },
-
   titleOverlayContent: {
     flex: 1,
     marginRight: 16,
@@ -822,13 +796,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: normalizeBorder(0.5),
     borderBottomColor: `rgba(0, 0, 0, ${normalizeBorderOpacity(0.15)})`,
   },
-  subsectionTitle: {
-    ...Typography.body,
-    color: Colors.charcoal,
-    fontWeight: '600' as const,
-    marginBottom: 12,
-    fontSize: 15,
-  },
   materialsScroll: {
     paddingRight: 24,
   },
@@ -841,9 +808,6 @@ const styles = StyleSheet.create({
     borderWidth: normalizeBorder(0.5),
     borderColor: 'rgba(139, 154, 123, 0.12)',
   },
-  materialCardUnused: {
-    opacity: 0.5,
-  },
   materialImage: {
     width: 140,
     height: 187,
@@ -852,17 +816,6 @@ const styles = StyleSheet.create({
   materialImagePlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  materialImageUnused: {
-    opacity: 0.6,
-  },
-  usedInProjectBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: Colors.deepTeal,
-    borderRadius: 12,
-    padding: 4,
   },
   quantityBadge: {
     position: 'absolute',
@@ -880,14 +833,6 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontSize: 13,
     fontWeight: '600' as const,
-  },
-  usedInProjectBadgeSmall: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    backgroundColor: Colors.deepTeal,
-    borderRadius: 10,
-    padding: 3,
   },
   brandBadge: {
     position: 'absolute',
@@ -915,65 +860,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     fontSize: 14,
   },
-  materialNameUnused: {
-    color: Colors.warmGray,
-  },
   materialDetail: {
     ...Typography.caption,
     color: Colors.warmGray,
     fontSize: 12,
   },
-  materialDetailUnused: {
-    opacity: 0.7,
-  },
-  hooksRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  hookCard: {
-    width: 90,
-    height: 110,
-    borderRadius: 12,
-    backgroundColor: Colors.linen,
-    borderWidth: normalizeBorder(0.5),
-    borderColor: 'rgba(139, 154, 123, 0.12)',
-    padding: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  hookCardUnused: {
-    opacity: 0.5,
-  },
-  hookImage: {
-    width: 50,
-    height: 50,
-    marginBottom: 8,
-  },
-  hookImageUnused: {
-    opacity: 0.6,
-  },
-  hookName: {
-    ...Typography.caption,
-    fontSize: 12,
-    fontWeight: '600' as const,
-    color: Colors.charcoal,
-    textAlign: 'center',
-  },
-  hookNameUnused: {
-    color: Colors.warmGray,
-  },
-  hookBrand: {
-    ...Typography.caption,
-    fontSize: 10,
-    color: Colors.warmGray,
-    textAlign: 'center',
-    marginTop: 2,
-  },
-  hookBrandUnused: {
-    opacity: 0.7,
-  },
-  // Hook list row styles
   hooksList: {
     gap: 8,
     marginBottom: 16,
@@ -1107,12 +998,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500' as const,
     flex: 1,
-  },
-  proFeatureSubtitle: {
-    ...Typography.caption,
-    color: Colors.warmGray,
-    fontSize: 13,
-    maxWidth: 120,
   },
   countBadge: {
     backgroundColor: Colors.deepSage,

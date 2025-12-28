@@ -1,10 +1,13 @@
-import { Stack } from 'expo-router';
-import { useAuth } from '@/hooks/auth-context';
 import { useEffect } from 'react';
-import { router } from 'expo-router';
+import { Stack, router } from 'expo-router';
+import { useAuth } from '@/hooks/auth-context';
 import Colors from '@/constants/colors';
 
-export default function AuthLayout() {
+/**
+ * AuthLayout - Stack navigator for authentication screens.
+ * Redirects authenticated users to the main app.
+ */
+export default function AuthLayout(): React.JSX.Element {
   const { isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -23,24 +23,27 @@ const { width } = Dimensions.get('window');
 const isSmallDevice = width < 375;
 const isTablet = width >= 768;
 
-export default function LoginScreen() {
+/** Email validation regex pattern */
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * LoginScreen - User authentication screen with email/password login.
+ * Handles Supabase auth errors with localized messages.
+ */
+export default function LoginScreen(): React.JSX.Element {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const { t } = useLanguage();
 
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  const handleLogin = async () => {
+  /** Handles login form submission with validation */
+  const handleLogin = useCallback(async () => {
     if (!email) {
       Alert.alert(t('common.error'), t('auth.emailRequired'));
       return;
     }
-    if (!validateEmail(email)) {
+    if (!EMAIL_REGEX.test(email)) {
       Alert.alert(t('common.error'), t('auth.emailInvalid'));
       return;
     }
@@ -72,7 +75,7 @@ export default function LoginScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [email, password, login, t]);
 
   return (
     <SafeAreaView style={styles.container}>

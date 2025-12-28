@@ -23,29 +23,36 @@ export function useImageSync() {
       onImageUploaded: async (itemId, itemType, imageIndex, newUrl, oldUri) => {
         console.log(`[ImageSync] Image uploaded for ${itemType} ${itemId}: ${newUrl}`);
 
+        // Helper to parse images (handles both array and JSON string for backward compat)
+        const parseImages = (raw: any): string[] => {
+          if (Array.isArray(raw)) return raw;
+          if (typeof raw === 'string') {
+            try { return JSON.parse(raw || '[]'); } catch { return []; }
+          }
+          return [];
+        };
+
         // Update the store with the new URL
         if (itemType === 'project') {
            // We need to read the current images to update safely
            const project = projects$[itemId].get();
            if (project) {
-             let images: any[] = [];
-             try { images = JSON.parse(project.images || '[]'); } catch {}
+             const images = parseImages(project.images);
 
              // Replace URI
              const updated = images.map(img => img === oldUri ? newUrl : img);
 
-             // Write back to store
-             updateProject(projects$, itemId, { images: JSON.stringify(updated) });
+             // Write back to store as array (DB uses TEXT[], not JSON string)
+             updateProject(projects$, itemId, { images: updated });
            }
         } else if (itemType === 'inventory') {
            const item = inventory$[itemId].get();
            if (item) {
-             let images: any[] = [];
-             try { images = JSON.parse(item.images || '[]'); } catch {}
-
+             const images = parseImages(item.images);
              const updated = images.map(img => img === oldUri ? newUrl : img);
 
-             updateInventoryItem(inventory$, itemId, { images: JSON.stringify(updated) });
+             // Store as array (DB uses TEXT[], not JSON string)
+             updateInventoryItem(inventory$, itemId, { images: updated });
            }
         }
       },
@@ -55,12 +62,13 @@ export function useImageSync() {
       onStaleImageFound: async (itemId, itemType, staleUri) => {
         console.log(`[ImageSync] Cleaning stale image from ${itemType} ${itemId}`);
 
-        // Helper to parse images (handles both JSON string and array formats)
+        // Helper to parse images (handles both array and JSON string for backward compat)
         const parseImages = (raw: any): string[] => {
+          if (Array.isArray(raw)) return raw;
           if (typeof raw === 'string') {
             try { return JSON.parse(raw || '[]'); } catch { return []; }
           }
-          return Array.isArray(raw) ? raw : [];
+          return [];
         };
 
         // Remove the stale URI from the store
@@ -70,7 +78,8 @@ export function useImageSync() {
             const images = parseImages(project.images);
             const filtered = images.filter(img => img !== staleUri);
             if (filtered.length !== images.length) {
-              updateProject(projects$, itemId, { images: JSON.stringify(filtered) });
+              // Store as array (DB uses TEXT[], not JSON string)
+              updateProject(projects$, itemId, { images: filtered });
               console.log(`[ImageSync] Removed stale image from project ${itemId}`);
             }
           }
@@ -80,7 +89,8 @@ export function useImageSync() {
             const images = parseImages(item.images);
             const filtered = images.filter(img => img !== staleUri);
             if (filtered.length !== images.length) {
-              updateInventoryItem(inventory$, itemId, { images: JSON.stringify(filtered) });
+              // Store as array (DB uses TEXT[], not JSON string)
+              updateInventoryItem(inventory$, itemId, { images: filtered });
               console.log(`[ImageSync] Removed stale image from inventory ${itemId}`);
             }
           }

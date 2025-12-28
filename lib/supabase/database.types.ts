@@ -1,12 +1,12 @@
 /**
- * Supabase Database Types - Aligned with SQLite (Source of Truth)
+ * Supabase Database Types - Production Schema
  *
- * These types match the local SQLite schema exactly.
- * No field name conversions needed between local and cloud.
+ * Following Supabase best practices:
+ * - UUID primary keys with foreign key constraints
+ * - Standard timestamps: created_at, updated_at, deleted_at
+ * - Soft deletes via deleted_at timestamp (NULL = active)
  *
- * @see lib/database/schema.ts for SQLite schema
- * @see lib/database/migrations.ts for SQLite migrations
- * @see supabase/migrations/00015_align_schema_with_sqlite.sql
+ * @see supabase/migrations/00019_production_schema.sql
  */
 
 export type Json =
@@ -51,30 +51,28 @@ export interface Database {
           title: string;
           description: string;
           status: ProjectStatus;
-          project_type: string | null;
+          project_type: string;
           images: string[];
-          default_image_index: number | null;
-          pattern_pdf: string | null;
-          pattern_url: string | null;
-          pattern_images: string[] | null;
-          inspiration_url: string | null;
-          notes: string | null;
+          default_image_index: number;
+          pattern_pdf: string;
+          pattern_url: string;
+          pattern_images: string[];
+          inspiration_url: string;
+          notes: string;
           yarn_used: string[];
-          yarn_used_ids: string[] | null;
-          hook_used_ids: string[] | null;
-          yarn_materials: Json | null;
-          work_progress: Json | null;
-          inspiration_sources: Json | null;
+          yarn_used_ids: string[];
+          hook_used_ids: string[];
+          yarn_materials: Json;
+          work_progress: Json;
+          inspiration_sources: Json;
           start_date: string | null;
           completed_date: string | null;
-          created_at: string;
-          updated_at: string;
-          synced_at: string | null;
-          deleted: boolean;
-          // Currently Working On feature
           currently_working_on: boolean;
           currently_working_on_at: string | null;
           currently_working_on_ended_at: string | null;
+          created_at: string;
+          updated_at: string;
+          deleted_at: string | null; // NULL = active, timestamp = soft deleted
         };
         Insert: {
           id?: string;
@@ -82,30 +80,28 @@ export interface Database {
           title: string;
           description?: string;
           status?: ProjectStatus;
-          project_type?: string | null;
+          project_type?: string;
           images?: string[];
-          default_image_index?: number | null;
-          pattern_pdf?: string | null;
-          pattern_url?: string | null;
-          pattern_images?: string[] | null;
-          inspiration_url?: string | null;
-          notes?: string | null;
+          default_image_index?: number;
+          pattern_pdf?: string;
+          pattern_url?: string;
+          pattern_images?: string[];
+          inspiration_url?: string;
+          notes?: string;
           yarn_used?: string[];
-          yarn_used_ids?: string[] | null;
-          hook_used_ids?: string[] | null;
-          yarn_materials?: Json | null;
-          work_progress?: Json | null;
-          inspiration_sources?: Json | null;
+          yarn_used_ids?: string[];
+          hook_used_ids?: string[];
+          yarn_materials?: Json;
+          work_progress?: Json;
+          inspiration_sources?: Json;
           start_date?: string | null;
           completed_date?: string | null;
-          created_at?: string;
-          updated_at?: string;
-          synced_at?: string | null;
-          deleted?: boolean;
-          // Currently Working On feature
           currently_working_on?: boolean;
           currently_working_on_at?: string | null;
           currently_working_on_ended_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
         };
         Update: {
           id?: string;
@@ -113,30 +109,28 @@ export interface Database {
           title?: string;
           description?: string;
           status?: ProjectStatus;
-          project_type?: string | null;
+          project_type?: string;
           images?: string[];
-          default_image_index?: number | null;
-          pattern_pdf?: string | null;
-          pattern_url?: string | null;
-          pattern_images?: string[] | null;
-          inspiration_url?: string | null;
-          notes?: string | null;
+          default_image_index?: number;
+          pattern_pdf?: string;
+          pattern_url?: string;
+          pattern_images?: string[];
+          inspiration_url?: string;
+          notes?: string;
           yarn_used?: string[];
-          yarn_used_ids?: string[] | null;
-          hook_used_ids?: string[] | null;
-          yarn_materials?: Json | null;
-          work_progress?: Json | null;
-          inspiration_sources?: Json | null;
+          yarn_used_ids?: string[];
+          hook_used_ids?: string[];
+          yarn_materials?: Json;
+          work_progress?: Json;
+          inspiration_sources?: Json;
           start_date?: string | null;
           completed_date?: string | null;
-          created_at?: string;
-          updated_at?: string;
-          synced_at?: string | null;
-          deleted?: boolean;
-          // Currently Working On feature
           currently_working_on?: boolean;
           currently_working_on_at?: string | null;
           currently_working_on_ended_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
         };
       };
       inventory_items: {
@@ -144,23 +138,22 @@ export interface Database {
           id: string;
           user_id: string;
           category: InventoryCategory;
-          name: string; // Matches SQLite (was 'title' in old Supabase)
+          name: string;
           description: string;
-          images: string[];
           quantity: number;
-          unit: string | null;
-          location: string | null;
+          unit: string;
+          images: string[];
           tags: string[];
           used_in_projects: string[];
-          notes: string | null;
-          barcode: string | null;
-          date_added: string;
-          last_updated: string;
+          location: string;
+          barcode: string;
+          notes: string;
           yarn_details: Json | null;
           hook_details: Json | null;
-          other_details: Json | null; // Matches SQLite (was 'notion_details' in old Supabase)
-          synced_at: string | null;
-          deleted: boolean;
+          other_details: Json | null;
+          created_at: string;
+          updated_at: string;
+          deleted_at: string | null; // NULL = active, timestamp = soft deleted
         };
         Insert: {
           id?: string;
@@ -168,21 +161,20 @@ export interface Database {
           category: InventoryCategory;
           name: string;
           description?: string;
-          images?: string[];
           quantity?: number;
-          unit?: string | null;
-          location?: string | null;
+          unit?: string;
+          images?: string[];
           tags?: string[];
           used_in_projects?: string[];
-          notes?: string | null;
-          barcode?: string | null;
-          date_added?: string;
-          last_updated?: string;
+          location?: string;
+          barcode?: string;
+          notes?: string;
           yarn_details?: Json | null;
           hook_details?: Json | null;
           other_details?: Json | null;
-          synced_at?: string | null;
-          deleted?: boolean;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
         };
         Update: {
           id?: string;
@@ -190,21 +182,20 @@ export interface Database {
           category?: InventoryCategory;
           name?: string;
           description?: string;
-          images?: string[];
           quantity?: number;
-          unit?: string | null;
-          location?: string | null;
+          unit?: string;
+          images?: string[];
           tags?: string[];
           used_in_projects?: string[];
-          notes?: string | null;
-          barcode?: string | null;
-          date_added?: string;
-          last_updated?: string;
+          location?: string;
+          barcode?: string;
+          notes?: string;
           yarn_details?: Json | null;
           hook_details?: Json | null;
           other_details?: Json | null;
-          synced_at?: string | null;
-          deleted?: boolean;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
         };
       };
       profiles: {

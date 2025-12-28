@@ -48,9 +48,11 @@ export function initializeLegendStateSync(): void {
     configureSyncedSupabase({
       generateId: () => uuidv4(),
       changesSince: 'last-sync',
+      // Standard field names (unified across ALL tables)
       fieldCreatedAt: 'created_at',
       fieldUpdatedAt: 'updated_at',
-      fieldDeleted: 'deleted',
+      // Soft delete via timestamp (NULL = active, timestamp = deleted)
+      fieldDeleted: 'deleted_at',
     });
   }
 
@@ -145,9 +147,7 @@ export function createInventoryStore(userId: string | null, isPro: boolean): any
         filter: (query: any) => query.eq('user_id', userId),
         actions: ['read', 'create', 'update', 'delete'],
         realtime: { filter: `user_id=eq.${userId}` },
-        // Override: inventory_items uses 'last_updated' not 'updated_at'
-        fieldCreatedAt: 'date_added',
-        fieldUpdatedAt: 'last_updated',
+        // No field overrides needed - unified with global config
         persist: {
           plugin: asyncStoragePlugin,
           name: persistKey,
@@ -208,8 +208,8 @@ export function getStores(userId: string | null, isPro: boolean) {
 export function addProject(projects$: any, userId: string | null, projectData: any) {
   const id = generateId();
   const now = new Date().toISOString();
-  
-  // Just write to the observable. 
+
+  // Just write to the observable.
   // - If Synced: handles cloud + local.
   // - If Local: handles local.
   projects$[id].set({
@@ -218,9 +218,9 @@ export function addProject(projects$: any, userId: string | null, projectData: a
     user_id: userId, // Can be null for guest
     created_at: now,
     updated_at: now,
-    deleted: false,
+    deleted_at: null, // NULL = active
   });
-  
+
   return id;
 }
 
@@ -240,14 +240,14 @@ export function deleteProject(projects$: any, id: string) {
 export function addInventoryItem(inventory$: any, userId: string | null, itemData: any) {
   const id = generateId();
   const now = new Date().toISOString();
-  
+
   inventory$[id].set({
     ...itemData,
     id,
     user_id: userId,
-    date_added: now, // Note: Schema calls this date_added
-    last_updated: now,
-    deleted: false,
+    created_at: now,
+    updated_at: now,
+    deleted_at: null, // NULL = active
   });
   return id;
 }
@@ -256,7 +256,7 @@ export function updateInventoryItem(inventory$: any, id: string, updates: any) {
   const now = new Date().toISOString();
   inventory$[id].assign({
     ...updates,
-    last_updated: now,
+    updated_at: now,
   });
 }
 

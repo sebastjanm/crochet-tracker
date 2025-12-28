@@ -285,11 +285,11 @@ export interface InventoryItem {
 
   // Common fields
   notes?: string;
-  dateAdded: Date;
-  lastUpdated: Date;
-
-  // Barcode
   barcode?: string;
+
+  // Unified timestamps (same as Project)
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export type UserRole = 'ordinary' | 'pro' | 'admin';

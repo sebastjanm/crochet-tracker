@@ -24,14 +24,13 @@ export {
   deleteInventoryItem,
 } from './config';
 
-// Type mappers for local ↔ cloud conversion
+// Image helpers for upload queue
 export {
-  mapLocalProjectToCloud,
-  mapCloudProjectToLocal,
-  mapLocalInventoryToCloud,
-  mapCloudInventoryToLocal,
   getLocalImagesToUpload,
   filterLocalImages,
+  isLocalImageUri,
+  isCloudImageUrl,
+  replaceImageUri,
 } from './type-mappers';
 
 // Image sync queue - Persistent upload queue for images

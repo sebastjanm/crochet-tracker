@@ -45,30 +45,11 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     if (!itemsMap) return [] as InventoryItem[];
 
     return Object.values(itemsMap)
-      .filter((row: any) => !row.deleted)
-      .map((row: any): InventoryItem => {
-         const item = mapRowToInventoryItem(row);
-         return {
-           ...item,
-           yarnDetails: item.yarnDetails
-             ? {
-                 ...item.yarnDetails,
-                 purchaseDate: item.yarnDetails.purchaseDate
-                   ? new Date(item.yarnDetails.purchaseDate)
-                   : undefined,
-               }
-             : undefined,
-           hookDetails: item.hookDetails
-             ? {
-                 ...item.hookDetails,
-                 purchaseDate: item.hookDetails.purchaseDate
-                   ? new Date(item.hookDetails.purchaseDate)
-                   : undefined,
-               }
-             : undefined,
-         };
-      })
-      .sort((a: InventoryItem, b: InventoryItem) => b.lastUpdated.getTime() - a.lastUpdated.getTime());
+      // Soft delete: deleted_at is NULL for active, timestamp for deleted
+      .filter((row: any) => row.deleted_at === null || row.deleted_at === undefined)
+      // Trust the mapper - no double date conversion needed
+      .map((row: any) => mapRowToInventoryItem(row))
+      .sort((a: InventoryItem, b: InventoryItem) => b.updatedAt.getTime() - a.updatedAt.getTime());
   });
 
   const isLoading = false;
@@ -78,19 +59,20 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
   // ==========================================================================
 
   const addItem = async (
-    item: Omit<InventoryItem, 'id' | 'dateAdded' | 'lastUpdated'>
+    item: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<InventoryItem> => {
+    const now = new Date();
     // 1. Map Domain -> Row
     const row = mapInventoryItemToRow({
       ...item,
       id: 'temp',
-      dateAdded: new Date(),
-      lastUpdated: new Date()
+      createdAt: now,
+      updatedAt: now,
     } as InventoryItem);
-    
+
     // 2. Add to Store
     const id = addItemToStore(inventory$, user?.id ?? null, row);
-    
+
     // 3. Queue Images
     if (item.images?.length) {
       queueInventoryImages({ ...row, id });
@@ -99,8 +81,8 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     return {
       ...item,
       id,
-      dateAdded: new Date(),
-      lastUpdated: new Date(),
+      createdAt: now,
+      updatedAt: now,
     };
   };
 
@@ -246,7 +228,7 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     filtered = [...filtered].sort((a: InventoryItem, b: InventoryItem) => {
       switch (sortBy) {
         case 'name': return (a.name || '').localeCompare(b.name || '');
-        case 'date': return b.lastUpdated.getTime() - a.lastUpdated.getTime();
+        case 'date': return b.updatedAt.getTime() - a.updatedAt.getTime();
         case 'quantity': return b.quantity - a.quantity;
         default: return 0;
       }

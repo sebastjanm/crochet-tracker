@@ -1,69 +1,97 @@
 /**
  * Legend-State Data Mappers
- * 
- * Maps between the raw JSON row format (stored in Legend-State/AsyncStorage)
+ *
+ * Maps between the raw row format (stored in Legend-State/AsyncStorage/Supabase)
  * and the Domain Objects used by the UI.
+ *
+ * Schema conventions (Supabase best practices):
+ * - UUID primary keys
+ * - Standard timestamps: created_at, updated_at, deleted_at
+ * - TEXT[] for simple string arrays, JSONB for complex objects
+ * - Soft deletes via deleted_at timestamp (NULL = active)
  */
 
-import { Project, InventoryItem, ProjectYarn, ProjectStatus } from '@/types';
+import { Project, InventoryItem, ProjectStatus } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 
 // ============================================================================
-// TYPES (Simulating the old DB Schema Row)
+// TYPES (Match Supabase schema exactly)
 // ============================================================================
 
 export interface ProjectRow {
   id: string;
+  user_id: string | null;
+
+  // Core fields
   title: string;
   description: string;
   status: ProjectStatus;
   project_type: string;
-  images: string; // JSON string
+
+  // TEXT[] arrays (native PostgreSQL arrays)
+  images: string[];
+  pattern_images: string[];
+  yarn_used: string[];
+  yarn_used_ids: string[];
+  hook_used_ids: string[];
+
+  // JSONB fields (stored as JSON strings locally)
+  yarn_materials: string;
+  work_progress: string;
+  inspiration_sources: string;
+
+  // Scalar fields
   default_image_index: number;
   pattern_pdf: string;
   pattern_url: string;
-  pattern_images: string; // JSON string
   inspiration_url: string;
   notes: string;
-  yarn_used: string; // JSON string
-  yarn_used_ids: string; // JSON string
-  hook_used_ids: string; // JSON string
-  yarn_materials: string; // JSON string
-  work_progress: string; // JSON string
-  inspiration_sources: string; // JSON string
-  start_date: string;
-  completed_date: string;
+
+  // Date fields
+  start_date: string | null;
+  completed_date: string | null;
+
+  // Currently working on
+  currently_working_on: boolean;
+  currently_working_on_at: string | null;
+  currently_working_on_ended_at: string | null;
+
+  // Standard timestamps (unified)
   created_at: string;
   updated_at: string;
-  pending_sync: number;
-  user_id: string | null;
-  currently_working_on: number;
-  currently_working_on_at: string;
-  currently_working_on_ended_at: string;
-  deleted: number;
+  deleted_at: string | null; // NULL = active, timestamp = soft deleted
 }
 
 export interface InventoryItemRow {
   id: string;
+  user_id: string | null;
+
+  // Core fields
   category: InventoryItem['category'];
   name: string;
   description: string;
-  images: string; // JSON string
   quantity: number;
   unit: string;
-  yarn_details: string; // JSON string
-  hook_details: string; // JSON string
-  other_details: string; // JSON string
+
+  // TEXT[] arrays
+  images: string[];
+  tags: string[];
+  used_in_projects: string[];
+
+  // Location & identification
   location: string;
-  tags: string; // JSON string
-  used_in_projects: string; // JSON string
-  notes: string;
   barcode: string;
-  date_added: string;
-  last_updated: string;
-  pending_sync: number;
-  user_id: string | null;
-  deleted: number;
+  notes: string;
+
+  // JSONB fields
+  yarn_details: string | null;
+  hook_details: string | null;
+  other_details: string | null;
+
+  // Standard timestamps (unified - same as projects)
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
 }
 
 // ============================================================================
@@ -96,22 +124,29 @@ function safeJsonStringify(data: any): string {
 // ============================================================================
 
 export function mapRowToProject(row: ProjectRow): Project {
+  // Helper to safely convert array-like data (handles both array and JSON string)
+  const toStringArray = (data: string[] | string | null | undefined): string[] => {
+    if (Array.isArray(data)) return data;
+    if (typeof data === 'string') return safeJsonParse(data, []);
+    return [];
+  };
+
   return {
     id: row.id,
     title: row.title,
     description: row.description,
     status: row.status as ProjectStatus,
     projectType: row.project_type as Project['projectType'],
-    images: safeJsonParse(row.images, []),
+    images: toStringArray(row.images),
     defaultImageIndex: row.default_image_index,
     patternPdf: row.pattern_pdf,
     patternUrl: row.pattern_url,
-    patternImages: safeJsonParse(row.pattern_images, []),
+    patternImages: toStringArray(row.pattern_images),
     inspirationUrl: row.inspiration_url,
     notes: row.notes,
-    yarnUsed: safeJsonParse(row.yarn_used, []),
-    yarnUsedIds: safeJsonParse(row.yarn_used_ids, []),
-    hookUsedIds: safeJsonParse(row.hook_used_ids, []),
+    yarnUsed: toStringArray(row.yarn_used),
+    yarnUsedIds: toStringArray(row.yarn_used_ids),
+    hookUsedIds: toStringArray(row.hook_used_ids),
     yarnMaterials: safeJsonParse(row.yarn_materials, []),
     workProgress: safeJsonParse(row.work_progress, []).map((wp: any) => ({
       ...wp,
@@ -122,39 +157,51 @@ export function mapRowToProject(row: ProjectRow): Project {
     completedDate: row.completed_date ? new Date(row.completed_date) : undefined,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
-    isCurrentlyWorkingOn: row.currently_working_on === 1,
+    // currently_working_on is now boolean (was integer 0/1)
+    isCurrentlyWorkingOn: Boolean(row.currently_working_on),
     currentlyWorkingOnAt: row.currently_working_on_at || undefined,
     currentlyWorkingOnEndedAt: row.currently_working_on_ended_at || undefined,
   };
 }
 
 export function mapProjectToRow(project: Project): Partial<ProjectRow> {
+  // Convert ProjectImage[] to string[] (extract URIs)
+  const imagesToStrings = (imgs: any[]): string[] => {
+    if (!imgs) return [];
+    return imgs.map(img => typeof img === 'string' ? img : (img?.uri || '')).filter(Boolean);
+  };
+
   return {
     id: project.id,
     title: project.title,
     description: project.description || '',
     status: project.status,
     project_type: project.projectType || '',
-    images: safeJsonStringify(project.images),
-    default_image_index: project.defaultImageIndex || 0,
-    pattern_pdf: project.patternPdf || '',
-    pattern_url: project.patternUrl || '',
-    pattern_images: safeJsonStringify(project.patternImages),
-    inspiration_url: project.inspirationUrl || '',
-    notes: project.notes || '',
-    yarn_used: safeJsonStringify(project.yarnUsed),
-    yarn_used_ids: safeJsonStringify(project.yarnUsedIds),
-    hook_used_ids: safeJsonStringify(project.hookUsedIds),
+    // TEXT[] arrays - native PostgreSQL arrays
+    images: imagesToStrings(project.images),
+    pattern_images: imagesToStrings(project.patternImages || []),
+    yarn_used: project.yarnUsed || [],
+    yarn_used_ids: project.yarnUsedIds || [],
+    hook_used_ids: project.hookUsedIds || [],
+    // JSONB fields - keep as JSON strings
     yarn_materials: safeJsonStringify(project.yarnMaterials),
     work_progress: safeJsonStringify(project.workProgress),
     inspiration_sources: safeJsonStringify(project.inspirationSources),
-    start_date: project.startDate?.toISOString() || null as any,
-    completed_date: project.completedDate?.toISOString() || null as any,
+    // Scalar fields
+    default_image_index: project.defaultImageIndex || 0,
+    pattern_pdf: project.patternPdf || '',
+    pattern_url: project.patternUrl || '',
+    inspiration_url: project.inspirationUrl || '',
+    notes: project.notes || '',
+    // Dates
+    start_date: project.startDate?.toISOString() || null,
+    completed_date: project.completedDate?.toISOString() || null,
     created_at: project.createdAt.toISOString(),
     updated_at: project.updatedAt.toISOString(),
-    currently_working_on: project.isCurrentlyWorkingOn ? 1 : 0,
-    currently_working_on_at: project.currentlyWorkingOnAt || null as any,
-    currently_working_on_ended_at: project.currentlyWorkingOnEndedAt || null as any,
+    // Currently working on (boolean, not integer)
+    currently_working_on: project.isCurrentlyWorkingOn || false,
+    currently_working_on_at: project.currentlyWorkingOnAt || null,
+    currently_working_on_ended_at: project.currentlyWorkingOnEndedAt || null,
   };
 }
 
@@ -163,6 +210,13 @@ export function mapProjectToRow(project: Project): Partial<ProjectRow> {
 // ============================================================================
 
 export function mapRowToInventoryItem(row: InventoryItemRow): InventoryItem {
+  // Helper to safely convert array-like data (handles both array and JSON string)
+  const toStringArray = (data: string[] | string | null | undefined): string[] => {
+    if (Array.isArray(data)) return data;
+    if (typeof data === 'string') return safeJsonParse(data, []);
+    return [];
+  };
+
   // Parse yarn details with Date conversion
   const parseYarnDetails = () => {
     if (!row.yarn_details) return undefined;
@@ -190,41 +244,52 @@ export function mapRowToInventoryItem(row: InventoryItemRow): InventoryItem {
     category: row.category,
     name: row.name,
     description: row.description,
-    images: safeJsonParse(row.images, []),
+    images: toStringArray(row.images),
     quantity: row.quantity,
     unit: row.unit as InventoryItem['unit'],
     yarnDetails: parseYarnDetails(),
     hookDetails: parseHookDetails(),
     otherDetails: safeJsonParse(row.other_details, undefined),
     location: row.location,
-    tags: safeJsonParse(row.tags, []),
-    usedInProjects: safeJsonParse(row.used_in_projects, []),
+    tags: toStringArray(row.tags),
+    usedInProjects: toStringArray(row.used_in_projects),
     notes: row.notes,
     barcode: row.barcode,
-    dateAdded: new Date(row.date_added),
-    lastUpdated: new Date(row.last_updated),
+    // Unified timestamps (now same as projects)
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
   };
 }
 
 export function mapInventoryItemToRow(item: InventoryItem): Partial<InventoryItemRow> {
+  // Convert ProjectImage[] to string[] (extract URIs)
+  const imagesToStrings = (imgs: any[]): string[] => {
+    if (!imgs) return [];
+    return imgs.map(img => typeof img === 'string' ? img : (img?.uri || '')).filter(Boolean);
+  };
+
   return {
     id: item.id,
     category: item.category,
     name: item.name,
     description: item.description || '',
-    images: safeJsonStringify(item.images),
     quantity: item.quantity,
-    unit: item.unit || '',
+    unit: item.unit || 'piece',
+    // TEXT[] arrays - native PostgreSQL arrays
+    images: imagesToStrings(item.images || []),
+    tags: item.tags || [],
+    used_in_projects: item.usedInProjects || [],
+    // Location & identification
+    location: item.location || '',
+    barcode: item.barcode || '',
+    notes: item.notes || '',
+    // JSONB fields
     yarn_details: safeJsonStringify(item.yarnDetails),
     hook_details: safeJsonStringify(item.hookDetails),
     other_details: safeJsonStringify(item.otherDetails),
-    location: item.location || '',
-    tags: safeJsonStringify(item.tags),
-    used_in_projects: safeJsonStringify(item.usedInProjects),
-    notes: item.notes || '',
-    barcode: item.barcode || '',
-    date_added: item.dateAdded.toISOString(),
-    last_updated: item.lastUpdated.toISOString(),
+    // Unified timestamps
+    created_at: item.createdAt.toISOString(),
+    updated_at: item.updatedAt.toISOString(),
   };
 }
 

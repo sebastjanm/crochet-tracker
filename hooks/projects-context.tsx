@@ -37,7 +37,8 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
     if (!projectsMap) return [];
 
     return Object.values(projectsMap)
-      .filter((row: any) => !row.deleted)
+      // Soft delete: deleted_at is NULL for active, timestamp for deleted
+      .filter((row: any) => row.deleted_at === null || row.deleted_at === undefined)
       .map((row: any) => {
         const project = mapRowToProject(row);
         let yarnMaterials: ProjectYarn[] | undefined = project.yarnMaterials;
@@ -158,16 +159,17 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
 
     const currentlyWorkingOnProjects = projects.filter((p: Project) => p.isCurrentlyWorkingOn);
     const isCurrentlyActive = project.isCurrentlyWorkingOn === true;
-    
+
     if (!isCurrentlyActive && currentlyWorkingOnProjects.length >= 3) {
       console.warn('[Projects] Max 3 active projects allowed');
       return false;
     }
 
     const timestamp = new Date().toISOString();
+    // Use boolean for currently_working_on (not 0/1)
     const updates = isCurrentlyActive
-      ? { currently_working_on: 0, currently_working_on_ended_at: timestamp }
-      : { currently_working_on: 1, currently_working_on_at: timestamp, currently_working_on_ended_at: null };
+      ? { currently_working_on: false, currently_working_on_ended_at: timestamp }
+      : { currently_working_on: true, currently_working_on_at: timestamp, currently_working_on_ended_at: null };
 
     updateProjectInStore(projects$, projectId, updates);
     return true;

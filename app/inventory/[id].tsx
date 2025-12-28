@@ -520,10 +520,10 @@ export default function InventoryDetailScreen() {
           {/* Metadata - below actions for subtle hierarchy */}
           <View style={styles.metadata}>
             <Text style={styles.metaText}>
-              {t('inventory.dateAdded')}: {formatEUDate(new Date(item.dateAdded))}
+              {t('inventory.dateAdded')}: {formatEUDate(new Date(item.createdAt))}
             </Text>
             <Text style={styles.metaText}>
-              {t('inventory.lastUpdated')}: {formatEUDate(new Date(item.lastUpdated))}
+              {t('inventory.lastUpdated')}: {formatEUDate(new Date(item.updatedAt))}
             </Text>
           </View>
         </View>

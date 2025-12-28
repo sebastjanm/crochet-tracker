@@ -128,8 +128,8 @@ export async function diagnoseSupabaseStorage(userId: string): Promise<Diagnosti
  * Checkpoint 3: Check for local vs cloud URLs in SQLite data
  */
 export async function diagnoseImageUrls(
-  projects: Array<{ id: string; title: string; images?: string[] }>,
-  inventoryItems: Array<{ id: string; name: string; images?: string[] }>
+  projects: { id: string; title: string; images?: string[] }[],
+  inventoryItems: { id: string; name: string; images?: string[] }[]
 ): Promise<DiagnosticResult> {
   const timestamp = new Date().toISOString();
 
@@ -147,8 +147,8 @@ export async function diagnoseImageUrls(
   let localInventoryImages = 0;
   let cloudInventoryImages = 0;
 
-  const projectsWithLocalImages: Array<{ id: string; title: string; localCount: number }> = [];
-  const inventoryWithLocalImages: Array<{ id: string; name: string; localCount: number }> = [];
+  const projectsWithLocalImages: { id: string; title: string; localCount: number }[] = [];
+  const inventoryWithLocalImages: { id: string; name: string; localCount: number }[] = [];
 
   for (const project of projects) {
     const images = project.images || [];
@@ -220,8 +220,8 @@ export async function diagnoseImageUrls(
  */
 export async function runAllDiagnostics(
   userId: string,
-  projects: Array<{ id: string; title: string; images?: string[] }>,
-  inventoryItems: Array<{ id: string; name: string; images?: string[] }>
+  projects: { id: string; title: string; images?: string[] }[],
+  inventoryItems: { id: string; name: string; images?: string[] }[]
 ): Promise<DiagnosticResult[]> {
   console.log('='.repeat(60));
   console.log('[Diagnostics] Starting image sync diagnostics...');

@@ -535,12 +535,12 @@ open "rndebugger://set-debugger-loc?host=localhost&port=8081"
 | `app/edit-project/[id].tsx` | ✅ | 2025-12-28 | 22 |
 | `app/project/[id].tsx` | ✅ | 2025-12-28 | 78 |
 | `app/inventory/[id].tsx` | ✅ | 2025-12-28 | 44 |
-| `components/Button.tsx` | ⬜ | - | - |
-| `components/Input.tsx` | ⬜ | - | - |
-| `components/Card.tsx` | ⬜ | - | - |
-| `hooks/auth-context.tsx` | ⬜ | - | - |
-| `hooks/projects-context.tsx` | ⬜ | - | - |
-| `hooks/inventory-context.tsx` | ⬜ | - | - |
+| `components/Button.tsx` | ✅ | 2025-12-28 | 20 |
+| `components/Input.tsx` | ✅ | 2025-12-28 | 12 |
+| `components/Card.tsx` | ✅ | 2025-12-28 | 3 |
+| `hooks/auth-context.tsx` | ✅ | 2025-12-28 | 0 |
+| `hooks/projects-context.tsx` | ✅ | 2025-12-28 | 0 |
+| `hooks/inventory-context.tsx` | ✅ | 2025-12-28 | 0 |
 
 ---
 
@@ -578,3 +578,85 @@ done
 ---
 
 *Standards: CLAUDE.md + WCAG 2.2 Level AA + Expo/RN/Legend-State/Supabase Best Practices*
+
+
+## DB Current Supabase Online Schema  | 2025-12-28 |
+
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.inventory_items (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  category USER-DEFINED NOT NULL,
+  name text NOT NULL CHECK (char_length(name) >= 1 AND char_length(name) <= 200),
+  description text DEFAULT ''::text,
+  quantity integer NOT NULL DEFAULT 1 CHECK (quantity >= 0),
+  unit text DEFAULT 'piece'::text,
+  images ARRAY DEFAULT '{}'::text[],
+  tags ARRAY DEFAULT '{}'::text[],
+  used_in_projects ARRAY DEFAULT '{}'::uuid[],
+  location text DEFAULT ''::text,
+  barcode text DEFAULT ''::text,
+  notes text DEFAULT ''::text,
+  yarn_details jsonb,
+  hook_details jsonb,
+  other_details jsonb,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  deleted_at timestamp with time zone,
+  CONSTRAINT inventory_items_pkey PRIMARY KEY (id),
+  CONSTRAINT inventory_items_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.profiles (
+  id uuid NOT NULL,
+  email text NOT NULL UNIQUE,
+  name text NOT NULL,
+  avatar_url text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  role USER-DEFINED NOT NULL DEFAULT 'ordinary'::user_role,
+  CONSTRAINT profiles_pkey PRIMARY KEY (id),
+  CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.projects (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  title text NOT NULL CHECK (char_length(title) >= 1 AND char_length(title) <= 200),
+  description text DEFAULT ''::text,
+  status USER-DEFINED NOT NULL DEFAULT 'to-do'::project_status,
+  project_type text DEFAULT ''::text,
+  images ARRAY DEFAULT '{}'::text[],
+  default_image_index integer DEFAULT 0,
+  pattern_images ARRAY DEFAULT '{}'::text[],
+  pattern_pdf text DEFAULT ''::text,
+  pattern_url text DEFAULT ''::text,
+  inspiration_url text DEFAULT ''::text,
+  yarn_used ARRAY DEFAULT '{}'::text[],
+  yarn_used_ids ARRAY DEFAULT '{}'::uuid[],
+  hook_used_ids ARRAY DEFAULT '{}'::uuid[],
+  yarn_materials jsonb DEFAULT '[]'::jsonb,
+  work_progress jsonb DEFAULT '[]'::jsonb,
+  inspiration_sources jsonb DEFAULT '[]'::jsonb,
+  notes text DEFAULT ''::text,
+  start_date timestamp with time zone,
+  completed_date timestamp with time zone,
+  currently_working_on boolean DEFAULT false,
+  currently_working_on_at timestamp with time zone,
+  currently_working_on_ended_at timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  deleted_at timestamp with time zone,
+  CONSTRAINT projects_pkey PRIMARY KEY (id),
+  CONSTRAINT projects_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.yarn_brands (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  name text NOT NULL,
+  display_name text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT yarn_brands_pkey PRIMARY KEY (id),
+  CONSTRAINT yarn_brands_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);

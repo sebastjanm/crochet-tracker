@@ -76,9 +76,9 @@ function mapProfileToUser(
 async function cacheUserProfile(user: User): Promise<void> {
   try {
     await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(user));
-    console.log('[Auth] User profile cached locally');
+    if (__DEV__) console.log('[Auth] User profile cached locally');
   } catch (error) {
-    console.error('[Auth] Failed to cache user profile:', error);
+    if (__DEV__) console.error('[Auth] Failed to cache user profile:', error);
   }
 }
 
@@ -92,7 +92,7 @@ async function loadCachedUserProfile(): Promise<User | null> {
       return JSON.parse(cached);
     }
   } catch (error) {
-    console.error('[Auth] Failed to load cached profile:', error);
+    if (__DEV__) console.error('[Auth] Failed to load cached profile:', error);
   }
   return null;
 }
@@ -103,9 +103,9 @@ async function loadCachedUserProfile(): Promise<User | null> {
 async function clearUserCache(): Promise<void> {
   try {
     await AsyncStorage.removeItem(USER_CACHE_KEY);
-    console.log('[Auth] User cache cleared');
+    if (__DEV__) console.log('[Auth] User cache cleared');
   } catch (error) {
-    console.error('[Auth] Failed to clear user cache:', error);
+    if (__DEV__) console.error('[Auth] Failed to clear user cache:', error);
   }
 }
 
@@ -128,19 +128,19 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
    * Includes a 5-second timeout to prevent hanging
    */
   const fetchProfile = useCallback(async (userId: string): Promise<User | null> => {
-    console.log('[Auth] fetchProfile starting for:', userId);
+    if (__DEV__) console.log('[Auth] fetchProfile starting for:', userId);
     if (!supabase) {
-      console.log('[Auth] fetchProfile: supabase is null');
+      if (__DEV__) console.log('[Auth] fetchProfile: supabase is null');
       return null;
     }
 
     try {
-      console.log('[Auth] fetchProfile: querying profiles table...');
+      if (__DEV__) console.log('[Auth] fetchProfile: querying profiles table...');
 
       // Add timeout to prevent hanging forever
       const timeoutPromise = new Promise<null>((resolve) => {
         setTimeout(() => {
-          console.warn('[Auth] fetchProfile: timeout after 5s');
+          if (__DEV__) console.warn('[Auth] fetchProfile: timeout after 5s');
           resolve(null);
         }, 5000);
       });
@@ -155,15 +155,15 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
       // If timeout won, result is null
       if (result === null) {
-        console.warn('[Auth] fetchProfile: timed out, returning null');
+        if (__DEV__) console.warn('[Auth] fetchProfile: timed out, returning null');
         return null;
       }
 
       const { data: profile, error } = result;
-      console.log('[Auth] fetchProfile: query complete', { profile, error: error?.message });
+      if (__DEV__) console.log('[Auth] fetchProfile: query complete', { profile, error: error?.message });
 
       if (error) {
-        console.error('[Auth] Failed to fetch profile:', error.message);
+        if (__DEV__) console.error('[Auth] Failed to fetch profile:', error.message);
         return null;
       }
 
@@ -173,7 +173,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
       return null;
     } catch (err) {
-      console.error('[Auth] Profile fetch error:', err);
+      if (__DEV__) console.error('[Auth] Profile fetch error:', err);
       return null;
     }
   }, []);
@@ -183,29 +183,29 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
    * Uses local cache for immediate user state, then refreshes from Supabase
    */
   const handleSessionChange = useCallback(async (newSession: Session | null) => {
-    console.log('[Auth] handleSessionChange:', { hasSession: !!newSession, userId: newSession?.user?.id });
+    if (__DEV__) console.log('[Auth] handleSessionChange:', { hasSession: !!newSession, userId: newSession?.user?.id });
     setSession(newSession);
 
     if (newSession?.user) {
       // First, try to load cached profile for immediate UI
       const cachedUser = await loadCachedUserProfile();
       if (cachedUser && cachedUser.id === newSession.user.id) {
-        console.log('[Auth] Using cached user profile (isPro:', cachedUser.isPro, ')');
+        if (__DEV__) console.log('[Auth] Using cached user profile (isPro:', cachedUser.isPro, ')');
         setUser(cachedUser);
       }
 
       // Then fetch fresh profile from Supabase (in background if we have cache)
-      console.log('[Auth] handleSessionChange: fetching fresh profile...');
+      if (__DEV__) console.log('[Auth] handleSessionChange: fetching fresh profile...');
       const profile = await fetchProfile(newSession.user.id);
-      console.log('[Auth] handleSessionChange: profile fetched', { hasProfile: !!profile });
+      if (__DEV__) console.log('[Auth] handleSessionChange: profile fetched', { hasProfile: !!profile });
 
       if (profile) {
-        console.log('[Auth] handleSessionChange: setting user from profile');
+        if (__DEV__) console.log('[Auth] handleSessionChange: setting user from profile');
         setUser(profile);
         await cacheUserProfile(profile); // Cache for next time
       } else if (!cachedUser) {
         // Only use fallback if no cached user AND no profile from server
-        console.log('[Auth] handleSessionChange: using fallback user (no cache, no profile)');
+        if (__DEV__) console.log('[Auth] handleSessionChange: using fallback user (no cache, no profile)');
         setUser({
           id: newSession.user.id,
           email: newSession.user.email || '',
@@ -217,11 +217,11 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       }
       // If we have cached user but fetch failed, keep using cached user (already set above)
     } else {
-      console.log('[Auth] handleSessionChange: no session, clearing user');
+      if (__DEV__) console.log('[Auth] handleSessionChange: no session, clearing user');
       setUser(null);
       await clearUserCache(); // Clear cache on logout
     }
-    console.log('[Auth] handleSessionChange: complete');
+    if (__DEV__) console.log('[Auth] handleSessionChange: complete');
   }, [fetchProfile]);
 
   /**
@@ -229,7 +229,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
    */
   useEffect(() => {
     if (!isSupabaseConfigured() || !supabase) {
-      console.log('[Auth] Supabase not configured');
+      if (__DEV__) console.log('[Auth] Supabase not configured');
       setIsLoading(false);
       return;
     }
@@ -238,21 +238,21 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
     // Get initial session
     const initAuth = async () => {
-      console.log('[Auth] initAuth starting...');
+      if (__DEV__) console.log('[Auth] initAuth starting...');
       try {
-        console.log('[Auth] initAuth: getting session...');
+        if (__DEV__) console.log('[Auth] initAuth: getting session...');
         const { data: { session: initialSession } } = await supabase!.auth.getSession();
-        console.log('[Auth] initAuth: session retrieved', { hasSession: !!initialSession });
+        if (__DEV__) console.log('[Auth] initAuth: session retrieved', { hasSession: !!initialSession });
 
         if (mounted) {
-          console.log('[Auth] initAuth: calling handleSessionChange...');
+          if (__DEV__) console.log('[Auth] initAuth: calling handleSessionChange...');
           await handleSessionChange(initialSession);
-          console.log('[Auth] initAuth: handleSessionChange complete, setting isLoading=false');
+          if (__DEV__) console.log('[Auth] initAuth: handleSessionChange complete, setting isLoading=false');
           setIsLoading(false);
           isInitializedRef.current = true;
         }
       } catch (error) {
-        console.error('[Auth] Init error:', error);
+        if (__DEV__) console.error('[Auth] Init error:', error);
         if (mounted) {
           setIsLoading(false);
           isInitializedRef.current = true;
@@ -260,18 +260,18 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       }
     };
 
-    console.log('[Auth] Starting initAuth...');
+    if (__DEV__) console.log('[Auth] Starting initAuth...');
     initAuth();
 
     // Subscribe to auth state changes
     // Skip INITIAL_SESSION and SIGNED_IN during init - initAuth handles these
     const { data: { subscription } } = supabase!.auth.onAuthStateChange(
       async (event, newSession) => {
-        console.log('[Auth] State change:', event);
+        if (__DEV__) console.log('[Auth] State change:', event);
 
         // Skip events during initialization - initAuth handles the initial session
         if (!isInitializedRef.current && (event === 'INITIAL_SESSION' || event === 'SIGNED_IN')) {
-          console.log('[Auth] Skipping event during init:', event);
+          if (__DEV__) console.log('[Auth] Skipping event during init:', event);
           return;
         }
 
@@ -310,7 +310,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     });
 
     if (error) {
-      console.error('[Auth] Login failed:', error.message);
+      if (__DEV__) console.error('[Auth] Login failed:', error.message);
       throw error;
     }
 
@@ -367,7 +367,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     });
 
     if (error) {
-      console.error('[Auth] Registration failed:', error.message);
+      if (__DEV__) console.error('[Auth] Registration failed:', error.message);
       throw error;
     }
 
@@ -410,7 +410,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     });
 
     if (error) {
-      console.error('[Auth] Password reset failed:', error.message);
+      if (__DEV__) console.error('[Auth] Password reset failed:', error.message);
       throw error;
     }
 
@@ -434,7 +434,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     const { error } = await supabase.auth.signOut();
 
     if (error) {
-      console.error('[Auth] Logout failed:', error.message);
+      if (__DEV__) console.error('[Auth] Logout failed:', error.message);
       // Still clear local state even if API call fails
     }
 
@@ -461,7 +461,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       .eq('id', user.id);
 
     if (error) {
-      console.error('[Auth] Profile update failed:', error.message);
+      if (__DEV__) console.error('[Auth] Profile update failed:', error.message);
       throw error;
     }
 
@@ -484,7 +484,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     if (profile) {
       setUser(profile);
       await cacheUserProfile(profile);
-      console.log('🔄 User profile refreshed from Supabase');
+      if (__DEV__) console.log('🔄 User profile refreshed from Supabase');
     }
   };
 

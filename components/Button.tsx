@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   TouchableOpacity,
   Text,
@@ -10,6 +9,7 @@ import {
   View,
   Platform,
 } from 'react-native';
+import type { ReactNode } from 'react';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { MAX_FONT_SIZE_MULTIPLIER } from '@/constants/accessibility';
@@ -19,13 +19,17 @@ interface ButtonProps extends TouchableOpacityProps {
   variant?: 'primary' | 'secondary' | 'ghost' | 'destructive';
   size?: 'large' | 'medium' | 'small';
   loading?: boolean;
-  icon?: React.ReactNode;
+  icon?: ReactNode;
   fullWidth?: boolean;
   accessibilityLabel?: string;
   accessibilityHint?: string;
 }
 
-export const Button: React.FC<ButtonProps> = ({
+/**
+ * Button - Reusable button component with multiple variants and sizes.
+ * Supports loading state, icons, and full accessibility.
+ */
+export function Button({
   title,
   variant = 'primary',
   size = 'medium',
@@ -37,7 +41,7 @@ export const Button: React.FC<ButtonProps> = ({
   accessibilityLabel,
   accessibilityHint,
   ...props
-}) => {
+}: ButtonProps): React.JSX.Element {
   const buttonStyle: ViewStyle[] = [
     styles.base,
     styles[variant],
@@ -95,7 +99,7 @@ export const Button: React.FC<ButtonProps> = ({
       )}
     </TouchableOpacity>
   );
-};
+}
 
 const styles = StyleSheet.create({
   base: {

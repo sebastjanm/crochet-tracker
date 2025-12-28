@@ -1,19 +1,23 @@
-import React from 'react';
 import { View, StyleSheet, ViewProps, Platform } from 'react-native';
+import type { ReactNode } from 'react';
 import Colors from '@/constants/colors';
 import { normalizeBorder, cardShadow, normalizeBorderOpacity } from '@/constants/pixelRatio';
 
 interface CardProps extends ViewProps {
-  children: React.ReactNode;
+  children: ReactNode;
   variant?: 'elevated' | 'outlined';
 }
 
-export const Card: React.FC<CardProps> = ({ 
-  children, 
+/**
+ * Card - Container component with elevated or outlined variants.
+ * Provides consistent styling for content sections.
+ */
+export function Card({
+  children,
   variant = 'elevated',
   style,
-  ...props 
-}) => {
+  ...props
+}: CardProps): React.JSX.Element {
   return (
     <View 
       style={[
@@ -26,7 +30,7 @@ export const Card: React.FC<CardProps> = ({
       {children}
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   base: {

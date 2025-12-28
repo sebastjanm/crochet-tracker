@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   TextInput,
   TextInputProps,
@@ -21,7 +21,11 @@ interface InputProps extends TextInputProps {
   required?: boolean;
 }
 
-export const Input: React.FC<InputProps> = ({
+/**
+ * Input - Floating label text input with validation and accessibility.
+ * Supports password visibility toggle and error states.
+ */
+export function Input({
   label,
   error,
   helper,
@@ -32,7 +36,7 @@ export const Input: React.FC<InputProps> = ({
   multiline,
   secureTextEntry,
   ...props
-}) => {
+}: InputProps): React.JSX.Element {
   const [isFocused, setIsFocused] = useState(false);
   const [animatedLabelPosition] = useState(new Animated.Value(value ? 1 : 0));
   const [showPassword, setShowPassword] = useState(false);
@@ -43,7 +47,7 @@ export const Input: React.FC<InputProps> = ({
   const hasValue = value && value.length > 0;
   const shouldFloat = isFocused || hasValue;
 
-  React.useEffect(() => {
+  useEffect(() => {
     Animated.timing(animatedLabelPosition, {
       toValue: shouldFloat ? 1 : 0,
       duration: 200,
@@ -141,7 +145,7 @@ export const Input: React.FC<InputProps> = ({
       )}
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {

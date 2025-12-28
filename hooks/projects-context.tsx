@@ -7,6 +7,7 @@
  * - Sync: Supabase (handled by Legend-State)
  */
 
+import { useCallback, useMemo } from 'react';
 import createContextHook from '@nkzw/create-context-hook';
 import { useSelector } from '@legendapp/state/react';
 import { Project, ProjectStatus, ProjectYarn } from '@/types';
@@ -38,9 +39,12 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
 
     return Object.values(projectsMap)
       // Soft delete: deleted_at is NULL for active, timestamp for deleted
-      .filter((row: any) => row.deleted_at === null || row.deleted_at === undefined)
-      .map((row: any) => {
-        const project = mapRowToProject(row);
+      .filter((row: unknown) => {
+        const r = row as { deleted_at?: string | null };
+        return r.deleted_at === null || r.deleted_at === undefined;
+      })
+      .map((row: unknown) => {
+        const project = mapRowToProject(row as Parameters<typeof mapRowToProject>[0]);
         let yarnMaterials: ProjectYarn[] | undefined = project.yarnMaterials;
         if (!yarnMaterials && project.yarnUsedIds && project.yarnUsedIds.length > 0) {
           yarnMaterials = project.yarnUsedIds.map((id: string) => ({
@@ -59,7 +63,8 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
   // ACTIONS
   // ==========================================================================
 
-  const addProject = async (
+  /** Add a new project to the store */
+  const addProject = useCallback(async (
     project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<Project> => {
     // 1. Map Domain -> Row
@@ -70,7 +75,7 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
       updatedAt: new Date(),
     };
     const row = mapProjectToRow(fullProject);
-    
+
     // 2. Add to Store
     const id = addProjectToStore(projects$, user?.id ?? null, row);
 
@@ -86,12 +91,13 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-  };
+  }, [projects$, user?.id, queueProjectImages]);
 
-  const updateProject = async (id: string, updates: Partial<Project>) => {
+  /** Update an existing project */
+  const updateProject = useCallback(async (id: string, updates: Partial<Project>) => {
     const existingProject = projects.find((p: Project) => p.id === id);
     if (!existingProject) {
-      console.error(`[Projects] Project ${id} not found`);
+      if (__DEV__) console.error(`[Projects] Project ${id} not found`);
       return;
     }
 
@@ -116,7 +122,7 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
           existingProject.hookUsedIds ?? []
         );
       } catch (error) {
-        console.error('[Projects] Failed to sync inventory items:', error);
+        if (__DEV__) console.error('[Projects] Failed to sync inventory items:', error);
       }
     }
 
@@ -140,20 +146,22 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
       queueProjectImages({ ...rowUpdates, id });
     }
 
-    console.log(`[Projects] Updated project: ${id}`);
-  };
+    if (__DEV__) console.log(`[Projects] Updated project: ${id}`);
+  }, [projects, projects$, queueProjectImages]);
 
-  const deleteProject = async (id: string) => {
+  /** Delete a project (soft delete) */
+  const deleteProject = useCallback(async (id: string) => {
     try {
       await removeProjectFromInventory(id);
     } catch (error) {
-      console.error('[Projects] Failed to clean up inventory references:', error);
+      if (__DEV__) console.error('[Projects] Failed to clean up inventory references:', error);
     }
     deleteProjectFromStore(projects$, id);
-    console.log(`[Projects] Deleted project: ${id}`);
-  };
+    if (__DEV__) console.log(`[Projects] Deleted project: ${id}`);
+  }, [projects$]);
 
-  const toggleCurrentlyWorkingOn = async (projectId: string): Promise<boolean> => {
+  /** Toggle the "currently working on" status for a project */
+  const toggleCurrentlyWorkingOn = useCallback(async (projectId: string): Promise<boolean> => {
     const project = projects.find((p: Project) => p.id === projectId);
     if (!project) return false;
 
@@ -161,7 +169,7 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
     const isCurrentlyActive = project.isCurrentlyWorkingOn === true;
 
     if (!isCurrentlyActive && currentlyWorkingOnProjects.length >= 3) {
-      console.warn('[Projects] Max 3 active projects allowed');
+      if (__DEV__) console.warn('[Projects] Max 3 active projects allowed');
       return false;
     }
 
@@ -173,16 +181,21 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
 
     updateProjectInStore(projects$, projectId, updates);
     return true;
-  };
+  }, [projects, projects$]);
 
   // Deprecated: used by ImageSyncQueue callback internally now
-  const replaceProjectImage = async (projectId: string, oldUri: string, newUrl: string) => {
+  const replaceProjectImage = useCallback(async (_projectId: string, _oldUri: string, _newUrl: string) => {
      // No-op for public API, handled by useImageSync internally
-  };
+  }, []);
 
-  const getProjectById = (id: string) => projects.find((p: Project) => p.id === id);
-  const getProjectsByStatus = (status: ProjectStatus) => projects.filter((p: Project) => p.status === status);
-  const currentlyWorkingOnProjects = projects.filter((p: Project) => p.isCurrentlyWorkingOn);
+  /** Get a project by ID */
+  const getProjectById = useCallback((id: string) => projects.find((p: Project) => p.id === id), [projects]);
+
+  /** Get projects by status */
+  const getProjectsByStatus = useCallback((status: ProjectStatus) => projects.filter((p: Project) => p.status === status), [projects]);
+
+  /** Projects currently being worked on */
+  const currentlyWorkingOnProjects = useMemo(() => projects.filter((p: Project) => p.isCurrentlyWorkingOn), [projects]);
 
   return {
     projects,
@@ -201,5 +214,5 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
     onHoldCount: projects.filter((p: Project) => p.status === 'on-hold').length,
     completedCount: projects.filter((p: Project) => p.status === 'completed').length,
     froggedCount: projects.filter((p: Project) => p.status === 'frogged').length,
-  };
+  } as const;
 });

@@ -7,8 +7,8 @@
  * - Sync: Supabase (handled by Legend-State)
  */
 
+import { useState, useMemo, useCallback } from 'react';
 import createContextHook from '@nkzw/create-context-hook';
-import { useState, useMemo } from 'react';
 import { useSelector } from '@legendapp/state/react';
 import { InventoryItem } from '@/types';
 import { useImagePicker } from './useImagePicker';
@@ -46,9 +46,12 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
 
     return Object.values(itemsMap)
       // Soft delete: deleted_at is NULL for active, timestamp for deleted
-      .filter((row: any) => row.deleted_at === null || row.deleted_at === undefined)
+      .filter((row: unknown) => {
+        const r = row as { deleted_at?: string | null };
+        return r.deleted_at === null || r.deleted_at === undefined;
+      })
       // Trust the mapper - no double date conversion needed
-      .map((row: any) => mapRowToInventoryItem(row))
+      .map((row: unknown) => mapRowToInventoryItem(row as Parameters<typeof mapRowToInventoryItem>[0]))
       .sort((a: InventoryItem, b: InventoryItem) => b.updatedAt.getTime() - a.updatedAt.getTime());
   });
 
@@ -58,7 +61,8 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
   // ACTIONS
   // ==========================================================================
 
-  const addItem = async (
+  /** Add a new inventory item */
+  const addItem = useCallback(async (
     item: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<InventoryItem> => {
     const now = new Date();
@@ -84,9 +88,44 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
       createdAt: now,
       updatedAt: now,
     };
-  };
+  }, [inventory$, user?.id, queueInventoryImages]);
 
-  const addItemWithBarcode = async (
+  /** Update an existing inventory item */
+  const updateItem = useCallback(async (id: string, updates: Partial<InventoryItem>) => {
+    const existingItem = items.find((i: InventoryItem) => i.id === id);
+    if (!existingItem) {
+      if (__DEV__) console.error(`[Inventory] Item ${id} not found`);
+      return;
+    }
+
+    // Handle Project Sync
+    if (updates.usedInProjects !== undefined) {
+      try {
+        await syncInventoryToProjects(
+          id,
+          existingItem.category,
+          updates.usedInProjects ?? [],
+          existingItem.usedInProjects ?? []
+        );
+      } catch (error) {
+        if (__DEV__) console.error('[Inventory] Failed to sync projects:', error);
+      }
+    }
+
+    const mergedItem = { ...existingItem, ...updates };
+    const rowUpdates = mapInventoryItemToRow(mergedItem);
+
+    updateItemInStore(inventory$, id, rowUpdates);
+
+    if (updates.images) {
+      queueInventoryImages({ ...rowUpdates, id });
+    }
+
+    if (__DEV__) console.log(`[Inventory] Updated item: ${id}`);
+  }, [items, inventory$, queueInventoryImages]);
+
+  /** Add item with barcode - updates quantity if exists */
+  const addItemWithBarcode = useCallback(async (
     barcode: string,
     additionalData: Partial<InventoryItem>
   ): Promise<InventoryItem> => {
@@ -110,50 +149,19 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
       barcode,
       ...additionalData,
     } as Omit<InventoryItem, 'id' | 'dateAdded' | 'lastUpdated'>);
-  };
+  }, [items, addItem, updateItem]);
 
-  const updateItem = async (id: string, updates: Partial<InventoryItem>) => {
-    const existingItem = items.find((i: InventoryItem) => i.id === id);
-    if (!existingItem) {
-      console.error(`[Inventory] Item ${id} not found`);
-      return;
-    }
-
-    // Handle Project Sync
-    if (updates.usedInProjects !== undefined) {
-      try {
-        await syncInventoryToProjects(
-          id,
-          existingItem.category,
-          updates.usedInProjects ?? [],
-          existingItem.usedInProjects ?? []
-        );
-      } catch (error) {
-        console.error('[Inventory] Failed to sync projects:', error);
-      }
-    }
-
-    const mergedItem = { ...existingItem, ...updates };
-    const rowUpdates = mapInventoryItemToRow(mergedItem);
-
-    updateItemInStore(inventory$, id, rowUpdates);
-
-    if (updates.images) {
-      queueInventoryImages({ ...rowUpdates, id });
-    }
-
-    console.log(`[Inventory] Updated item: ${id}`);
-  };
-
-  const updateQuantity = async (id: string, delta: number) => {
+  /** Update item quantity by delta */
+  const updateQuantity = useCallback(async (id: string, delta: number) => {
     const item = items.find((i: InventoryItem) => i.id === id);
     if (item) {
       const newQuantity = Math.max(0, item.quantity + delta);
       await updateItem(id, { quantity: newQuantity });
     }
-  };
+  }, [items, updateItem]);
 
-  const markAsUsed = async (id: string, projectId?: string) => {
+  /** Mark item as used in a project */
+  const markAsUsed = useCallback(async (id: string, projectId?: string) => {
     const item = items.find((i: InventoryItem) => i.id === id);
     if (item) {
       const usedInProjects = item.usedInProjects || [];
@@ -162,49 +170,58 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
       }
       await updateItem(id, { usedInProjects });
     }
-  };
+  }, [items, updateItem]);
 
-  const addImages = async (itemId: string, newImages: string[]) => {
+  /** Add images to an item */
+  const addImages = useCallback(async (itemId: string, newImages: string[]) => {
     const item = items.find((i: InventoryItem) => i.id === itemId);
     if (item) {
       await updateItem(itemId, {
         images: [...(item.images || []), ...newImages],
       });
     }
-  };
+  }, [items, updateItem]);
 
-  const removeImage = async (itemId: string, imageIndex: number) => {
+  /** Remove an image from an item */
+  const removeImage = useCallback(async (itemId: string, imageIndex: number) => {
     const item = items.find((i: InventoryItem) => i.id === itemId);
     if (item && item.images) {
       const newImages = [...item.images];
       newImages.splice(imageIndex, 1);
       await updateItem(itemId, { images: newImages });
     }
-  };
+  }, [items, updateItem]);
 
-  const deleteItem = async (id: string) => {
+  /** Delete an inventory item (soft delete) */
+  const deleteItem = useCallback(async (id: string) => {
     const itemToDelete = items.find((item: InventoryItem) => item.id === id);
     if (itemToDelete) {
       try {
         await removeInventoryFromProjects(id, itemToDelete.category);
       } catch (error) {
-        console.error('[Inventory] Failed to clean up project references:', error);
+        if (__DEV__) console.error('[Inventory] Failed to clean up project references:', error);
       }
     }
     deleteItemFromStore(inventory$, id);
-    console.log(`[Inventory] Deleted item: ${id}`);
-  };
+    if (__DEV__) console.log(`[Inventory] Deleted item: ${id}`);
+  }, [items, inventory$]);
 
   // Deprecated
-  const replaceInventoryImage = async (itemId: string, oldUri: string, newUrl: string) => {
+  const replaceInventoryImage = useCallback(async (_itemId: string, _oldUri: string, _newUrl: string) => {
      // No-op
-  };
+  }, []);
 
-  const getItemById = (id: string) => items.find((i: InventoryItem) => i.id === id);
-  const getItemsByCategory = (category: InventoryItem['category']) => items.filter((i: InventoryItem) => i.category === category);
-  const getItemByBarcode = (barcode: string) => items.find((i: InventoryItem) => i.barcode === barcode);
-  
-  const searchItems = (query: string): InventoryItem[] => {
+  /** Get item by ID */
+  const getItemById = useCallback((id: string) => items.find((i: InventoryItem) => i.id === id), [items]);
+
+  /** Get items by category */
+  const getItemsByCategory = useCallback((category: InventoryItem['category']) => items.filter((i: InventoryItem) => i.category === category), [items]);
+
+  /** Get item by barcode */
+  const getItemByBarcode = useCallback((barcode: string) => items.find((i: InventoryItem) => i.barcode === barcode), [items]);
+
+  /** Search items by query */
+  const searchItems = useCallback((query: string): InventoryItem[] => {
     const lowerQuery = query.toLowerCase();
     return items.filter(
       (item: InventoryItem) =>
@@ -215,7 +232,7 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
         item.hookDetails?.brand?.toLowerCase().includes(lowerQuery) ||
         item.barcode?.includes(query)
     );
-  };
+  }, [items]);
 
   const filteredItems = useMemo(() => {
     let filtered = items;

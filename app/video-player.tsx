@@ -4,7 +4,6 @@ import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { X } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let WebView: React.ComponentType<any> | null = null;
 try {
   if (Platform.OS !== 'web') {

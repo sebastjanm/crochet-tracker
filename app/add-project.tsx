@@ -48,8 +48,7 @@ export default function AddProjectScreen(): React.JSX.Element {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [notes, setNotes] = useState('');
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [inspirationUrl, _setInspirationUrl] = useState(''); // Planned feature
+  const [inspirationUrl] = useState(''); // Planned feature - setter not yet needed
   const [images, setImages] = useState<string[]>([]);
   const [defaultImageIndex, setDefaultImageIndex] = useState<number>(0);
   const [patternImages, setPatternImages] = useState<string[]>([]);
@@ -458,7 +457,6 @@ export default function AddProjectScreen(): React.JSX.Element {
             label={t('projects.startDate')}
             value={startDate}
             onChange={setStartDate}
-            placeholder={t('projects.selectStartDate')}
             maxDate={new Date()}
           />
 

@@ -10,7 +10,6 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Dimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -21,9 +20,6 @@ import { useLanguage } from '@/providers/LanguageProvider';
 import { cardShadow } from '@/constants/pixelRatio';
 import { MAX_FONT_SIZE_MULTIPLIER } from '@/constants/accessibility';
 import { UniversalHeader } from '@/components/UniversalHeader';
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const { width: _width } = Dimensions.get('window');
 
 const IMAGE_API_URL = 'https://toolkit.rork.com/images/generate/';
 

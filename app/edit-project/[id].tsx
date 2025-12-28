@@ -481,7 +481,6 @@ export default function EditProjectScreen(): React.JSX.Element {
             label={t('projects.startDate')}
             value={startDate}
             onChange={setStartDate}
-            placeholder={t('projects.selectStartDate')}
             maxDate={new Date()}
           />
 

@@ -17,7 +17,6 @@ interface DatePickerProps {
   label: string;
   value?: Date;
   onChange: (date: Date | undefined) => void;
-  placeholder?: string;
   required?: boolean;
   error?: string;
   maxDate?: Date;
@@ -29,7 +28,6 @@ export function DatePicker({
   label,
   value,
   onChange,
-  placeholder = 'Select date',
   required = false,
   error,
   maxDate = new Date(), // Default: can't select future dates
@@ -81,13 +79,6 @@ export function DatePicker({
     }
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _handleClear = () => {
-    onChange(undefined);
-  };
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _displayValue = value ? formatDate(value) : placeholder;
   const dateAnnouncement = value
     ? `Selected date: ${formatDate(value)}`
     : 'No date selected';
@@ -225,14 +216,8 @@ const styles = StyleSheet.create({
     fontWeight: '500' as const,
     lineHeight: 20,
   },
-  placeholderText: {
-    color: Colors.warmGray,
-  },
   disabledText: {
     color: Colors.warmGray,
-  },
-  clearButton: {
-    padding: 4,
   },
   errorText: {
     ...Typography.caption2,

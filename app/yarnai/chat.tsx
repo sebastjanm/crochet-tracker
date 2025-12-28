@@ -10,7 +10,6 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Send, MessageSquare, User, Bot } from 'lucide-react-native';
@@ -20,9 +19,6 @@ import { useLanguage } from '@/providers/LanguageProvider';
 import { normalizeBorder, cardShadow } from '@/constants/pixelRatio';
 import { MAX_FONT_SIZE_MULTIPLIER } from '@/constants/accessibility';
 import { UniversalHeader } from '@/components/UniversalHeader';
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const { width: _width } = Dimensions.get('window');
 
 const CHAT_API_URL = 'https://toolkit.rork.com/text/llm/';
 

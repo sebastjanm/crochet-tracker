@@ -74,8 +74,7 @@ export default function AddInventoryScreen(): React.JSX.Element {
 
   // Hook specific fields
   const [hookName, setHookName] = useState('');
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [hookSize, _setHookSize] = useState(''); // Legacy field
+  const [hookSize] = useState(''); // Legacy field - setter not needed
   const [hookBrand, setHookBrand] = useState('');
   const [hookModel, setHookModel] = useState('');
   const [hookSizeMm, setHookSizeMm] = useState('');
@@ -601,7 +600,6 @@ export default function AddInventoryScreen(): React.JSX.Element {
                 label={t('inventory.purchaseDate')}
                 value={purchaseDate}
                 onChange={setPurchaseDate}
-                placeholder={t('inventory.selectPurchaseDate')}
                 maxDate={new Date()}
               />
 
@@ -723,7 +721,6 @@ export default function AddInventoryScreen(): React.JSX.Element {
                 label={t('inventory.purchaseDate')}
                 value={hookPurchaseDate}
                 onChange={setHookPurchaseDate}
-                placeholder={t('inventory.selectPurchaseDate')}
                 maxDate={new Date()}
               />
 
@@ -831,7 +828,6 @@ export default function AddInventoryScreen(): React.JSX.Element {
                 label={t('inventory.purchaseDate')}
                 value={otherPurchaseDate}
                 onChange={setOtherPurchaseDate}
-                placeholder={t('inventory.selectPurchaseDate')}
                 maxDate={new Date()}
               />
 

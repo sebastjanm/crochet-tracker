@@ -611,7 +611,6 @@ export default function EditInventoryScreen(): React.JSX.Element {
                 label={t('inventory.purchaseDate')}
                 value={purchaseDate}
                 onChange={setPurchaseDate}
-                placeholder={t('inventory.selectPurchaseDate')}
                 maxDate={new Date()}
               />
 
@@ -733,7 +732,6 @@ export default function EditInventoryScreen(): React.JSX.Element {
                 label={t('inventory.purchaseDate')}
                 value={hookPurchaseDate}
                 onChange={setHookPurchaseDate}
-                placeholder={t('inventory.selectPurchaseDate')}
                 maxDate={new Date()}
               />
 
@@ -841,7 +839,6 @@ export default function EditInventoryScreen(): React.JSX.Element {
                 label={t('inventory.purchaseDate')}
                 value={otherPurchaseDate}
                 onChange={setOtherPurchaseDate}
-                placeholder={t('inventory.selectPurchaseDate')}
                 maxDate={new Date()}
               />
 

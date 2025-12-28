@@ -28,6 +28,11 @@ export type ProjectType =
   | 'home-decor'
   | 'toy'
   | 'leg-warmer'
+  | 'hat'
+  | 'scarf'
+  | 'bag'
+  | 'shawl'
+  | 'baby'
   | 'other';
 
 export interface WorkProgressEntry {

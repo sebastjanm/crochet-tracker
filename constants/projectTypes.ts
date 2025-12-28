@@ -43,6 +43,31 @@ export const PROJECT_TYPE_CONFIGS: Record<ProjectType, ProjectTypeConfig> = {
     icon: 'Footprints',
     color: '#FF6B9D', // Pink
   },
+  hat: {
+    label: 'Hat',
+    icon: 'CircleUser',
+    color: '#5C6BC0', // Indigo
+  },
+  scarf: {
+    label: 'Scarf',
+    icon: 'Wind',
+    color: '#26A69A', // Teal
+  },
+  bag: {
+    label: 'Bag',
+    icon: 'ShoppingBag',
+    color: '#8D6E63', // Brown
+  },
+  shawl: {
+    label: 'Shawl',
+    icon: 'Origami',
+    color: '#AB47BC', // Purple
+  },
+  baby: {
+    label: 'Baby Item',
+    icon: 'Baby',
+    color: '#F48FB1', // Light pink
+  },
   other: {
     label: 'Other',
     icon: 'MoreHorizontal',

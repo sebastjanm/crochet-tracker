@@ -1,13 +1,17 @@
 /**
  * Toast Notification Component
  *
- * Provides global toast notifications with auto-dismiss.
- * Use ToastProvider in _layout.tsx and useToast hook in components.
+ * Provides global toast notifications with:
+ * - Type-specific durations (success: 1.5s, error: 4s)
+ * - Swipe-to-dismiss gesture
+ * - Non-blocking UI positioning
  *
  * @example
  * ```tsx
  * const { showToast } = useToast();
- * showToast('Image uploaded successfully', 'success');
+ * showToast('Saved!', 'success');           // Auto-dismisses in 1.5s
+ * showToast('Failed to save', 'error');     // Stays 4s, swipeable
+ * showToast('Custom duration', 'info', 5000); // 5s override
  * ```
  */
 
@@ -19,10 +23,35 @@ import {
   View,
   TouchableOpacity,
   Platform,
+  PanResponder,
+  Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X, CheckCircle, AlertCircle, Info } from 'lucide-react-native';
+import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react-native';
 import { Colors } from '@/constants/colors';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+
+// ============================================================================
+// DURATION CONSTANTS (in milliseconds)
+// ============================================================================
+
+/**
+ * Type-specific toast durations following UX best practices:
+ * - Success: Quick feedback, user knows action completed (1.5s)
+ * - Info: Informational, slightly longer to read (2.5s)
+ * - Warning: Important but not critical, user should notice (3s)
+ * - Error: Critical, user needs time to read/act (4s)
+ */
+const TOAST_DURATIONS: Record<ToastType, number> = {
+  success: 1500,
+  info: 2500,
+  warning: 3000,
+  error: 4000,
+};
+
+// Swipe threshold to dismiss (in pixels)
+const SWIPE_THRESHOLD = 80;
 
 // ============================================================================
 // TYPES
@@ -67,8 +96,13 @@ interface ToastItemProps {
 function ToastItem({ toast, onDismiss }: ToastItemProps) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(-20)).current;
+  const translateX = useRef(new Animated.Value(0)).current;
+  const dismissedRef = useRef(false);
 
   const dismiss = useCallback(() => {
+    if (dismissedRef.current) return;
+    dismissedRef.current = true;
+
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 0,
@@ -85,22 +119,84 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
     });
   }, [fadeAnim, translateY, onDismiss, toast.id]);
 
+  // Swipe-to-dismiss with horizontal pan
+  const dismissSwipe = useCallback((direction: 'left' | 'right') => {
+    if (dismissedRef.current) return;
+    dismissedRef.current = true;
+
+    const targetX = direction === 'left' ? -SCREEN_WIDTH : SCREEN_WIDTH;
+
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateX, {
+        toValue: targetX,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      onDismiss(toast.id);
+    });
+  }, [fadeAnim, translateX, onDismiss, toast.id]);
+
+  // PanResponder for swipe gesture
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        // Only respond to horizontal swipes
+        return Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 10;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        translateX.setValue(gestureState.dx);
+        // Fade out as user swipes
+        const progress = Math.min(Math.abs(gestureState.dx) / SWIPE_THRESHOLD, 1);
+        fadeAnim.setValue(1 - progress * 0.5);
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (Math.abs(gestureState.dx) > SWIPE_THRESHOLD) {
+          // Swipe completed - dismiss
+          dismissSwipe(gestureState.dx < 0 ? 'left' : 'right');
+        } else {
+          // Snap back
+          Animated.parallel([
+            Animated.spring(translateX, {
+              toValue: 0,
+              useNativeDriver: true,
+              tension: 100,
+              friction: 10,
+            }),
+            Animated.timing(fadeAnim, {
+              toValue: 1,
+              duration: 100,
+              useNativeDriver: true,
+            }),
+          ]).start();
+        }
+      },
+    })
+  ).current;
+
   useEffect(() => {
-    // Slide in
+    // Slide in animation
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 200,
         useNativeDriver: true,
       }),
-      Animated.timing(translateY, {
+      Animated.spring(translateY, {
         toValue: 0,
-        duration: 200,
         useNativeDriver: true,
+        tension: 100,
+        friction: 10,
       }),
     ]).start();
 
-    // Auto-dismiss
+    // Auto-dismiss timer
     const timer = setTimeout(() => {
       dismiss();
     }, toast.duration);
@@ -122,37 +218,43 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
     }
   };
 
-  const Icon = () => {
+  function ToastIcon() {
     const { icon } = getColors();
     const props = { size: 20, color: icon, strokeWidth: 2 };
     switch (toast.type) {
       case 'success':
         return <CheckCircle {...props} />;
       case 'error':
-      case 'warning':
         return <AlertCircle {...props} />;
+      case 'warning':
+        return <AlertTriangle {...props} />;
       case 'info':
       default:
         return <Info {...props} />;
     }
-  };
+  }
 
   const colors = getColors();
 
   return (
     <Animated.View
+      {...panResponder.panHandlers}
       style={[
         styles.toast,
         {
           backgroundColor: colors.bg,
           borderColor: colors.border,
           opacity: fadeAnim,
-          transform: [{ translateY }],
+          transform: [{ translateY }, { translateX }],
         },
       ]}
+      accessible={true}
+      accessibilityRole="alert"
+      accessibilityLabel={`${toast.type}: ${toast.message}`}
+      accessibilityHint="Swipe left or right to dismiss"
     >
       <View style={styles.iconContainer}>
-        <Icon />
+        <ToastIcon />
       </View>
       <Text style={styles.message} numberOfLines={2}>
         {toast.message}
@@ -160,9 +262,12 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
       <TouchableOpacity
         onPress={dismiss}
         style={styles.dismissButton}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel="Dismiss notification"
       >
-        <X size={16} color={Colors.warmGray} strokeWidth={2} />
+        <X size={18} color={Colors.warmGray} strokeWidth={2.5} />
       </TouchableOpacity>
     </Animated.View>
   );
@@ -181,9 +286,11 @@ export function ToastProvider({ children }: ToastProviderProps) {
   const insets = useSafeAreaInsets();
 
   const showToast = useCallback(
-    (message: string, type: ToastType = 'info', duration: number = 3000) => {
+    (message: string, type: ToastType = 'info', duration?: number) => {
+      // Use type-specific duration if not explicitly provided
+      const finalDuration = duration ?? TOAST_DURATIONS[type];
       const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-      setToasts((prev) => [...prev, { id, message, type, duration }]);
+      setToasts((prev) => [...prev, { id, message, type, duration: finalDuration }]);
     },
     []
   );
@@ -195,6 +302,11 @@ export function ToastProvider({ children }: ToastProviderProps) {
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
+      {/*
+        Toast container positioned at top with safe area inset.
+        pointerEvents="box-none" allows touches to pass through to content below.
+        Individual toasts are interactive (swipeable, tappable dismiss button).
+      */}
       <View
         style={[
           styles.container,
@@ -223,6 +335,8 @@ const styles = StyleSheet.create({
     right: 16,
     zIndex: 9999,
     alignItems: 'center',
+    // Ensure container doesn't block touches on underlying UI
+    pointerEvents: 'box-none',
   },
   toast: {
     flexDirection: 'row',
@@ -235,15 +349,16 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     width: '100%',
     maxWidth: 400,
+    // Ensure toast itself captures touches for swipe gesture
     ...Platform.select({
       ios: {
         shadowColor: Colors.black,
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
+        shadowOpacity: 0.15,
         shadowRadius: 12,
       },
       android: {
-        elevation: 6,
+        elevation: 8,
       },
     }),
   },
@@ -259,7 +374,11 @@ const styles = StyleSheet.create({
   },
   dismissButton: {
     marginLeft: 10,
-    padding: 4,
+    padding: 6,
+    minWidth: 30,
+    minHeight: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

@@ -174,7 +174,8 @@
       "Bash(if ! grep -q \"styles\\\\.$style\" \"/Users/sebastjanm/dev/SeboAI-crochet-tracker/app/edit-project/[id].tsx\")",
       "Bash(/Users/sebastjanm/dev/SeboAI-crochet-tracker/hooks/language-context.tsx )",
       "Bash(/Users/sebastjanm/dev/SeboAI-crochet-tracker/hooks/projects-context.tsx )",
-      "Bash(/Users/sebastjanm/dev/SeboAI-crochet-tracker/hooks/inventory-context.tsx)"
+      "Bash(/Users/sebastjanm/dev/SeboAI-crochet-tracker/hooks/inventory-context.tsx)",
+      "Bash(npx @sentry/wizard@latest -i reactNative:*)"
     ],
     "deny": [],
     "ask": []

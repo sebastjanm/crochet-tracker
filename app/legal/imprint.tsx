@@ -9,7 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
-import { useLanguage } from '@/hooks/language-context';
+import { useLanguage } from '@/providers/LanguageProvider';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 

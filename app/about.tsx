@@ -25,7 +25,7 @@ import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 import Colors from '@/constants/colors';
 import { Card } from '@/components/Card';
-import { useLanguage } from '@/hooks/language-context';
+import { useLanguage } from '@/providers/LanguageProvider';
 
 export default function AboutScreen() {
   const { t } = useLanguage();

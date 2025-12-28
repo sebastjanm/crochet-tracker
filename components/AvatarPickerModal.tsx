@@ -11,7 +11,7 @@ import { X, Check } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { CUTE_AVATARS, AvatarStyle } from '@/constants/avatars';
-import { useLanguage } from '@/hooks/language-context';
+import { useLanguage } from '@/providers/LanguageProvider';
 
 interface AvatarPickerModalProps {
   visible: boolean;

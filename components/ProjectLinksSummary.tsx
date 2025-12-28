@@ -7,8 +7,8 @@ import {
   Platform,
 } from 'react-native';
 import { ChevronRight, Link } from 'lucide-react-native';
-import { useProjects } from '@/hooks/projects-context';
-import { useLanguage } from '@/hooks/language-context';
+import { useProjects } from '@/providers/ProjectsProvider';
+import { useLanguage } from '@/providers/LanguageProvider';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, cardShadow } from '@/constants/pixelRatio';

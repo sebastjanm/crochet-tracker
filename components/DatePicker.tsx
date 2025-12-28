@@ -8,10 +8,10 @@ import {
   Animated,
 } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { Calendar, X } from 'lucide-react-native';
+import { Calendar } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
-import { useLanguage } from '@/hooks/language-context';
+import { useLanguage } from '@/providers/LanguageProvider';
 
 interface DatePickerProps {
   label: string;
@@ -48,7 +48,7 @@ export function DatePicker({
       duration: 200,
       useNativeDriver: false,
     }).start();
-  }, [hasValue]);
+  }, [hasValue, animatedLabelSize]);
 
   const formatDate = (date: Date): string => {
     const day = date.getDate().toString().padStart(2, '0');
@@ -81,11 +81,13 @@ export function DatePicker({
     }
   };
 
-  const handleClear = () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _handleClear = () => {
     onChange(undefined);
   };
 
-  const displayValue = value ? formatDate(value) : placeholder;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _displayValue = value ? formatDate(value) : placeholder;
   const dateAnnouncement = value
     ? `Selected date: ${formatDate(value)}`
     : 'No date selected';

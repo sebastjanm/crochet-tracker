@@ -1,5 +1,5 @@
 import { Redirect } from 'expo-router';
-import { useAuth } from '@/hooks/auth-context';
+import { useAuth } from '@/providers/AuthProvider';
 import { View, Text, StyleSheet, Animated, Platform } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';

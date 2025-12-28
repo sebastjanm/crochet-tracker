@@ -24,9 +24,9 @@ import { DatePicker } from '@/components/DatePicker';
 import { ModalHeader } from '@/components/ModalHeader';
 import { SectionHeaderWithAdd } from '@/components/SectionHeaderWithAdd';
 import { FullscreenImageModal } from '@/components/FullscreenImageModal';
-import { useProjects } from '@/hooks/projects-context';
-import { useInventory } from '@/hooks/inventory-context';
-import { useLanguage } from '@/hooks/language-context';
+import { useProjects } from '@/providers/ProjectsProvider';
+import { useInventory } from '@/providers/InventoryProvider';
+import { useLanguage } from '@/providers/LanguageProvider';
 import { useImagePicker } from '@/hooks/useImagePicker';
 import { useImageActions } from '@/hooks/useImageActions';
 import Colors from '@/constants/colors';
@@ -48,7 +48,8 @@ export default function AddProjectScreen(): React.JSX.Element {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [notes, setNotes] = useState('');
-  const [inspirationUrl, setInspirationUrl] = useState('');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [inspirationUrl, _setInspirationUrl] = useState(''); // Planned feature
   const [images, setImages] = useState<string[]>([]);
   const [defaultImageIndex, setDefaultImageIndex] = useState<number>(0);
   const [patternImages, setPatternImages] = useState<string[]>([]);

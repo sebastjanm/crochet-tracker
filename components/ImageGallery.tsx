@@ -18,7 +18,7 @@ import { useImagePicker } from '@/hooks/useImagePicker';
 import { useImageActions } from '@/hooks/useImageActions';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
-import { useLanguage } from '@/hooks/language-context';
+import { useLanguage } from '@/providers/LanguageProvider';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 

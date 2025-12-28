@@ -10,10 +10,13 @@ import type { ReactNode } from "react";
 import { StyleSheet, Platform, Alert } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { AuthProvider } from "@/hooks/auth-context";
-import { ProjectsProvider } from "@/hooks/projects-context";
-import { InventoryProvider } from "@/hooks/inventory-context";
-import { LanguageProvider, useLanguage } from "@/hooks/language-context";
+import {
+  AuthProvider,
+  ProjectsProvider,
+  InventoryProvider,
+  LanguageProvider,
+  useLanguage,
+} from "@/providers";
 import { ToastProvider } from "@/components/Toast";
 import Colors from "@/constants/colors";
 

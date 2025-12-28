@@ -5,7 +5,7 @@ import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { ProjectType } from '@/types';
 import { getProjectTypeConfig } from '@/constants/projectTypes';
-import { useLanguage } from '@/hooks/language-context';
+import { useLanguage } from '@/providers/LanguageProvider';
 
 interface ProjectTypeBadgeProps {
   type: ProjectType;

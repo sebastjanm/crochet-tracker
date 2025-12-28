@@ -4,8 +4,8 @@ import { useEffect } from "react";
 import { Platform, View, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
-import { useAuth } from "@/hooks/auth-context";
-import { useLanguage } from "@/hooks/language-context";
+import { useAuth } from "@/providers/AuthProvider";
+import { useLanguage } from "@/providers/LanguageProvider";
 import { normalizeBorder } from "@/constants/pixelRatio";
 
 /**

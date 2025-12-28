@@ -13,7 +13,7 @@ import { ChevronDown, Check, X } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { YARN_WEIGHTS, getWeightByName } from '@/constants/yarnWeights';
-import { useLanguage } from '@/hooks/language-context';
+import { useLanguage } from '@/providers/LanguageProvider';
 
 interface WeightCategorySelectProps {
   label: string;

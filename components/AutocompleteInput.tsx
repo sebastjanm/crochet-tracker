@@ -13,7 +13,6 @@ import {
   TextInputProps,
   StyleSheet,
   Animated,
-  TouchableOpacity,
   Pressable,
   Keyboard,
   Platform,

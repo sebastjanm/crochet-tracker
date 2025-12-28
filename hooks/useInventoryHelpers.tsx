@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useInventory } from './inventory-context';
+import { useInventory } from '@/providers/InventoryProvider';
 import { InventoryItem } from '@/types';
 
 export function useYarnInventory() {

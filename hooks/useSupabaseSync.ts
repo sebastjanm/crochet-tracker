@@ -6,7 +6,7 @@
  */
 
 import { useState } from 'react';
-import { useAuth } from '@/hooks/auth-context';
+import { useAuth } from '@/providers/AuthProvider';
 // Note: getStores import removed - Legend-State handles sync automatically
 // Note: useSelector removed since isSyncing is now a constant
 

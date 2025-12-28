@@ -8,7 +8,7 @@
 
 import { useCallback } from 'react';
 import { useSelector } from '@legendapp/state/react';
-import { useAuth } from './auth-context';
+import { useAuth } from '@/providers/AuthProvider';
 import { getStores } from '@/lib/legend-state/config';
 import type { InventoryItem } from '@/types';
 

@@ -11,7 +11,7 @@ import { useState, useMemo, useCallback } from 'react';
 import createContextHook from '@nkzw/create-context-hook';
 import { useSelector } from '@legendapp/state/react';
 import { InventoryItem } from '@/types';
-import { useImagePicker } from './useImagePicker';
+import { useImagePicker } from '@/hooks/useImagePicker';
 import { syncInventoryToProjects, removeInventoryFromProjects } from '@/lib/cross-context-sync';
 import {
   getStores,
@@ -19,7 +19,7 @@ import {
   updateInventoryItem as updateItemInStore,
   deleteInventoryItem as deleteItemFromStore,
 } from '@/lib/legend-state/config';
-import { useAuth } from '@/hooks/auth-context';
+import { useAuth } from '@/providers/AuthProvider';
 import { useImageSync } from '@/hooks/useImageSync';
 import {
   mapRowToInventoryItem,
@@ -29,7 +29,7 @@ import {
 export const [InventoryProvider, useInventory] = createContextHook(() => {
   const { user, isPro } = useAuth();
   const { queueInventoryImages } = useImageSync();
-  
+
   // State for Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<InventoryItem['category'] | 'all'>('all');

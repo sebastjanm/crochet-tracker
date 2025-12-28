@@ -5,7 +5,7 @@ import { BookOpen, Play, X } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Colors from '@/constants/colors';
 import { Card } from '@/components/Card';
-import { useLanguage } from '@/hooks/language-context';
+import { useLanguage } from '@/providers/LanguageProvider';
 
 export default function HelpCenter() {
   const { t } = useLanguage();

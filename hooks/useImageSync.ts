@@ -6,7 +6,7 @@
  */
 
 import { useCallback, useEffect } from 'react';
-import { useAuth } from '@/hooks/auth-context';
+import { useAuth } from '@/providers/AuthProvider';
 import { imageSyncQueue } from '@/lib/legend-state/image-sync-queue';
 import { getLocalImagesToUpload } from '@/lib/legend-state/type-mappers';
 import { getStores, updateProject, updateInventoryItem } from '@/lib/legend-state/config';

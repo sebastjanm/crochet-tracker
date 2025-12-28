@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import Colors from '@/constants/colors';
 import { Card } from '@/components/Card';
-import { useLanguage } from '@/hooks/language-context';
+import { useLanguage } from '@/providers/LanguageProvider';
 import { normalizeBorder } from '@/constants/pixelRatio';
 
 type FAQSection = 'projects' | 'inventory' | 'yarn' | 'hooks' | 'materials' | 'photos' | 'general';

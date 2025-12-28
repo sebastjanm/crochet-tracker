@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Modal, View, StyleSheet, TouchableOpacity, Animated, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { X } from 'lucide-react-native';
-import { useLanguage } from '@/hooks/language-context';
+import { useLanguage } from '@/providers/LanguageProvider';
 import { ProjectImage, getImageSource } from '@/types';
 import Colors from '@/constants/colors';
 

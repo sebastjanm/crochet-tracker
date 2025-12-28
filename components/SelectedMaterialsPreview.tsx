@@ -14,7 +14,7 @@ import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder } from '@/constants/pixelRatio';
 import { useImageActions } from '@/hooks/useImageActions';
-import { useLanguage } from '@/hooks/language-context';
+import { useLanguage } from '@/providers/LanguageProvider';
 import type { InventoryItem } from '@/types';
 import { getImageSource } from '@/types';
 

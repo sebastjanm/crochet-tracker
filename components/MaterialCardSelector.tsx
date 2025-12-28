@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { Plus, CheckCircle } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useImageActions } from '@/hooks/useImageActions';
-import { useLanguage } from '@/hooks/language-context';
+import { useLanguage } from '@/providers/LanguageProvider';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { InventoryItem, getImageSource } from '@/types';

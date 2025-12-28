@@ -16,8 +16,8 @@ import { Plus, Package, Volleyball, Grid3x3, Wrench, HelpCircle } from 'lucide-r
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
 import { SearchableFilterBar } from '@/components/SearchableFilterBar';
-import { useInventory } from '@/hooks/inventory-context';
-import { useLanguage } from '@/hooks/language-context';
+import { useInventory } from '@/providers/InventoryProvider';
+import { useLanguage } from '@/providers/LanguageProvider';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { InventoryItem, getImageSource } from '@/types';

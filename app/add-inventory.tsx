@@ -23,14 +23,14 @@ import { Select } from '@/components/Select';
 import { ColorFamilySelect } from '@/components/ColorFamilySelect';
 import { WeightCategorySelect } from '@/components/WeightCategorySelect';
 import { DatePicker } from '@/components/DatePicker';
-import { useInventory } from '@/hooks/inventory-context';
-import { useAuth } from '@/hooks/auth-context';
+import { useInventory } from '@/providers/InventoryProvider';
+import { useAuth } from '@/providers/AuthProvider';
 import { useBrandSuggestions } from '@/hooks/useBrandSuggestions';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, cardShadow, buttonShadow } from '@/constants/pixelRatio';
 import { InventoryItem, YarnDetails, HookDetails, YarnWeightName, ProjectImage } from '@/types';
-import { useLanguage } from '@/hooks/language-context';
+import { useLanguage } from '@/providers/LanguageProvider';
 
 /**
  * AddInventoryScreen - Form for adding new inventory items.
@@ -74,7 +74,8 @@ export default function AddInventoryScreen(): React.JSX.Element {
 
   // Hook specific fields
   const [hookName, setHookName] = useState('');
-  const [hookSize, setHookSize] = useState('');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [hookSize, _setHookSize] = useState(''); // Legacy field
   const [hookBrand, setHookBrand] = useState('');
   const [hookModel, setHookModel] = useState('');
   const [hookSizeMm, setHookSizeMm] = useState('');
@@ -271,7 +272,7 @@ export default function AddInventoryScreen(): React.JSX.Element {
         category,
         description,
         images,
-        quantity: parseInt(quantity) || 1,
+        quantity: qty,
         unit,
         yarnDetails,
         hookDetails,

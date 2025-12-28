@@ -12,7 +12,7 @@ import { Eye, EyeOff } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { MAX_FONT_SIZE_MULTIPLIER, ACCESSIBLE_COLORS } from '@/constants/accessibility';
-import { useLanguage } from '@/hooks/language-context';
+import { useLanguage } from '@/providers/LanguageProvider';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -53,7 +53,7 @@ export function Input({
       duration: 200,
       useNativeDriver: false,
     }).start();
-  }, [shouldFloat]);
+  }, [shouldFloat, animatedLabelPosition]);
 
   const labelStyle = {
     position: 'absolute' as const,

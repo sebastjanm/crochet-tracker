@@ -22,7 +22,7 @@ import {
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
-import { useLanguage } from '@/hooks/language-context';
+import { useLanguage } from '@/providers/LanguageProvider';
 import { normalizeBorder, cardShadow, normalizeBorderOpacity } from '@/constants/pixelRatio';
 
 const { width } = Dimensions.get('window');
@@ -122,7 +122,7 @@ export default function ToolsScreen(): React.JSX.Element {
       router.push(tool.route as Parameters<typeof router.push>[0]);
     }
     // Non-implemented tools simply do nothing until routes are added
-  }, [tools]);
+  }, []);
 
   return (
     <View style={styles.backgroundContainer}>

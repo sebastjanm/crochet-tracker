@@ -1,6 +1,6 @@
 import { Alert } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { useLanguage } from '@/hooks/language-context';
+import { useLanguage } from '@/providers/LanguageProvider';
 
 interface ImageActionOptions {
   canSetDefault?: boolean;

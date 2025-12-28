@@ -18,7 +18,7 @@ import {
   updateProject as updateProjectInStore,
   deleteProject as deleteProjectFromStore,
 } from '@/lib/legend-state/config';
-import { useAuth } from '@/hooks/auth-context';
+import { useAuth } from '@/providers/AuthProvider';
 import { useImageSync } from '@/hooks/useImageSync';
 import {
   mapRowToProject,
@@ -28,7 +28,7 @@ import {
 export const [ProjectsProvider, useProjects] = createContextHook(() => {
   const { user, isPro } = useAuth();
   const { queueProjectImages } = useImageSync();
-  
+
   // Get the reactive store
   const { projects$ } = getStores(user?.id ?? null, isPro);
 
@@ -206,7 +206,7 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
     deleteProject,
     getProjectById,
     getProjectsByStatus,
-    refreshProjects: async () => {}, 
+    refreshProjects: async () => {},
     replaceProjectImage,
     currentlyWorkingOnProjects,
     toggleCurrentlyWorkingOn,

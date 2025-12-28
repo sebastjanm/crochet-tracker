@@ -14,8 +14,8 @@ import { ArrowLeft } from 'lucide-react-native';
 import { YarnBallLogo } from '@/components/YarnBallLogo';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
-import { useAuth } from '@/hooks/auth-context';
-import { useLanguage } from '@/hooks/language-context';
+import { useAuth } from '@/providers/AuthProvider';
+import { useLanguage } from '@/providers/LanguageProvider';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 

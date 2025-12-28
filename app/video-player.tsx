@@ -4,9 +4,11 @@ import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { X } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 
-let WebView: any = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let WebView: React.ComponentType<any> | null = null;
 try {
   if (Platform.OS !== 'web') {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { WebView: RNWebView } = require('react-native-webview');
     WebView = RNWebView;
   }

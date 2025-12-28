@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { File as ExpoFile, Directory, Paths } from 'expo-file-system';
-import { Alert, Platform } from 'react-native';
+import { Alert } from 'react-native';
 
 /**
  * Copy a picked image from temp cache to permanent storage.

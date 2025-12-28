@@ -3,6 +3,8 @@
  * WCAG 2.2 Level AA Compliance
  */
 
+import { AccessibilityInfo } from 'react-native';
+
 // Minimum touch target size (WCAG 2.5.5)
 export const MINIMUM_TOUCH_TARGET = 44;
 
@@ -142,8 +144,6 @@ export function meetsTouchTargetSize(
 /**
  * Announce to screen reader
  */
-import { AccessibilityInfo } from 'react-native';
-
 export function announceForAccessibility(message: string, queue = false) {
   AccessibilityInfo.announceForAccessibility(message);
   // On Android, we might want to set accessibility focus

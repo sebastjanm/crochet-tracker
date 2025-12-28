@@ -12,8 +12,8 @@
  * This module ensures UI elements appear visually consistent across all densities.
  */
 
-import { PixelRatio, Platform } from 'react-native';
-import Colors from './colors';
+import { PixelRatio } from 'react-native';
+import { Colors } from './colors';
 
 // Get device pixel ratio once (cached for performance)
 const pixelRatio = PixelRatio.get();

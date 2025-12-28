@@ -74,7 +74,6 @@ export default function AddInventoryScreen(): React.JSX.Element {
 
   // Hook specific fields
   const [hookName, setHookName] = useState('');
-  const [hookSize] = useState(''); // Legacy field - setter not needed
   const [hookBrand, setHookBrand] = useState('');
   const [hookModel, setHookModel] = useState('');
   const [hookSizeMm, setHookSizeMm] = useState('');
@@ -241,8 +240,7 @@ export default function AddInventoryScreen(): React.JSX.Element {
         purchaseDate: hookPurchaseDate,
         purchasePrice: hookPriceNum,
         currency: user?.currency || 'EUR',
-        // Keep legacy size field for backwards compatibility
-        size: hookSize.trim() || hookSizeMm.trim() || undefined,
+        size: hookSizeMm.trim() || undefined,
       } : undefined;
 
       const otherPriceNum = otherPurchasePrice ? parseFloat(otherPurchasePrice) : undefined;

@@ -5,6 +5,7 @@ import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { ProjectType } from '@/types';
 import { getProjectTypeConfig } from '@/constants/projectTypes';
+import { useLanguage } from '@/hooks/language-context';
 
 interface ProjectTypeBadgeProps {
   type: ProjectType;
@@ -17,7 +18,9 @@ export function ProjectTypeBadge({
   size = 'medium',
   showLabel = true,
 }: ProjectTypeBadgeProps) {
+  const { t } = useLanguage();
   const config = getProjectTypeConfig(type);
+  const translatedLabel = t(`projects.projectTypes.${type}`);
 
   // Get the icon component dynamically
   // eslint-disable-next-line import/namespace
@@ -35,7 +38,7 @@ export function ProjectTypeBadge({
       ]}
       accessible={true}
       accessibilityRole="text"
-      accessibilityLabel={`Project type: ${config.label}`}
+      accessibilityLabel={`${t('projects.projectType')}: ${translatedLabel}`}
     >
       {IconComponent && (
         <IconComponent
@@ -53,7 +56,7 @@ export function ProjectTypeBadge({
           ]}
           numberOfLines={1}
         >
-          {config.label}
+          {translatedLabel}
         </Text>
       )}
     </View>

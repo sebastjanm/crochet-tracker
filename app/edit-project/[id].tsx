@@ -29,7 +29,7 @@ import { useInventory } from '@/providers/InventoryProvider';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { useImagePicker } from '@/hooks/useImagePicker';
 import { useImageActions } from '@/hooks/useImageActions';
-import Colors from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, buttonShadow } from '@/constants/pixelRatio';
 import { ProjectStatus, ProjectType, ProjectImage, ProjectYarn, getImageSource } from '@/types';

@@ -23,7 +23,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Updates from 'expo-updates';
 import * as Application from 'expo-application';
 import Constants from 'expo-constants';
-import Colors from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 import { Card } from '@/components/Card';
 import { useLanguage } from '@/providers/LanguageProvider';
 

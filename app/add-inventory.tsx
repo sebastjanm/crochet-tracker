@@ -26,7 +26,7 @@ import { DatePicker } from '@/components/DatePicker';
 import { useInventory } from '@/providers/InventoryProvider';
 import { useAuth } from '@/providers/AuthProvider';
 import { useBrandSuggestions } from '@/hooks/useBrandSuggestions';
-import Colors from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, cardShadow, buttonShadow } from '@/constants/pixelRatio';
 import { InventoryItem, YarnDetails, HookDetails, YarnWeightName, ProjectImage } from '@/types';

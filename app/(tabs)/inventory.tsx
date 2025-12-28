@@ -18,7 +18,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { SearchableFilterBar } from '@/components/SearchableFilterBar';
 import { useInventory } from '@/providers/InventoryProvider';
 import { useLanguage } from '@/providers/LanguageProvider';
-import Colors from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { InventoryItem, getImageSource } from '@/types';
 import { normalizeBorder, normalizeBorderOpacity, cardShadow, buttonShadow } from '@/constants/pixelRatio';

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { router } from 'expo-router';
 import { BookOpen, Play, X } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Colors from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 import { Card } from '@/components/Card';
 import { useLanguage } from '@/providers/LanguageProvider';
 

@@ -10,7 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import type { ReactNode } from 'react';
-import Colors from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { MAX_FONT_SIZE_MULTIPLIER } from '@/constants/accessibility';
 

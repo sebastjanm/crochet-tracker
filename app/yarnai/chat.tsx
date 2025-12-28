@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Send, MessageSquare, User, Bot } from 'lucide-react-native';
-import Colors from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { normalizeBorder, cardShadow } from '@/constants/pixelRatio';

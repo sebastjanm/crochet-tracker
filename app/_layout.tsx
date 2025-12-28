@@ -18,7 +18,7 @@ import {
   useLanguage,
 } from "@/providers";
 import { ToastProvider } from "@/components/Toast";
-import Colors from "@/constants/colors";
+import { Colors } from "@/constants/colors";
 
 SplashScreen.preventAutoHideAsync();
 

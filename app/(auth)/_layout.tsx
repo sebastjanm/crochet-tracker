@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Stack, router } from 'expo-router';
 import { useAuth } from '@/providers/AuthProvider';
-import Colors from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 
 /**
  * AuthLayout - Stack navigator for authentication screens.

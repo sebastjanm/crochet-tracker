@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { X } from 'lucide-react-native';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { ProjectImage, getImageSource } from '@/types';
-import Colors from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 

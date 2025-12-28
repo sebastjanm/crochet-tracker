@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Mic, MicOff, Volume2, MessageSquare } from 'lucide-react-native';
 import { useAudioRecorder, IOSOutputFormat, AudioQuality } from 'expo-audio';
 import * as Audio from 'expo-audio';
-import Colors from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { normalizeBorder, cardShadow, modalShadow } from '@/constants/pixelRatio';

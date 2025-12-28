@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet, Text, Platform, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { X } from 'lucide-react-native';
-import Colors from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 
 let WebView: React.ComponentType<any> | null = null;
 try {

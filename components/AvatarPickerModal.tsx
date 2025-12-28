@@ -8,7 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { X, Check } from 'lucide-react-native';
-import Colors from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { CUTE_AVATARS, AvatarStyle } from '@/constants/avatars';
 import { useLanguage } from '@/providers/LanguageProvider';

@@ -16,7 +16,7 @@ import { X, ImageIcon, Trash2, Plus } from 'lucide-react-native';
 import type { ProjectImage } from '@/types';
 import { useImagePicker } from '@/hooks/useImagePicker';
 import { useImageActions } from '@/hooks/useImageActions';
-import Colors from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { useLanguage } from '@/providers/LanguageProvider';
 

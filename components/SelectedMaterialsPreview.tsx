@@ -10,7 +10,7 @@ import { Swipeable } from 'react-native-gesture-handler';
 import { Image } from 'expo-image';
 import { ChevronRight, Minus, Plus } from 'lucide-react-native';
 import { router } from 'expo-router';
-import Colors from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder } from '@/constants/pixelRatio';
 import { useImageActions } from '@/hooks/useImageActions';

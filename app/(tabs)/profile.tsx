@@ -39,7 +39,7 @@ import { useSupabaseSync } from '@/hooks/useSupabaseSync';
 import { useNetworkState } from '@/hooks/useNetworkState';
 import { imageSyncQueue } from '@/lib/legend-state';
 import { useToast } from '@/components/Toast';
-import Colors from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder } from '@/constants/pixelRatio';
 import { ACCESSIBLE_COLORS } from '@/constants/accessibility';

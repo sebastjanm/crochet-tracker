@@ -21,7 +21,7 @@ import { useToast } from '@/components/Toast';
 import { useProjects } from '@/providers/ProjectsProvider';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { useAuth } from '@/providers/AuthProvider';
-import Colors from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { Project, ProjectStatus, getImageSource } from '@/types';
 import { normalizeBorder, normalizeBorderOpacity, cardShadow, buttonShadow } from '@/constants/pixelRatio';

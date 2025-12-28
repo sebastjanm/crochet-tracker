@@ -22,7 +22,7 @@ import { useProjects } from '@/providers/ProjectsProvider';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { useAuth } from '@/providers/AuthProvider';
 import { useImagePicker } from '@/hooks/useImagePicker';
-import Colors from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import type { InspirationSource } from '@/types';
 import { normalizeBorder, buttonShadow } from '@/constants/pixelRatio';

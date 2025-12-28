@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronDown, Check, X } from 'lucide-react-native';
-import Colors from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { COLOR_FAMILIES, getColorByCode, isLightColor } from '@/constants/colorFamilies';
 import { useLanguage } from '@/providers/LanguageProvider';

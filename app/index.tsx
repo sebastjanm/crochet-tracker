@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, Animated, Platform } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { YarnBallLogo } from '@/components/YarnBallLogo';
-import Colors from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 import { buttonShadow } from '@/constants/pixelRatio';
 
 export default function RootIndex() {

@@ -1,6 +1,6 @@
 import { View, StyleSheet, ViewProps, Platform } from 'react-native';
 import type { ReactNode } from 'react';
-import Colors from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 import { normalizeBorder, cardShadow, normalizeBorderOpacity } from '@/constants/pixelRatio';
 
 interface CardProps extends ViewProps {

@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { Search, X } from 'lucide-react-native';
-import Colors from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, normalizeBorderOpacity, cardShadow } from '@/constants/pixelRatio';
 

@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { User } from 'lucide-react-native';
 import { getUserAvatar, getInitials, CUTE_AVATARS } from '@/constants/avatars';
-import Colors from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 
 interface AvatarProps {

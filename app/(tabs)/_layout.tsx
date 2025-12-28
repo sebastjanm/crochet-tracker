@@ -3,7 +3,7 @@ import { Volleyball, Box, User, Wrench } from "lucide-react-native";
 import { useEffect } from "react";
 import { Platform, View, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Colors from "@/constants/colors";
+import { Colors } from "@/constants/colors";
 import { useAuth } from "@/providers/AuthProvider";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { normalizeBorder } from "@/constants/pixelRatio";

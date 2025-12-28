@@ -16,6 +16,7 @@ import { Plus, Package, Volleyball, Grid3x3, Wrench, HelpCircle } from 'lucide-r
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
 import { SearchableFilterBar } from '@/components/SearchableFilterBar';
+import { InventoryListSkeleton } from '@/components/Skeleton';
 import { useInventory } from '@/providers/InventoryProvider';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { Colors } from '@/constants/colors';
@@ -32,7 +33,7 @@ const isTablet = width >= 768;
  * Displays items in a grid layout with category filtering and search.
  */
 export default function InventoryScreen(): React.JSX.Element {
-  const { items, yarnCount, hookCount } = useInventory();
+  const { items, isLoading, yarnCount, hookCount } = useInventory();
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'yarn' | 'hook' | 'other'>('all');
@@ -150,7 +151,10 @@ export default function InventoryScreen(): React.JSX.Element {
       />
 
       <View style={styles.container}>
-      {filteredItems.length === 0 ? (
+      {/* Skeleton loading state */}
+      {isLoading ? (
+        <InventoryListSkeleton count={6} />
+      ) : filteredItems.length === 0 ? (
         <EmptyState
           icon={<Package size={64} color={Colors.warmGray} />}
           title={selectedCategory === 'all' && !searchQuery ? t('inventory.noItems') : t('inventory.noItemsInCategory')}

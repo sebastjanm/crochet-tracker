@@ -18,6 +18,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { SearchableFilterBar } from '@/components/SearchableFilterBar';
 import { Avatar } from '@/components/Avatar';
 import { useToast } from '@/components/Toast';
+import { ProjectsListSkeleton, ActiveProjectsSkeleton } from '@/components/Skeleton';
 import { useProjects } from '@/providers/ProjectsProvider';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { useAuth } from '@/providers/AuthProvider';
@@ -37,6 +38,7 @@ const isTablet = width >= 768;
 export default function ProjectsScreen(): React.JSX.Element {
   const {
     projects,
+    isLoading,
     toDoCount,
     inProgressCount,
     onHoldCount,
@@ -292,53 +294,63 @@ export default function ProjectsScreen(): React.JSX.Element {
       />
 
       <View style={styles.container}>
-      {/* Currently Working On Section - Now below filters */}
-      {currentlyWorkingOnProjects.length > 0 && (
-        <View style={styles.activeSection}>
-          <View style={styles.activeSectionHeader}>
-            <Zap size={18} color={Colors.deepTeal} />
-            <Text style={styles.activeSectionTitle}>{t('projects.currentlyWorkingOn')}</Text>
-          </View>
-          <FlashList
-            data={currentlyWorkingOnProjects}
-            renderItem={renderActiveProject}
-            keyExtractor={(item) => `active-${item.id}`}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.activeProjectsList}
-          />
-        </View>
-      )}
-
-      {filteredProjects.length === 0 ? (
-        <EmptyState
-          icon={<Volleyball size={64} color={Colors.warmGray} />}
-          title={filter === 'all' && !searchQuery ? t('projects.noProjects') : t('projects.noProjectsInCategory')}
-          description={filter === 'all' && !searchQuery ? t('projects.startFirstProject') : t('projects.tryDifferentFilter')}
-          action={
-            <Button
-              title={filter === 'all' && !searchQuery ? t('projects.addFirstProject') : t('projects.addProject')}
-              icon={<Plus size={20} color={Colors.white} />}
-              onPress={() => router.push('/add-project')}
-              size="large"
-            />
-          }
-        />
+      {/* Skeleton loading state */}
+      {isLoading ? (
+        <>
+          <ActiveProjectsSkeleton count={2} />
+          <ProjectsListSkeleton count={6} />
+        </>
       ) : (
-        <FlashList
-          data={filteredProjects}
-          renderItem={renderProject}
-          keyExtractor={(item) => item.id}
-          numColumns={2}
-          contentContainerStyle={[styles.list, { paddingBottom: 100 + insets.bottom }]}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={Colors.sage}
+        <>
+          {/* Currently Working On Section - Now below filters */}
+          {currentlyWorkingOnProjects.length > 0 && (
+            <View style={styles.activeSection}>
+              <View style={styles.activeSectionHeader}>
+                <Zap size={18} color={Colors.deepTeal} />
+                <Text style={styles.activeSectionTitle}>{t('projects.currentlyWorkingOn')}</Text>
+              </View>
+              <FlashList
+                data={currentlyWorkingOnProjects}
+                renderItem={renderActiveProject}
+                keyExtractor={(item) => `active-${item.id}`}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.activeProjectsList}
+              />
+            </View>
+          )}
+
+          {filteredProjects.length === 0 ? (
+            <EmptyState
+              icon={<Volleyball size={64} color={Colors.warmGray} />}
+              title={filter === 'all' && !searchQuery ? t('projects.noProjects') : t('projects.noProjectsInCategory')}
+              description={filter === 'all' && !searchQuery ? t('projects.startFirstProject') : t('projects.tryDifferentFilter')}
+              action={
+                <Button
+                  title={filter === 'all' && !searchQuery ? t('projects.addFirstProject') : t('projects.addProject')}
+                  icon={<Plus size={20} color={Colors.white} />}
+                  onPress={() => router.push('/add-project')}
+                  size="large"
+                />
+              }
             />
-          }
-        />
+          ) : (
+            <FlashList
+              data={filteredProjects}
+              renderItem={renderProject}
+              keyExtractor={(item) => item.id}
+              numColumns={2}
+              contentContainerStyle={[styles.list, { paddingBottom: 100 + insets.bottom }]}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  tintColor={Colors.sage}
+                />
+              }
+            />
+          )}
+        </>
       )}
 
       {projects.length > 0 && (

@@ -111,11 +111,6 @@ export default function ToolsScreen(): React.JSX.Element {
     },
   ], [t]);
 
-  /**
-   * Handles navigation when a tool card is pressed.
-   * Note: Empty deps [] is correct because `tool` is passed as a parameter at call-time,
-   * not read from the outer `tools` array. The typeof annotation is compile-time only.
-   */
   const handleToolPress = useCallback((tool: typeof tools[number]) => {
     if (tool.isPlaceholder) {
       return;

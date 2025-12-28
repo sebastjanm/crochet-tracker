@@ -64,7 +64,7 @@ export async function uploadImage(
   itemId: string,
   options: UploadOptions = {}
 ): Promise<UploadResult> {
-  console.log('[Storage] uploadImage called', {
+  if (__DEV__) console.log('[Storage] uploadImage called', {
     localUri: localUri.substring(0, 60) + '...',
     bucket,
     userId: userId.substring(0, 8) + '...',
@@ -94,7 +94,7 @@ export async function uploadImage(
     const isHeic = localUri.toLowerCase().endsWith('.heic');
 
     if (isHeic) {
-      console.log('[Storage] Converting HEIC to JPEG...');
+      if (__DEV__) console.log('[Storage] Converting HEIC to JPEG...');
       try {
         const converted = await ImageManipulator.manipulateAsync(
           localUri,
@@ -102,9 +102,9 @@ export async function uploadImage(
           { format: ImageManipulator.SaveFormat.JPEG, compress: 0.8 }
         );
         processedUri = converted.uri;
-        console.log('[Storage] Converted HEIC to JPEG:', processedUri.slice(0, 50));
+        if (__DEV__) console.log('[Storage] Converted HEIC to JPEG:', processedUri.slice(0, 50));
       } catch (convertError) {
-        console.error('[Storage] HEIC conversion failed:', convertError);
+        if (__DEV__) console.error('[Storage] HEIC conversion failed:', convertError);
       }
     }
 
@@ -126,7 +126,7 @@ export async function uploadImage(
     const base64 = await processedFile.base64();
     const fileData = decode(base64);
 
-    console.log(`[Storage] Uploading to ${bucket}/${fileName} (${contentType}, ${fileData.byteLength} bytes)`);
+    if (__DEV__) console.log(`[Storage] Uploading to ${bucket}/${fileName} (${contentType}, ${fileData.byteLength} bytes)`);
 
     const { data, error } = await supabase!.storage
       .from(bucket)
@@ -136,7 +136,7 @@ export async function uploadImage(
       });
 
     if (error) {
-      console.error('[Storage] Upload error:', error);
+      if (__DEV__) console.error('[Storage] Upload error:', error);
       return { success: false, error: error.message };
     }
 
@@ -144,7 +144,7 @@ export async function uploadImage(
       .from(bucket)
       .getPublicUrl(data.path);
 
-    console.log(`[Storage] Upload successful: ${urlData.publicUrl}`);
+    if (__DEV__) console.log(`[Storage] Upload successful: ${urlData.publicUrl}`);
 
     return {
       success: true,
@@ -152,7 +152,7 @@ export async function uploadImage(
       path: data.path,
     };
   } catch (error) {
-    console.error('[Storage] Unexpected error:', error);
+    if (__DEV__) console.error('[Storage] Unexpected error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -185,14 +185,14 @@ export async function deleteImage(
     const { error } = await supabase!.storage.from(bucket).remove([path]);
 
     if (error) {
-      console.error('[Storage] Delete error:', error);
+      if (__DEV__) console.error('[Storage] Delete error:', error);
       return { success: false, error: error.message };
     }
 
-    console.log(`[Storage] Deleted: ${bucket}/${path}`);
+    if (__DEV__) console.log(`[Storage] Deleted: ${bucket}/${path}`);
     return { success: true };
   } catch (error) {
-    console.error('[Storage] Unexpected delete error:', error);
+    if (__DEV__) console.error('[Storage] Unexpected delete error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',

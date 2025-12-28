@@ -79,18 +79,20 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
     // 2. Add to Store
     const id = addProjectToStore(projects$, user?.id ?? null, row);
 
-    // 3. Queue Images
-    if (project.images?.length) {
-       // We need to pass the row with the correct ID to the queue
-       queueProjectImages({ ...row, id });
-    }
-
-    return {
+    // 3. Build final Project
+    const newProject: Project = {
       ...project,
       id,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
+
+    // 4. Queue Images
+    if (project.images?.length) {
+      queueProjectImages(newProject);
+    }
+
+    return newProject;
   }, [projects$, user?.id, queueProjectImages]);
 
   /** Update an existing project */
@@ -134,7 +136,7 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
       completedDate = undefined;
     }
 
-    const mergedProject = { ...existingProject, ...updates, completedDate };
+    const mergedProject: Project = { ...existingProject, ...updates, completedDate, updatedAt: new Date() };
     const rowUpdates = mapProjectToRow(mergedProject);
 
     // Update Store
@@ -142,8 +144,7 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
 
     // Queue Images (if changed)
     if (updates.images) {
-      // Use the raw row format expected by queueProjectImages
-      queueProjectImages({ ...rowUpdates, id });
+      queueProjectImages(mergedProject);
     }
 
     if (__DEV__) console.log(`[Projects] Updated project: ${id}`);

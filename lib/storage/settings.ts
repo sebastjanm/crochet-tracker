@@ -19,7 +19,7 @@ export async function getLanguage(): Promise<string> {
     const language = await AsyncStorage.getItem(LANGUAGE_KEY);
     return language ?? DEFAULT_LANGUAGE;
   } catch (error) {
-    console.warn('[Settings] Failed to get language:', error);
+    if (__DEV__) console.warn('[Settings] Failed to get language:', error);
     return DEFAULT_LANGUAGE;
   }
 }
@@ -33,7 +33,7 @@ export function getLanguageSync(): string | null {
 
 export async function setLanguage(language: string): Promise<void> {
   await AsyncStorage.setItem(LANGUAGE_KEY, language);
-  console.log(`[Settings] Language set to: ${language}`);
+  if (__DEV__) console.log(`[Settings] Language set to: ${language}`);
 }
 
 // ============================================================================
@@ -188,5 +188,5 @@ export async function clearAllSettings(): Promise<void> {
   ];
 
   await AsyncStorage.multiRemove(keys);
-  console.log('[Settings] All settings cleared');
+  if (__DEV__) console.log('[Settings] All settings cleared');
 }

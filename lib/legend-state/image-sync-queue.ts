@@ -101,7 +101,7 @@ class ImageSyncQueueManager {
    * Call cleanup() first if you need to reinitialize with new callbacks.
    */
   async initialize(userId: string, callbacks?: ImageUploadCallbacks): Promise<void> {
-    console.log('[ImageQueue] Initialize called', {
+    if (__DEV__) console.log('[ImageQueue] Initialize called', {
       userId,
       hasCallbacks: !!(callbacks?.onImageUploaded || callbacks?.onImageFailed),
       alreadyInitialized: this.isInitialized,
@@ -113,10 +113,10 @@ class ImageSyncQueueManager {
     if (this.isInitialized && this.userId === userId) {
       // Only update callbacks if new ones are provided and have at least one handler
       if (callbacks?.onImageUploaded || callbacks?.onImageFailed) {
-        console.log('[ImageQueue] Updating callbacks for existing session');
+        if (__DEV__) console.log('[ImageQueue] Updating callbacks for existing session');
         this.callbacks = callbacks;
       } else {
-        console.log('[ImageQueue] Already initialized, skipping (preserving existing callbacks)');
+        if (__DEV__) console.log('[ImageQueue] Already initialized, skipping (preserving existing callbacks)');
       }
       return;
     }
@@ -138,12 +138,12 @@ class ImageSyncQueueManager {
             try {
               const file = new ExpoFile(item.localUri);
               if (!file.exists) {
-                console.warn(`[ImageQueue] Removing stale queue entry (file deleted): ${item.localUri.slice(-50)}`);
+                if (__DEV__) console.warn(`[ImageQueue] Removing stale queue entry (file deleted): ${item.localUri.slice(-50)}`);
                 return false;
               }
               return true;
             } catch {
-              console.warn(`[ImageQueue] Removing invalid queue entry: ${item.localUri.slice(-50)}`);
+              if (__DEV__) console.warn(`[ImageQueue] Removing invalid queue entry: ${item.localUri.slice(-50)}`);
               return false;
             }
           })
@@ -152,13 +152,13 @@ class ImageSyncQueueManager {
             status: item.status === 'uploading' ? 'pending' : item.status,
           }));
 
-        console.log(`[ImageQueue] Loaded ${this.queue.length} pending items from storage`);
+        if (__DEV__) console.log(`[ImageQueue] Loaded ${this.queue.length} pending items from storage`);
 
         // Persist cleaned queue (remove stale entries from storage)
         await this.persistQueue();
       }
     } catch (error) {
-      console.error('[ImageQueue] Failed to load queue from storage:', error);
+      if (__DEV__) console.error('[ImageQueue] Failed to load queue from storage:', error);
       this.queue = [];
     }
 
@@ -189,7 +189,7 @@ class ImageSyncQueueManager {
     try {
       await AsyncStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(this.queue));
     } catch (error) {
-      console.error('[ImageQueue] Failed to persist queue:', error);
+      if (__DEV__) console.error('[ImageQueue] Failed to persist queue:', error);
     }
   }
 
@@ -207,7 +207,7 @@ class ImageSyncQueueManager {
    * @returns Number of items actually added (excludes duplicates)
    */
   async enqueue(images: EnqueueOptions[]): Promise<number> {
-    console.log('[ImageQueue] Enqueue called', {
+    if (__DEV__) console.log('[ImageQueue] Enqueue called', {
       imageCount: images.length,
       isInitialized: this.isInitialized,
       hasUserId: !!this.userId,
@@ -215,7 +215,7 @@ class ImageSyncQueueManager {
     });
 
     if (!this.isInitialized || !this.userId) {
-      console.warn('[ImageQueue] Queue not initialized, cannot enqueue');
+      if (__DEV__) console.warn('[ImageQueue] Queue not initialized, cannot enqueue');
       return 0;
     }
 
@@ -231,16 +231,16 @@ class ImageSyncQueueManager {
       try {
         const file = new ExpoFile(image.localUri);
         if (!file.exists) {
-          console.warn(`[ImageQueue] Skipping non-existent file: ${image.localUri.slice(-50)}`);
+          if (__DEV__) console.warn(`[ImageQueue] Skipping non-existent file: ${image.localUri.slice(-50)}`);
           // Notify caller to clean up the stale reference
           if (this.callbacks.onStaleImageFound) {
             this.callbacks.onStaleImageFound(image.itemId, image.itemType, image.localUri)
-              .catch(err => console.error('[ImageQueue] Failed to clean stale image:', err));
+              .catch(err => { if (__DEV__) console.error('[ImageQueue] Failed to clean stale image:', err); });
           }
           continue;
         }
       } catch {
-        console.warn(`[ImageQueue] Error checking file existence: ${image.localUri.slice(-50)}`);
+        if (__DEV__) console.warn(`[ImageQueue] Error checking file existence: ${image.localUri.slice(-50)}`);
         continue;
       }
 
@@ -249,7 +249,7 @@ class ImageSyncQueueManager {
         q => q.localUri === image.localUri && q.itemId === image.itemId
       );
       if (exists) {
-        console.log(`[ImageQueue] Skipping duplicate: ${image.localUri}`);
+        if (__DEV__) console.log(`[ImageQueue] Skipping duplicate: ${image.localUri}`);
         continue;
       }
 
@@ -267,7 +267,7 @@ class ImageSyncQueueManager {
 
       this.queue.push(queuedImage);
       added++;
-      console.log(`[ImageQueue] Enqueued: ${image.localUri} for ${image.itemType}/${image.itemId}`);
+      if (__DEV__) console.log(`[ImageQueue] Enqueued: ${image.localUri} for ${image.itemType}/${image.itemId}`);
     }
 
     if (added > 0) {
@@ -290,7 +290,7 @@ class ImageSyncQueueManager {
     }
 
     this.isProcessing = true;
-    console.log('[ImageQueue] Starting queue processing');
+    if (__DEV__) console.log('[ImageQueue] Starting queue processing');
 
     while (true) {
       // Find next pending item
@@ -308,11 +308,11 @@ class ImageSyncQueueManager {
 
       if (success) {
         item.status = 'completed';
-        console.log(`[ImageQueue] Completed: ${item.id}`);
+        if (__DEV__) console.log(`[ImageQueue] Completed: ${item.id}`);
 
         // Trigger callback
         if (this.callbacks.onImageUploaded && item.resultUrl) {
-          console.log('[ImageQueue] Calling onImageUploaded callback', {
+          if (__DEV__) console.log('[ImageQueue] Calling onImageUploaded callback', {
             itemId: item.itemId,
             itemType: item.itemType,
             imageIndex: item.imageIndex,
@@ -327,12 +327,12 @@ class ImageSyncQueueManager {
               item.resultUrl,
               item.localUri
             );
-            console.log('[ImageQueue] Callback executed successfully');
+            if (__DEV__) console.log('[ImageQueue] Callback executed successfully');
           } catch (error) {
-            console.error('[ImageQueue] Callback error:', error);
+            if (__DEV__) console.error('[ImageQueue] Callback error:', error);
           }
         } else {
-          console.warn('[ImageQueue] No callback to execute', {
+          if (__DEV__) console.warn('[ImageQueue] No callback to execute', {
             hasCallback: !!this.callbacks.onImageUploaded,
             hasResultUrl: !!item.resultUrl,
           });
@@ -343,7 +343,7 @@ class ImageSyncQueueManager {
 
         if (item.retryCount >= MAX_RETRIES) {
           item.status = 'failed';
-          console.error(`[ImageQueue] Failed permanently: ${item.id} - ${item.lastError}`);
+          if (__DEV__) console.error(`[ImageQueue] Failed permanently: ${item.id} - ${item.lastError}`);
 
           // Trigger failure callback
           if (this.callbacks.onImageFailed) {
@@ -358,7 +358,7 @@ class ImageSyncQueueManager {
           // Schedule retry with backoff
           item.status = 'pending';
           const delay = RETRY_DELAYS[item.retryCount] || RETRY_DELAYS[RETRY_DELAYS.length - 1];
-          console.log(`[ImageQueue] Retrying ${item.id} in ${delay}ms (attempt ${item.retryCount + 1})`);
+          if (__DEV__) console.log(`[ImageQueue] Retrying ${item.id} in ${delay}ms (attempt ${item.retryCount + 1})`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
@@ -370,14 +370,14 @@ class ImageSyncQueueManager {
     await this.cleanupCompleted();
 
     this.isProcessing = false;
-    console.log('[ImageQueue] Queue processing complete');
+    if (__DEV__) console.log('[ImageQueue] Queue processing complete');
   }
 
   /**
    * Upload a single item
    */
   private async uploadItem(item: QueuedImage): Promise<boolean> {
-    console.log('[ImageQueue] uploadItem starting', {
+    if (__DEV__) console.log('[ImageQueue] uploadItem starting', {
       id: item.id,
       localUri: item.localUri,
       bucket: item.bucket,
@@ -388,7 +388,7 @@ class ImageSyncQueueManager {
 
     if (!this.userId) {
       item.lastError = 'No user ID';
-      console.error('[ImageQueue] uploadItem failed: No user ID');
+      if (__DEV__) console.error('[ImageQueue] uploadItem failed: No user ID');
       return false;
     }
 
@@ -400,7 +400,7 @@ class ImageSyncQueueManager {
         item.itemId
       );
 
-      console.log('[ImageQueue] uploadImage result', {
+      if (__DEV__) console.log('[ImageQueue] uploadImage result', {
         success: result.success,
         hasUrl: !!result.url,
         error: result.error,
@@ -408,16 +408,16 @@ class ImageSyncQueueManager {
 
       if (result.success && result.url) {
         item.resultUrl = result.url;
-        console.log('[ImageQueue] Upload SUCCESS', result.url);
+        if (__DEV__) console.log('[ImageQueue] Upload SUCCESS', result.url);
         return true;
       } else {
         item.lastError = result.error || 'Upload failed';
-        console.error('[ImageQueue] Upload FAILED', item.lastError);
+        if (__DEV__) console.error('[ImageQueue] Upload FAILED', item.lastError);
         return false;
       }
     } catch (error) {
       item.lastError = error instanceof Error ? error.message : 'Unknown error';
-      console.error('[ImageQueue] Upload EXCEPTION', item.lastError);
+      if (__DEV__) console.error('[ImageQueue] Upload EXCEPTION', item.lastError);
       return false;
     }
   }
@@ -434,7 +434,7 @@ class ImageSyncQueueManager {
     );
 
     if (this.queue.length < before) {
-      console.log(`[ImageQueue] Cleaned up ${before - this.queue.length} completed items`);
+      if (__DEV__) console.log(`[ImageQueue] Cleaned up ${before - this.queue.length} completed items`);
       await this.persistQueue();
     }
   }

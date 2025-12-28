@@ -77,17 +77,20 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     // 2. Add to Store
     const id = addItemToStore(inventory$, user?.id ?? null, row);
 
-    // 3. Queue Images
-    if (item.images?.length) {
-      queueInventoryImages({ ...row, id });
-    }
-
-    return {
+    // 3. Build final InventoryItem
+    const newItem: InventoryItem = {
       ...item,
       id,
       createdAt: now,
       updatedAt: now,
     };
+
+    // 4. Queue Images
+    if (item.images?.length) {
+      queueInventoryImages(newItem);
+    }
+
+    return newItem;
   }, [inventory$, user?.id, queueInventoryImages]);
 
   /** Update an existing inventory item */
@@ -112,13 +115,13 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
       }
     }
 
-    const mergedItem = { ...existingItem, ...updates };
+    const mergedItem: InventoryItem = { ...existingItem, ...updates, updatedAt: new Date() };
     const rowUpdates = mapInventoryItemToRow(mergedItem);
 
     updateItemInStore(inventory$, id, rowUpdates);
 
     if (updates.images) {
-      queueInventoryImages({ ...rowUpdates, id });
+      queueInventoryImages(mergedItem);
     }
 
     if (__DEV__) console.log(`[Inventory] Updated item: ${id}`);

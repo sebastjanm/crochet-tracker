@@ -57,7 +57,7 @@ export function initializeLegendStateSync(): void {
   }
 
   isConfigured = true;
-  console.log('[LegendState] Configured (Persistence: AsyncStorage)');
+  if (__DEV__) console.log('[LegendState] Configured (Persistence: AsyncStorage)');
 }
 
 // ============================================================================
@@ -67,6 +67,14 @@ export function initializeLegendStateSync(): void {
 type ProjectRow = Database['public']['Tables']['projects']['Row'];
 type InventoryItemRow = Database['public']['Tables']['inventory_items']['Row'];
 
+/**
+ * Store types use 'any' because Legend-State's syncedSupabase returns
+ * complex internal types that aren't exported. The observable is a
+ * Record<string, Row> but with reactive capabilities that can't be
+ * expressed in standard TypeScript without the library's internal types.
+ *
+ * @see https://legendapp.com/open-source/state/v3/sync/supabase/
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export type ProjectsStore = any;
 export type InventoryStore = any;
@@ -94,7 +102,7 @@ export function createProjectsStore(userId: string | null, isPro: boolean): any 
 
   // 2. Cloud Config (Only if Pro + Authed)
   if (userId && isPro && supabase) {
-    console.log(`[LegendState] Creating SYNCED projects store for ${userId}`);
+    if (__DEV__) console.log(`[LegendState] Creating SYNCED projects store for ${userId}`);
     
     // SyncedSupabase handles both local persistence AND cloud sync
     return observable(
@@ -116,7 +124,7 @@ export function createProjectsStore(userId: string | null, isPro: boolean): any 
   }
 
   // 3. Local-Only Config (Free / Guest)
-  console.log(`[LegendState] Creating LOCAL-ONLY projects store (${persistKey})`);
+  if (__DEV__) console.log(`[LegendState] Creating LOCAL-ONLY projects store (${persistKey})`);
   const obs = observable({});
   
   // Attach persistence manually for local-only mode
@@ -139,7 +147,7 @@ export function createInventoryStore(userId: string | null, isPro: boolean): any
   const persistKey = userId ? `inventory_${userId}` : 'inventory_guest';
 
   if (userId && isPro && supabase) {
-    console.log(`[LegendState] Creating SYNCED inventory store for ${userId}`);
+    if (__DEV__) console.log(`[LegendState] Creating SYNCED inventory store for ${userId}`);
     return observable(
       syncedSupabase({
         supabase,
@@ -159,7 +167,7 @@ export function createInventoryStore(userId: string | null, isPro: boolean): any
     );
   }
 
-  console.log(`[LegendState] Creating LOCAL-ONLY inventory store (${persistKey})`);
+  if (__DEV__) console.log(`[LegendState] Creating LOCAL-ONLY inventory store (${persistKey})`);
   const obs = observable({});
   
   // Attach persistence manually
@@ -205,7 +213,15 @@ export function getStores(userId: string | null, isPro: boolean) {
 // CRUD HELPERS (Now operating purely on Observables)
 // ============================================================================
 
-export function addProject(projects$: any, userId: string | null, projectData: any) {
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// Store parameters use 'any' due to Legend-State's internal observable types
+// Data parameters are properly typed with Partial<Row> for type safety
+
+export function addProject(
+  projects$: any,
+  userId: string | null,
+  projectData: Partial<Omit<ProjectRow, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'deleted_at'>>
+): string {
   const id = generateId();
   const now = new Date().toISOString();
 
@@ -224,7 +240,11 @@ export function addProject(projects$: any, userId: string | null, projectData: a
   return id;
 }
 
-export function updateProject(projects$: any, id: string, updates: any) {
+export function updateProject(
+  projects$: any,
+  id: string,
+  updates: Partial<Omit<ProjectRow, 'id' | 'user_id' | 'created_at' | 'updated_at'>>
+): void {
   const now = new Date().toISOString();
   projects$[id].assign({
     ...updates,
@@ -232,12 +252,16 @@ export function updateProject(projects$: any, id: string, updates: any) {
   });
 }
 
-export function deleteProject(projects$: any, id: string) {
+export function deleteProject(projects$: any, id: string): void {
   // Soft delete is handled by 'fieldDeleted' config in syncedSupabase
-  projects$[id].delete(); 
+  projects$[id].delete();
 }
 
-export function addInventoryItem(inventory$: any, userId: string | null, itemData: any) {
+export function addInventoryItem(
+  inventory$: any,
+  userId: string | null,
+  itemData: Partial<Omit<InventoryItemRow, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'deleted_at'>>
+): string {
   const id = generateId();
   const now = new Date().toISOString();
 
@@ -252,7 +276,11 @@ export function addInventoryItem(inventory$: any, userId: string | null, itemDat
   return id;
 }
 
-export function updateInventoryItem(inventory$: any, id: string, updates: any) {
+export function updateInventoryItem(
+  inventory$: any,
+  id: string,
+  updates: Partial<Omit<InventoryItemRow, 'id' | 'user_id' | 'created_at' | 'updated_at'>>
+): void {
   const now = new Date().toISOString();
   inventory$[id].assign({
     ...updates,
@@ -260,6 +288,7 @@ export function updateInventoryItem(inventory$: any, id: string, updates: any) {
   });
 }
 
-export function deleteInventoryItem(inventory$: any, id: string) {
+export function deleteInventoryItem(inventory$: any, id: string): void {
   inventory$[id].delete();
 }
+/* eslint-enable @typescript-eslint/no-explicit-any */

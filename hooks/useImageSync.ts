@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/auth-context';
 import { imageSyncQueue } from '@/lib/legend-state/image-sync-queue';
 import { getLocalImagesToUpload } from '@/lib/legend-state/type-mappers';
 import { getStores, updateProject, updateInventoryItem } from '@/lib/legend-state/config';
+import type { Project, InventoryItem } from '@/types';
 
 export function useImageSync() {
   const { user, isPro } = useAuth();
@@ -21,10 +22,10 @@ export function useImageSync() {
 
     imageSyncQueue.initialize(user.id, {
       onImageUploaded: async (itemId, itemType, imageIndex, newUrl, oldUri) => {
-        console.log(`[ImageSync] Image uploaded for ${itemType} ${itemId}: ${newUrl}`);
+        if (__DEV__) console.log(`[ImageSync] Image uploaded for ${itemType} ${itemId}: ${newUrl}`);
 
         // Helper to parse images (handles both array and JSON string for backward compat)
-        const parseImages = (raw: any): string[] => {
+        const parseImages = (raw: string[] | string | null | undefined): string[] => {
           if (Array.isArray(raw)) return raw;
           if (typeof raw === 'string') {
             try { return JSON.parse(raw || '[]'); } catch { return []; }
@@ -57,13 +58,13 @@ export function useImageSync() {
         }
       },
       onImageFailed: (itemId, error) => {
-        console.warn(`[ImageSync] Upload failed for ${itemId}: ${error}`);
+        if (__DEV__) console.warn(`[ImageSync] Upload failed for ${itemId}: ${error}`);
       },
       onStaleImageFound: async (itemId, itemType, staleUri) => {
-        console.log(`[ImageSync] Cleaning stale image from ${itemType} ${itemId}`);
+        if (__DEV__) console.log(`[ImageSync] Cleaning stale image from ${itemType} ${itemId}`);
 
         // Helper to parse images (handles both array and JSON string for backward compat)
-        const parseImages = (raw: any): string[] => {
+        const parseImages = (raw: string[] | string | null | undefined): string[] => {
           if (Array.isArray(raw)) return raw;
           if (typeof raw === 'string') {
             try { return JSON.parse(raw || '[]'); } catch { return []; }
@@ -80,7 +81,7 @@ export function useImageSync() {
             if (filtered.length !== images.length) {
               // Store as array (DB uses TEXT[], not JSON string)
               updateProject(projects$, itemId, { images: filtered });
-              console.log(`[ImageSync] Removed stale image from project ${itemId}`);
+              if (__DEV__) console.log(`[ImageSync] Removed stale image from project ${itemId}`);
             }
           }
         } else if (itemType === 'inventory') {
@@ -91,7 +92,7 @@ export function useImageSync() {
             if (filtered.length !== images.length) {
               // Store as array (DB uses TEXT[], not JSON string)
               updateInventoryItem(inventory$, itemId, { images: filtered });
-              console.log(`[ImageSync] Removed stale image from inventory ${itemId}`);
+              if (__DEV__) console.log(`[ImageSync] Removed stale image from inventory ${itemId}`);
             }
           }
         }
@@ -105,7 +106,7 @@ export function useImageSync() {
   }, [user?.id, projects$, inventory$]);
 
   // 2. Helper to Queue Images for a Project
-  const queueProjectImages = useCallback(async (project: any) => {
+  const queueProjectImages = useCallback(async (project: Project) => {
     if (!user?.id) return;
 
     const images = typeof project.images === 'string' 
@@ -115,7 +116,7 @@ export function useImageSync() {
     const localImages = getLocalImagesToUpload(images);
     
     if (localImages.length > 0) {
-      console.log(`[ImageSync] Queuing ${localImages.length} images for project ${project.id}`);
+      if (__DEV__) console.log(`[ImageSync] Queuing ${localImages.length} images for project ${project.id}`);
       await imageSyncQueue.enqueue(
         localImages.map(({ uri, index }) => ({
           localUri: uri,
@@ -129,7 +130,7 @@ export function useImageSync() {
   }, [user?.id]);
 
   // 3. Helper to Queue Images for Inventory
-  const queueInventoryImages = useCallback(async (item: any) => {
+  const queueInventoryImages = useCallback(async (item: InventoryItem) => {
     if (!user?.id) return;
 
     const images = typeof item.images === 'string' 
@@ -139,7 +140,7 @@ export function useImageSync() {
     const localImages = getLocalImagesToUpload(images);
     
     if (localImages.length > 0) {
-      console.log(`[ImageSync] Queuing ${localImages.length} images for inventory ${item.id}`);
+      if (__DEV__) console.log(`[ImageSync] Queuing ${localImages.length} images for inventory ${item.id}`);
       await imageSyncQueue.enqueue(
         localImages.map(({ uri, index }) => ({
           localUri: uri,
@@ -156,21 +157,21 @@ export function useImageSync() {
   const scanForMissingUploads = useCallback(async () => {
     if (!user?.id) return;
     
-    console.log('[ImageSync] Scanning for missing uploads...');
+    if (__DEV__) console.log('[ImageSync] Scanning for missing uploads...');
     const projects = projects$.get() || {};
     const inventory = inventory$.get() || {};
 
     let count = 0;
-    
-    for (const p of Object.values(projects)) {
+
+    for (const p of Object.values(projects) as Project[]) {
       await queueProjectImages(p);
       count++;
     }
-    for (const i of Object.values(inventory)) {
+    for (const i of Object.values(inventory) as InventoryItem[]) {
       await queueInventoryImages(i);
       count++;
     }
-    console.log(`[ImageSync] Scanned ${count} records.`);
+    if (__DEV__) console.log(`[ImageSync] Scanned ${count} records.`);
   }, [user?.id, projects$, inventory$, queueProjectImages, queueInventoryImages]);
 
   // Run scan once on mount (delayed slightly to let store load)

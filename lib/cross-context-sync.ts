@@ -24,7 +24,7 @@ async function loadInventory(): Promise<InventoryItem[]> {
     const data = await AsyncStorage.getItem(INVENTORY_KEY);
     return data ? JSON.parse(data) : [];
   } catch (error) {
-    console.error('[sync] Failed to load inventory:', error);
+    if (__DEV__) console.error('[sync] Failed to load inventory:', error);
     return [];
   }
 }
@@ -33,7 +33,7 @@ async function saveInventory(items: InventoryItem[]): Promise<void> {
   try {
     await AsyncStorage.setItem(INVENTORY_KEY, JSON.stringify(items));
   } catch (error) {
-    console.error('[sync] Failed to save inventory:', error);
+    if (__DEV__) console.error('[sync] Failed to save inventory:', error);
     throw error;
   }
 }
@@ -43,7 +43,7 @@ async function loadProjects(): Promise<Project[]> {
     const data = await AsyncStorage.getItem(PROJECTS_KEY);
     return data ? JSON.parse(data) : [];
   } catch (error) {
-    console.error('[sync] Failed to load projects:', error);
+    if (__DEV__) console.error('[sync] Failed to load projects:', error);
     return [];
   }
 }
@@ -52,7 +52,7 @@ async function saveProjects(projects: Project[]): Promise<void> {
   try {
     await AsyncStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
   } catch (error) {
-    console.error('[sync] Failed to save projects:', error);
+    if (__DEV__) console.error('[sync] Failed to save projects:', error);
     throw error;
   }
 }
@@ -93,11 +93,11 @@ export async function syncProjectMaterials(
 
   // Early exit if nothing changed
   if (addedIds.length === 0 && removedIds.length === 0) {
-    console.log('[sync] No material changes detected, skipping sync');
+    if (__DEV__) console.log('[sync] No material changes detected, skipping sync');
     return items;
   }
 
-  console.log('[sync] syncProjectMaterials:', {
+  if (__DEV__) console.log('[sync] syncProjectMaterials:', {
     projectId,
     added: addedIds,
     removed: removedIds,
@@ -134,7 +134,7 @@ export async function syncProjectMaterials(
 
   if (hasChanges) {
     await saveInventory(updated);
-    console.log('[sync] Inventory updated with project references');
+    if (__DEV__) console.log('[sync] Inventory updated with project references');
   }
 
   return updated;
@@ -152,7 +152,7 @@ export async function removeProjectFromInventory(
 ): Promise<InventoryItem[]> {
   const items = await loadInventory();
 
-  console.log('[sync] removeProjectFromInventory:', projectId);
+  if (__DEV__) console.log('[sync] removeProjectFromInventory:', projectId);
 
   let hasChanges = false;
 
@@ -171,7 +171,7 @@ export async function removeProjectFromInventory(
 
   if (hasChanges) {
     await saveInventory(updated);
-    console.log('[sync] Cleaned up inventory after project deletion');
+    if (__DEV__) console.log('[sync] Cleaned up inventory after project deletion');
   }
 
   return updated;
@@ -199,7 +199,7 @@ export async function syncInventoryToProjects(
 ): Promise<Project[]> {
   // 'other' category items don't link to projects
   if (itemCategory === 'other') {
-    console.log('[sync] Skipping sync for "other" category item');
+    if (__DEV__) console.log('[sync] Skipping sync for "other" category item');
     return await loadProjects();
   }
 
@@ -210,11 +210,11 @@ export async function syncInventoryToProjects(
 
   // Early exit if nothing changed
   if (addedProjects.length === 0 && removedProjects.length === 0) {
-    console.log('[sync] No project changes detected, skipping sync');
+    if (__DEV__) console.log('[sync] No project changes detected, skipping sync');
     return projects;
   }
 
-  console.log('[sync] syncInventoryToProjects:', {
+  if (__DEV__) console.log('[sync] syncInventoryToProjects:', {
     itemId,
     category: itemCategory,
     added: addedProjects,
@@ -253,7 +253,7 @@ export async function syncInventoryToProjects(
 
   if (hasChanges) {
     await saveProjects(updated);
-    console.log('[sync] Projects updated with inventory references');
+    if (__DEV__) console.log('[sync] Projects updated with inventory references');
   }
 
   return updated;
@@ -278,7 +278,7 @@ export async function removeInventoryFromProjects(
 
   const projects = await loadProjects();
 
-  console.log('[sync] removeInventoryFromProjects:', { itemId, category: itemCategory });
+  if (__DEV__) console.log('[sync] removeInventoryFromProjects:', { itemId, category: itemCategory });
 
   const field = itemCategory === 'yarn' ? 'yarnUsedIds' : 'hookUsedIds';
 
@@ -300,7 +300,7 @@ export async function removeInventoryFromProjects(
 
   if (hasChanges) {
     await saveProjects(updated);
-    console.log('[sync] Cleaned up projects after inventory deletion');
+    if (__DEV__) console.log('[sync] Cleaned up projects after inventory deletion');
   }
 
   return updated;

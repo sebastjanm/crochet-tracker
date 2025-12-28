@@ -10,7 +10,7 @@ import { useCallback } from 'react';
 import { useSelector } from '@legendapp/state/react';
 import { useAuth } from './auth-context';
 import { getStores } from '@/lib/legend-state/config';
-import { InventoryItem } from '@/types';
+import type { InventoryItem } from '@/types';
 
 export function useBrandSuggestions() {
   const { user, isPro } = useAuth();
@@ -37,31 +37,37 @@ export function useBrandSuggestions() {
     brands.add('Scheepjes');
     brands.add('Malabrigo');
 
-    Object.values(itemsMap).forEach((row: any) => {
-      // Check yarnDetails.brand
-      if (row.yarn_details) {
+    (Object.values(itemsMap) as InventoryItem[]).forEach((row) => {
+      // Check yarnDetails.brand (snake_case from DB, camelCase in types)
+      const yarnDetails = (row as unknown as Record<string, unknown>).yarn_details ?? row.yarnDetails;
+      if (yarnDetails) {
         try {
-          const details = typeof row.yarn_details === 'string' 
-            ? JSON.parse(row.yarn_details) 
-            : row.yarn_details;
-            
+          const details = typeof yarnDetails === 'string'
+            ? JSON.parse(yarnDetails)
+            : yarnDetails;
+
           if (details?.brand?.name) {
             brands.add(details.brand.name.trim());
           }
-        } catch {}
+        } catch (error) {
+          if (__DEV__) console.warn('[BrandSuggestions] Failed to parse yarn details:', error);
+        }
       }
-      
-      // Check hookDetails.brand
-      if (row.hook_details) {
+
+      // Check hookDetails.brand (snake_case from DB, camelCase in types)
+      const hookDetails = (row as unknown as Record<string, unknown>).hook_details ?? row.hookDetails;
+      if (hookDetails) {
         try {
-          const details = typeof row.hook_details === 'string' 
-            ? JSON.parse(row.hook_details) 
-            : row.hook_details;
-            
+          const details = typeof hookDetails === 'string'
+            ? JSON.parse(hookDetails)
+            : hookDetails;
+
           if (details?.brand) {
             brands.add(details.brand.trim());
           }
-        } catch {}
+        } catch (error) {
+          if (__DEV__) console.warn('[BrandSuggestions] Failed to parse hook details:', error);
+        }
       }
     });
 
@@ -95,7 +101,7 @@ export function useBrandSuggestions() {
    */
   const learnBrand = useCallback(async (brandName: string): Promise<void> => {
     // No-op: Data is derived from inventory usage
-    console.log('[BrandSuggestions] Brand will be learned when item is saved:', brandName);
+    if (__DEV__) console.log('[BrandSuggestions] Brand will be learned when item is saved:', brandName);
   }, []);
 
   /**

@@ -70,7 +70,7 @@ export function useNetworkState(): NetworkState {
         isAirplaneMode: false, // Will be updated by listener if available
       });
     } catch (error) {
-      console.warn('[Network] Failed to get network state:', error);
+      if (__DEV__) console.warn('[Network] Failed to get network state:', error);
       setState((prev) => ({
         ...prev,
         isLoading: false,

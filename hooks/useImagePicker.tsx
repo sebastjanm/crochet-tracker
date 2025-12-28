@@ -28,16 +28,20 @@ async function copyToPermanentStorage(tempUri: string): Promise<string> {
 
     sourceFile.copy(destFile);
 
-    console.log('[ImagePicker] Copied to permanent storage:', destFile.uri);
+    if (__DEV__) console.log('[ImagePicker] Copied to permanent storage:', destFile.uri);
     return destFile.uri;
   } catch (error) {
-    console.error('[ImagePicker] Failed to copy to permanent storage:', error);
+    if (__DEV__) console.error('[ImagePicker] Failed to copy to permanent storage:', error);
     // Return original URI as fallback (may fail later if cache is cleared)
     return tempUri;
   }
 }
 
-export const useImagePicker = () => {
+/**
+ * Hook for picking images from gallery or camera.
+ * Automatically copies images to permanent storage to prevent cache loss.
+ */
+export function useImagePicker() {
   const [isPickingImage, setIsPickingImage] = useState(false);
 
   const pickImagesFromGallery = async (): Promise<string[]> => {
@@ -67,7 +71,7 @@ export const useImagePicker = () => {
       }
       return [];
     } catch (error) {
-      console.error('Error picking images:', error);
+      if (__DEV__) console.error('Error picking images:', error);
       Alert.alert('Error', 'Failed to pick images');
       return [];
     } finally {
@@ -97,7 +101,7 @@ export const useImagePicker = () => {
       }
       return null;
     } catch (error) {
-      console.error('Error taking photo:', error);
+      if (__DEV__) console.error('Error taking photo:', error);
       Alert.alert('Error', 'Failed to take photo');
       return null;
     } finally {
@@ -174,4 +178,4 @@ export const useImagePicker = () => {
     showImagePickerOptions,
     showImagePickerOptionsMultiple,
   };
-};
+}

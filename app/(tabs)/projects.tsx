@@ -332,6 +332,10 @@ export default function ProjectsScreen(): React.JSX.Element {
           numColumns={2}
           columnWrapperStyle={styles.row}
           contentContainerStyle={[styles.list, { paddingBottom: 100 + insets.bottom }]}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          initialNumToRender={6}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}

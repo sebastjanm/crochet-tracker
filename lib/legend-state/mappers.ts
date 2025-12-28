@@ -11,7 +11,15 @@
  * - Soft deletes via deleted_at timestamp (NULL = active)
  */
 
-import { Project, InventoryItem, ProjectStatus } from '@/types';
+import {
+  Project,
+  InventoryItem,
+  ProjectStatus,
+  ProjectImage,
+  WorkProgressEntry,
+  YarnDetails,
+  HookDetails,
+} from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 
 // ============================================================================
@@ -115,8 +123,8 @@ function safeJsonParse<T>(json: string | null | undefined, fallback: T): T {
   }
 }
 
-function safeJsonStringify(data: any): string {
-  return JSON.stringify(data || null);
+function safeJsonStringify(data: unknown): string {
+  return JSON.stringify(data ?? null);
 }
 
 // ============================================================================
@@ -148,7 +156,10 @@ export function mapRowToProject(row: ProjectRow): Project {
     yarnUsedIds: toStringArray(row.yarn_used_ids),
     hookUsedIds: toStringArray(row.hook_used_ids),
     yarnMaterials: safeJsonParse(row.yarn_materials, []),
-    workProgress: safeJsonParse(row.work_progress, []).map((wp: any) => ({
+    workProgress: safeJsonParse<Array<Omit<WorkProgressEntry, 'date'> & { date: string }>>(
+      row.work_progress,
+      []
+    ).map((wp) => ({
       ...wp,
       date: new Date(wp.date),
     })),
@@ -166,9 +177,9 @@ export function mapRowToProject(row: ProjectRow): Project {
 
 export function mapProjectToRow(project: Project): Partial<ProjectRow> {
   // Convert ProjectImage[] to string[] (extract URIs)
-  const imagesToStrings = (imgs: any[]): string[] => {
+  const imagesToStrings = (imgs: ProjectImage[] | undefined): string[] => {
     if (!imgs) return [];
-    return imgs.map(img => typeof img === 'string' ? img : (img?.uri || '')).filter(Boolean);
+    return imgs.map(img => typeof img === 'string' ? img : ((img as { uri?: string })?.uri ?? '')).filter(Boolean);
   };
 
   return {
@@ -218,9 +229,12 @@ export function mapRowToInventoryItem(row: InventoryItemRow): InventoryItem {
   };
 
   // Parse yarn details with Date conversion
-  const parseYarnDetails = () => {
+  const parseYarnDetails = (): YarnDetails | undefined => {
     if (!row.yarn_details) return undefined;
-    const parsed = safeJsonParse<any>(row.yarn_details, null);
+    const parsed = safeJsonParse<Omit<YarnDetails, 'purchaseDate'> & { purchaseDate?: string }>(
+      row.yarn_details,
+      null as unknown as Omit<YarnDetails, 'purchaseDate'> & { purchaseDate?: string }
+    );
     if (!parsed) return undefined;
     return {
       ...parsed,
@@ -229,9 +243,12 @@ export function mapRowToInventoryItem(row: InventoryItemRow): InventoryItem {
   };
 
   // Parse hook details with Date conversion
-  const parseHookDetails = () => {
+  const parseHookDetails = (): HookDetails | undefined => {
     if (!row.hook_details) return undefined;
-    const parsed = safeJsonParse<any>(row.hook_details, null);
+    const parsed = safeJsonParse<Omit<HookDetails, 'purchaseDate'> & { purchaseDate?: string }>(
+      row.hook_details,
+      null as unknown as Omit<HookDetails, 'purchaseDate'> & { purchaseDate?: string }
+    );
     if (!parsed) return undefined;
     return {
       ...parsed,
@@ -263,9 +280,9 @@ export function mapRowToInventoryItem(row: InventoryItemRow): InventoryItem {
 
 export function mapInventoryItemToRow(item: InventoryItem): Partial<InventoryItemRow> {
   // Convert ProjectImage[] to string[] (extract URIs)
-  const imagesToStrings = (imgs: any[]): string[] => {
+  const imagesToStrings = (imgs: ProjectImage[] | undefined): string[] => {
     if (!imgs) return [];
-    return imgs.map(img => typeof img === 'string' ? img : (img?.uri || '')).filter(Boolean);
+    return imgs.map(img => typeof img === 'string' ? img : ((img as { uri?: string })?.uri ?? '')).filter(Boolean);
   };
 
   return {

@@ -36,7 +36,7 @@ export const [LanguageProvider, useLanguage] = createContextHook(() => {
         i18n.locale = savedLanguage;
       }
     } catch (error) {
-      console.error('Error loading language:', error);
+      if (__DEV__) console.error('Error loading language:', error);
     } finally {
       setIsLoading(false);
     }
@@ -48,11 +48,11 @@ export const [LanguageProvider, useLanguage] = createContextHook(() => {
       setLanguage(newLanguage);
       i18n.locale = newLanguage;
     } catch (error) {
-      console.error('Error saving language:', error);
+      if (__DEV__) console.error('Error saving language:', error);
     }
   };
 
-  const t = (key: string, options?: any) => {
+  const t = (key: string, options?: Record<string, unknown>) => {
     return i18n.t(key, options);
   };
 

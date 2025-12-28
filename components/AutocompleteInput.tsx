@@ -83,7 +83,7 @@ export function AutocompleteInput({
         setSuggestions(results);
         setShowDropdown(results.length > 0 && isFocused);
       } catch (error) {
-        console.error('[AutocompleteInput] Error fetching suggestions:', error);
+        if (__DEV__) console.error('[AutocompleteInput] Error fetching suggestions:', error);
         setSuggestions([]);
         setShowDropdown(false);
       }

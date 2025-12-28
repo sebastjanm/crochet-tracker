@@ -3,11 +3,11 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   TouchableOpacity,
   Platform,
   Dimensions,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -165,17 +165,13 @@ export default function InventoryScreen(): React.JSX.Element {
           }
         />
       ) : (
-        <FlatList
+        <FlashList
           key={selectedCategory}
           data={filteredItems}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
           contentContainerStyle={[styles.list, { paddingBottom: 100 + insets.bottom }]}
           numColumns={2}
-          columnWrapperStyle={styles.row}
-          removeClippedSubviews={true}
-          maxToRenderPerBatch={10}
-          windowSize={5}
         />
       )}
 
@@ -255,10 +251,6 @@ const styles = StyleSheet.create({
   list: {
     padding: 16,
     paddingBottom: 100,
-  },
-  row: {
-    justifyContent: 'space-between',
-    paddingHorizontal: 0,
   },
   itemWrapper: {
     width: '48%',

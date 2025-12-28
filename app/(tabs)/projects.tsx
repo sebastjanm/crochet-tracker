@@ -3,12 +3,12 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   TouchableOpacity,
   RefreshControl,
   Platform,
   Dimensions,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -299,7 +299,7 @@ export default function ProjectsScreen(): React.JSX.Element {
             <Zap size={18} color={Colors.deepTeal} />
             <Text style={styles.activeSectionTitle}>{t('projects.currentlyWorkingOn')}</Text>
           </View>
-          <FlatList
+          <FlashList
             data={currentlyWorkingOnProjects}
             renderItem={renderActiveProject}
             keyExtractor={(item) => `active-${item.id}`}
@@ -325,17 +325,12 @@ export default function ProjectsScreen(): React.JSX.Element {
           }
         />
       ) : (
-        <FlatList
+        <FlashList
           data={filteredProjects}
           renderItem={renderProject}
           keyExtractor={(item) => item.id}
           numColumns={2}
-          columnWrapperStyle={styles.row}
           contentContainerStyle={[styles.list, { paddingBottom: 100 + insets.bottom }]}
-          removeClippedSubviews={true}
-          maxToRenderPerBatch={10}
-          windowSize={5}
-          initialNumToRender={6}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -444,10 +439,6 @@ const styles = StyleSheet.create({
   list: {
     padding: 16,
     paddingBottom: 100,
-  },
-  row: {
-    justifyContent: 'space-between',
-    paddingHorizontal: 0,
   },
   gridItem: {
     width: '48%',

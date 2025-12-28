@@ -5,7 +5,8 @@ import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
 import { setButtonStyleAsync } from "expo-navigation-bar";
 import * as Updates from "expo-updates";
-import React, { useEffect } from "react";
+import { useEffect } from "react";
+import type { ReactNode } from "react";
 import { StyleSheet, Platform, Alert } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -25,15 +26,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.headerBg,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.headerBg,
-  },
 });
 
-function UpdateChecker({ children }: { children: React.ReactNode }) {
+/**
+ * UpdateChecker - Checks for OTA updates and prompts user to restart.
+ * Only runs in production builds.
+ */
+function UpdateChecker({ children }: { children: ReactNode }): React.JSX.Element {
   const { t } = useLanguage();
 
   useEffect(() => {
@@ -59,7 +58,7 @@ function UpdateChecker({ children }: { children: React.ReactNode }) {
           );
         }
       } catch (error) {
-        console.error('[Updates] Error checking for updates:', error);
+        if (__DEV__) console.error('[Updates] Error checking for updates:', error);
       }
     }
 
@@ -69,7 +68,11 @@ function UpdateChecker({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-export default function RootLayout() {
+/**
+ * RootLayout - Root layout component with all providers.
+ * Sets up navigation, auth, state management, and theme.
+ */
+export default function RootLayout(): React.JSX.Element {
   useEffect(() => {
     async function prepare() {
       try {
@@ -79,7 +82,7 @@ export default function RootLayout() {
         }
         await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error) {
-        console.warn('Error during app initialization:', error);
+        if (__DEV__) console.warn('Error during app initialization:', error);
       } finally {
         await SplashScreen.hideAsync();
       }

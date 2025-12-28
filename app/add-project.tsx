@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -31,11 +31,15 @@ import { useImagePicker } from '@/hooks/useImagePicker';
 import { useImageActions } from '@/hooks/useImageActions';
 import Colors from '@/constants/colors';
 import { Typography } from '@/constants/typography';
-import { normalizeBorder, cardShadow, buttonShadow } from '@/constants/pixelRatio';
+import { normalizeBorder, buttonShadow } from '@/constants/pixelRatio';
 import { ProjectStatus, ProjectType, ProjectYarn } from '@/types';
 import { getProjectTypeOptions } from '@/constants/projectTypes';
 
-export default function AddProjectScreen() {
+/**
+ * AddProjectScreen - Form for creating a new crochet project.
+ * Supports photos, status, materials, patterns, and notes.
+ */
+export default function AddProjectScreen(): React.JSX.Element {
   const { addProject } = useProjects();
   const { items: inventory } = useInventory();
   const { t } = useLanguage();
@@ -287,7 +291,7 @@ export default function AddProjectScreen() {
         hookUsedIds,
       });
       router.dismiss();
-    } catch (error) {
+    } catch {
       Alert.alert(t('common.error'), t('projects.failedToCreate'));
     } finally {
       setLoading(false);
@@ -378,7 +382,7 @@ export default function AddProjectScreen() {
                       transition={200}
                       cachePolicy="memory-disk"
                       onError={(error) => {
-                        console.warn('Image load error:', error);
+                        if (__DEV__) console.warn('Image load error:', error);
                       }}
                     />
                     {index === defaultImageIndex && (
@@ -632,9 +636,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
   },
-  textArea: {
-    minHeight: 100,
-  },
   sectionDivider: {
     height: 1,
     backgroundColor: Colors.border,
@@ -680,166 +681,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  imageButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  imageButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: Colors.white,
-    borderWidth: normalizeBorder(1.5),
-    borderColor: Colors.sage,
-    borderRadius: 14,
-    paddingVertical: 16,
-    minHeight: 54,
-    ...Platform.select({
-      ...buttonShadow,
-      default: {},
-    }),
-  },
-  imageButtonText: {
-    ...Typography.body,
-    color: Colors.sage,
-    fontWeight: '600' as const,
-    fontSize: 16,
-  },
   footer: {
     marginTop: 24,
     marginBottom: 32,
   },
   statusSection: {
     marginBottom: 16,
-  },
-  materialsSection: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    ...Typography.title3,
-    color: Colors.charcoal,
-    fontWeight: '600' as const,
-    marginBottom: 16,
-    fontSize: 18,
-  },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: Colors.deepSage,
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    marginBottom: 16,
-    minHeight: 50,
-  },
-  addButtonText: {
-    ...Typography.body,
-    color: Colors.white,
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  savedWorkEntry: {
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: normalizeBorder(1),
-    borderColor: Colors.border,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-  },
-  savedWorkEntryText: {
-    ...Typography.body,
-    color: Colors.charcoal,
-    fontSize: 15,
-    lineHeight: 22,
-    flex: 1,
-    marginRight: 12,
-  },
-  workEntryDeleteButton: {
-    padding: 4,
-    marginTop: -4,
-  },
-  workEntryForm: {
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: normalizeBorder(1.5),
-    borderColor: Colors.sage,
-  },
-  formButtons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 12,
-    marginTop: 12,
-  },
-  cancelButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: normalizeBorder(1),
-    borderColor: Colors.border,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  cancelButtonText: {
-    ...Typography.body,
-    color: Colors.charcoal,
-    fontSize: 15,
-    fontWeight: '500' as const,
-  },
-  saveButton: {
-    backgroundColor: Colors.sage,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  saveButtonDisabled: {
-    backgroundColor: Colors.warmGray,
-    opacity: 0.5,
-  },
-  saveButtonText: {
-    ...Typography.body,
-    color: Colors.white,
-    fontSize: 15,
-    fontWeight: '600' as const,
-  },
-  workEntryTitle: {
-    ...Typography.title3,
-    color: Colors.charcoal,
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  inspirationCard: {
-    backgroundColor: Colors.beige,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: normalizeBorder(1),
-    borderColor: Colors.deepSage,
-  },
-  inspirationHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  inspirationTitle: {
-    ...Typography.title3,
-    color: Colors.deepSage,
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  inspirationImagesSection: {
-    marginTop: 12,
   },
   statusScrollContent: {
     paddingVertical: 4,
@@ -894,40 +741,5 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.sage,
     borderRadius: 12,
     padding: 4,
-  },
-  addImageButton: {
-    width: 120,
-    height: 120,
-    borderRadius: 12,
-    borderWidth: normalizeBorder(2),
-    borderColor: Colors.sage,
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.white,
-    gap: 4,
-  },
-  addImageText: {
-    ...Typography.caption,
-    color: Colors.sage,
-    fontWeight: '600' as const,
-  },
-  addPhotoButton: {
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    borderWidth: normalizeBorder(2),
-    borderColor: Colors.sage,
-    borderStyle: 'dashed',
-    padding: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    minHeight: 120,
-  },
-  addPhotoButtonText: {
-    ...Typography.body,
-    color: Colors.sage,
-    fontWeight: '600' as const,
-    fontSize: 16,
   },
 });

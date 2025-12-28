@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,10 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
+import { useLocalSearchParams, router } from 'expo-router';
 import {
   Trash2,
   Package,
@@ -38,7 +37,11 @@ function formatEUDate(date: Date): string {
   return `${day}.${month}.${year}`;
 }
 
-export default function InventoryDetailScreen() {
+/**
+ * InventoryDetailScreen - Displays inventory item details.
+ * Shows yarn, hook, or other item info with edit/delete actions.
+ */
+export default function InventoryDetailScreen(): React.JSX.Element {
   const { id } = useLocalSearchParams();
   const { getItemById, deleteItem, updateItem } = useInventory();
   const { projects } = useProjects();
@@ -48,6 +51,34 @@ export default function InventoryDetailScreen() {
   const item = getItemById(id as string);
   
   const [showProjectSelector, setShowProjectSelector] = useState(false);
+
+  /** Confirms and deletes the inventory item */
+  const handleDelete = useCallback(() => {
+    if (!item) return;
+    Alert.alert(
+      t('inventory.deleteItem'),
+      t('inventory.deleteConfirm'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            await deleteItem(item.id);
+            router.back();
+          },
+        },
+      ]
+    );
+  }, [t, item, deleteItem]);
+
+  /** Updates projects that use this item */
+  const handleProjectsChange = useCallback(async (projectIds: string[]) => {
+    if (!item) return;
+    await updateItem(item.id, {
+      usedInProjects: projectIds.length > 0 ? projectIds : undefined,
+    });
+  }, [item, updateItem]);
 
   // Debug log to verify data flow
   if (item && __DEV__) {
@@ -83,32 +114,6 @@ export default function InventoryDetailScreen() {
   const relatedProjects = item.usedInProjects
     ? projects.filter(p => item.usedInProjects?.includes(p.id))
     : [];
-
-  const handleDelete = () => {
-    Alert.alert(
-      t('inventory.deleteItem'),
-      t('inventory.deleteConfirm'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('common.delete'),
-          style: 'destructive',
-          onPress: async () => {
-            await deleteItem(item.id);
-            router.back();
-          },
-        },
-      ]
-    );
-  };
-
-  const handleProjectsChange = async (projectIds: string[]) => {
-    if (!item) return;
-    await updateItem(item.id, {
-      usedInProjects: projectIds.length > 0 ? projectIds : undefined,
-    });
-    // No need to manually refresh - Legend-State reactive store auto-updates UI
-  };
 
   return (
     <View style={styles.backgroundContainer}>

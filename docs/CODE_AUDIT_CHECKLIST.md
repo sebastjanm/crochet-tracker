@@ -528,13 +528,13 @@ open "rndebugger://set-debugger-loc?host=localhost&port=8081"
 | `app/(auth)/login.tsx` | ✅ | 2025-12-28 | 18 |
 | `app/(auth)/register.tsx` | ✅ | 2025-12-28 | 17 |
 | `app/(auth)/forgot-password.tsx` | ✅ | 2025-12-28 | 15 |
-| `app/_layout.tsx` | ⬜ | - | - |
-| `app/add-project.tsx` | ⬜ | - | - |
-| `app/add-inventory.tsx` | ⬜ | - | - |
+| `app/_layout.tsx` | ✅ | 2025-12-28 | 1 |
+| `app/add-project.tsx` | ✅ | 2025-12-28 | 22 |
+| `app/add-inventory.tsx` | ✅ | 2025-12-28 | 32 |
 | `app/edit-inventory/[id].tsx` | ✅ | 2025-12-28 | 30 |
 | `app/edit-project/[id].tsx` | ✅ | 2025-12-28 | 22 |
 | `app/project/[id].tsx` | ✅ | 2025-12-28 | 78 |
-| `app/inventory/[id].tsx` | ⬜ | - | - |
+| `app/inventory/[id].tsx` | ✅ | 2025-12-28 | 44 |
 | `components/Button.tsx` | ⬜ | - | - |
 | `components/Input.tsx` | ⬜ | - | - |
 | `components/Card.tsx` | ⬜ | - | - |

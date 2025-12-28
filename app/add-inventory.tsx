@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,12 +8,9 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Image,
-  Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { QrCode, Barcode, Minus, Plus } from 'lucide-react-native';
 import { Button } from '@/components/Button';
@@ -35,7 +32,11 @@ import { normalizeBorder, cardShadow, buttonShadow } from '@/constants/pixelRati
 import { InventoryItem, YarnDetails, HookDetails, YarnWeightName, ProjectImage } from '@/types';
 import { useLanguage } from '@/hooks/language-context';
 
-export default function AddInventoryScreen() {
+/**
+ * AddInventoryScreen - Form for adding new inventory items.
+ * Supports yarn, hooks, and other craft supplies with QR/barcode scanning.
+ */
+export default function AddInventoryScreen(): React.JSX.Element {
   const params = useLocalSearchParams();
   const { addItem } = useInventory();
   const { user } = useAuth();
@@ -114,7 +115,7 @@ export default function AddInventoryScreen() {
 
 
   const handleBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
-    console.log(`${scannerMode === 'qr' ? 'QR' : 'Bar'}code scanned:`, data);
+    if (__DEV__) console.log(`${scannerMode === 'qr' ? 'QR' : 'Bar'}code scanned:`, data);
     setShowScanner(false);
 
     if (scannerMode === 'barcode') {
@@ -284,7 +285,7 @@ export default function AddInventoryScreen() {
       }
 
       router.dismiss();
-    } catch (error) {
+    } catch {
       Alert.alert(t('common.error'), t('inventory.failedToAddItem'));
     } finally {
       setLoading(false);
@@ -894,12 +895,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontWeight: '500' as const,
   },
-  sectionHint: {
-    ...Typography.caption,
-    color: Colors.warmGray,
-    marginBottom: 12,
-    fontSize: 13,
-  },
   categoryButtons: {
     flexDirection: 'row',
     gap: 10,
@@ -943,14 +938,6 @@ const styles = StyleSheet.create({
   },
   halfInput: {
     flex: 1,
-  },
-  thirdInput: {
-    flex: 1,
-  },
-  textArea: {
-    minHeight: 100,
-    textAlignVertical: 'top',
-    paddingTop: 12,
   },
   imageSection: {
     marginTop: 24,
@@ -1015,40 +1002,6 @@ const styles = StyleSheet.create({
   },
   fieldGroup: {
     marginBottom: 16,
-  },
-  handleTypeButtons: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  handleTypeButton: {
-    flex: 1,
-    minWidth: '45%',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    borderWidth: normalizeBorder(1.5),
-    borderColor: Colors.border,
-    backgroundColor: Colors.white,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  handleTypeButtonActive: {
-    backgroundColor: Colors.sage,
-    borderColor: Colors.deepSage,
-    borderWidth: normalizeBorder(2),
-  },
-  handleTypeButtonText: {
-    ...Typography.body,
-    color: Colors.charcoal,
-    fontSize: 13,
-    fontWeight: '500' as const,
-    textAlign: 'center',
-  },
-  handleTypeButtonTextActive: {
-    color: Colors.white,
-    fontWeight: '600' as const,
   },
   // Quantity stepper styles
   quantitySection: {

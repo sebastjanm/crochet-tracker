@@ -114,11 +114,25 @@ export function generateId(): string {
   return uuidv4();
 }
 
+/**
+ * Safely parse JSON with fallback.
+ * In __DEV__ mode, logs a loud error when parsing fails to help catch data issues.
+ */
 function safeJsonParse<T>(json: string | null | undefined, fallback: T): T {
   if (!json) return fallback;
   try {
     return JSON.parse(json);
-  } catch {
+  } catch (error) {
+    if (__DEV__) {
+      // Truncate long JSON for readability
+      const preview = json.length > 200 ? json.slice(0, 200) + '...' : json;
+      console.error(
+        '🚨 [safeJsonParse] JSON PARSE ERROR - Fix the data source!',
+        '\n  📄 Input:', preview,
+        '\n  ❌ Error:', error instanceof Error ? error.message : String(error),
+        '\n  ↩️  Using fallback:', JSON.stringify(fallback)
+      );
+    }
     return fallback;
   }
 }

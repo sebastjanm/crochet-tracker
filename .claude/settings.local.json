@@ -175,7 +175,11 @@
       "Bash(/Users/sebastjanm/dev/SeboAI-crochet-tracker/hooks/language-context.tsx )",
       "Bash(/Users/sebastjanm/dev/SeboAI-crochet-tracker/hooks/projects-context.tsx )",
       "Bash(/Users/sebastjanm/dev/SeboAI-crochet-tracker/hooks/inventory-context.tsx)",
-      "Bash(npx @sentry/wizard@latest -i reactNative:*)"
+      "Bash(npx @sentry/wizard@latest -i reactNative:*)",
+      "Bash(bash -c 'SECRET=$\\(grep SUPABASE_SECRET_KEY /Users/sebastjanm/dev/SeboAI-crochet-tracker/.env | cut -d= -f2 | tr -d \"\"\\\\r\"\"\\) && curl -s \"\"https://wpslbhiecxiwhfncpbgs.supabase.co/rest/v1/inventory_items?user_id=eq.46265084-28e1-4bc6-8f8f-d1d5ea90cd63&select=id,yarn_details&limit=5\"\" -H \"\"apikey: $SECRET\"\" -H \"\"Authorization: Bearer $SECRET\"\" | jq \"\".[].yarn_details\"\"')",
+      "Bash(bash -c 'SECRET=$\\(grep SUPABASE_SECRET_KEY /Users/sebastjanm/dev/SeboAI-crochet-tracker/.env | cut -d= -f2 | tr -d \"\"\\\\r\"\"\\) && curl -s \"\"https://wpslbhiecxiwhfncpbgs.supabase.co/rest/v1/inventory_items?user_id=eq.46265084-28e1-4bc6-8f8f-d1d5ea90cd63&select=id,yarn_details&limit=3\"\" -H \"\"apikey: $SECRET\"\" -H \"\"Authorization: Bearer $SECRET\"\"')",
+      "Bash(bash -c 'SECRET=$\\(grep SUPABASE_SECRET_KEY /Users/sebastjanm/dev/SeboAI-crochet-tracker/.env | cut -d= -f2 | tr -d \"\"\\\\r\"\"\\) && curl -s \"\"https://wpslbhiecxiwhfncpbgs.supabase.co/rest/v1/inventory_items?user_id=eq.46265084-28e1-4bc6-8f8f-d1d5ea90cd63&select=*&limit=1\"\" -H \"\"apikey: $SECRET\"\" -H \"\"Authorization: Bearer $SECRET\"\" | jq \"\".[0] | keys\"\"')",
+      "Bash(timeout 30 bunx expo start:*)"
     ],
     "deny": [],
     "ask": []

@@ -19,6 +19,26 @@ import {
 } from "@/providers";
 import { ToastProvider } from "@/components/Toast";
 import { Colors } from "@/constants/colors";
+import * as Sentry from '@sentry/react-native';
+
+Sentry.init({
+  dsn: 'https://70f480ee76421814fb0e218e86714783@o4509615901507584.ingest.de.sentry.io/4510614720086096',
+
+  // Adds more context data to events (IP address, cookies, user, etc.)
+  // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
+  sendDefaultPii: true,
+
+  // Enable Logs
+  enableLogs: true,
+
+  // Configure Session Replay
+  replaysSessionSampleRate: 0.1,
+  replaysOnErrorSampleRate: 1,
+  integrations: [Sentry.mobileReplayIntegration()],
+
+  // uncomment the line below to enable Spotlight (https://spotlightjs.com)
+  // spotlight: __DEV__,
+});
 
 SplashScreen.preventAutoHideAsync();
 
@@ -75,7 +95,7 @@ function UpdateChecker({ children }: { children: ReactNode }): React.JSX.Element
  * RootLayout - Root layout component with all providers.
  * Sets up navigation, auth, state management, and theme.
  */
-export default function RootLayout(): React.JSX.Element {
+export default Sentry.wrap(function RootLayout() {
   useEffect(() => {
     async function prepare() {
       try {
@@ -146,4 +166,4 @@ export default function RootLayout(): React.JSX.Element {
       </QueryClientProvider>
     </SafeAreaProvider>
   );
-}
+});

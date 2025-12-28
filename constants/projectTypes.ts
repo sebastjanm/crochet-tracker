@@ -1,5 +1,5 @@
 import { ProjectType } from '@/types';
-import Colors from './colors';
+import { Colors } from './colors';
 
 export interface ProjectTypeConfig {
   label: string;
@@ -81,7 +81,7 @@ export function getProjectTypeConfig(type: ProjectType): ProjectTypeConfig {
 }
 
 // Helper function to get all project type options for select dropdown
-export function getProjectTypeOptions(): Array<{ value: ProjectType; label: string }> {
+export function getProjectTypeOptions(): { value: ProjectType; label: string }[] {
   return Object.entries(PROJECT_TYPE_CONFIGS).map(([value, config]) => ({
     value: value as ProjectType,
     label: config.label,

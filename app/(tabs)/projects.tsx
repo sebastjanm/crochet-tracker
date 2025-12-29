@@ -436,12 +436,14 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.beige,
   },
   list: {
-    padding: 16,
+    paddingHorizontal: 10,
+    paddingTop: 16,
     paddingBottom: 100,
   },
   gridItem: {
-    width: '48%',
-    marginBottom: 16,
+    flex: 1,
+    paddingHorizontal: 6,
+    paddingBottom: 16,
   },
   projectCard: {
     borderRadius: 12,

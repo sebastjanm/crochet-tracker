@@ -117,12 +117,13 @@ export function generateId(): string {
 /**
  * Safely parse JSON with fallback.
  * Handles: null/undefined, strings, and already-parsed objects.
- * In __DEV__ mode, logs errors when parsing fails.
+ * Always returns fallback for null/undefined results.
  */
 function safeJsonParse<T>(json: string | object | null | undefined, fallback: T): T {
+  // Null or undefined input - use fallback
   if (json === null || json === undefined) return fallback;
 
-  // Already an object - return as-is
+  // Already an object (but not null) - return as-is
   if (typeof json === 'object') {
     return json as T;
   }
@@ -132,13 +133,23 @@ function safeJsonParse<T>(json: string | object | null | undefined, fallback: T)
     return fallback;
   }
 
+  // Empty string or "null" string - use fallback
+  if (json === '' || json === 'null') {
+    return fallback;
+  }
+
   try {
-    return JSON.parse(json);
+    const parsed = JSON.parse(json);
+    // If parsed result is null/undefined, use fallback
+    if (parsed === null || parsed === undefined) {
+      return fallback;
+    }
+    return parsed;
   } catch (error) {
     if (__DEV__) {
       const preview = json.length > 200 ? json.slice(0, 200) + '...' : json;
       console.error(
-        '🚨 [safeJsonParse] JSON PARSE ERROR - Fix the data source!',
+        '🚨 [safeJsonParse] JSON PARSE ERROR',
         '\n  📄 Input:', preview,
         '\n  ❌ Error:', error instanceof Error ? error.message : String(error),
         '\n  ↩️  Using fallback:', JSON.stringify(fallback)

@@ -240,12 +240,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   list: {
-    padding: 16,
+    paddingHorizontal: 10,
+    paddingTop: 16,
     paddingBottom: 100,
   },
   itemWrapper: {
-    width: '48%',
-    marginBottom: 16,
+    flex: 1,
+    paddingHorizontal: 6,
+    paddingBottom: 16,
   },
   itemCard: {
     width: '100%',

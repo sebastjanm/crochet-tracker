@@ -164,7 +164,7 @@ export default function InventoryDetailScreen(): React.JSX.Element {
           {/* Category Badge with Inline Quantity */}
           <View style={styles.categoryContainer}>
             <View style={[styles.categoryBadge, { backgroundColor: categoryColor }]}>
-              <Package size={16} color={Colors.white} />
+              <Package size={14} color={Colors.white} />
               <Text style={styles.categoryText}>
                 {item.category === 'yarn' ? t('inventory.yarn') :
                  item.category === 'hook' ? t('inventory.hooks') :
@@ -602,64 +602,66 @@ const styles = StyleSheet.create({
     color: Colors.charcoal,
   },
   content: {
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 24,
   },
   categoryContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 20,
+    marginBottom: 16,
   },
   categoryBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 999,
-    minHeight: 36,
+    minHeight: 28,
   },
   categoryText: {
     color: Colors.white,
     fontWeight: '600' as const,
-    fontSize: 14,
+    fontSize: 12,
     letterSpacing: -0.1,
   },
   quantityBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     backgroundColor: Colors.deepSage,
-    borderRadius: 20,
-    minHeight: 36,
+    borderRadius: 14,
+    minHeight: 28,
   },
   quantityBadgeLabel: {
     color: Colors.white,
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 12,
   },
   quantityBadgeValue: {
     color: Colors.white,
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 12,
   },
   usedInProjectsBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     backgroundColor: Colors.deepSage,
-    borderRadius: 20,
-    minHeight: 36,
+    borderRadius: 14,
+    minHeight: 28,
   },
   usedInProjectsText: {
     color: Colors.white,
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 12,
   },
   projectsSection: {
     marginBottom: 16,
@@ -741,8 +743,8 @@ const styles = StyleSheet.create({
   actionButtonsRow: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 24,
-    marginBottom: 16,
+    marginTop: 0,
+    marginBottom: 12,
   },
   editActionButton: {
     flex: 1,

@@ -1046,8 +1046,8 @@ const styles = StyleSheet.create({
   actionButtonsRow: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 24,
-    marginBottom: 16,
+    marginTop: 12,
+    marginBottom: 12,
   },
   editButton: {
     flex: 1,
@@ -1099,6 +1099,8 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 14,
     minHeight: 52,
+    borderBottomWidth: normalizeBorder(0.5),
+    borderBottomColor: `rgba(0, 0, 0, ${normalizeBorderOpacity(0.15)})`,
   },
   patternAdjustmentsTitleContainer: {
     flex: 1,

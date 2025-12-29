@@ -120,7 +120,6 @@ export async function migrateDataToSupabase(): Promise<MigrationResult> {
             location: item.location,
             used_in_projects: item.usedInProjects || [],
             notes: item.notes,
-            barcode: item.barcode,
             created_at: item.createdAt,
             updated_at: item.updatedAt,
             yarn_details: item.yarnDetails,

@@ -177,7 +177,6 @@ export interface HookDetails {
   model?: string; // e.g., "Amour"
   line?: string; // Product line
   sku?: string; // Product code
-  barcode?: string;
 
   // ===== SIZE INFORMATION =====
   size?: string; // e.g., "3.5 mm", "E/4"
@@ -293,7 +292,6 @@ export interface InventoryItem {
 
   // Common fields
   notes?: string;
-  barcode?: string;
 
   // Unified timestamps (same as Project)
   createdAt: Date;

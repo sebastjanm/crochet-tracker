@@ -88,7 +88,6 @@ export interface InventoryItemRow {
 
   // Location & identification
   location: string;
-  barcode: string;
   notes: string;
 
   // JSONB fields
@@ -307,7 +306,6 @@ export function mapRowToInventoryItem(row: InventoryItemRow): InventoryItem {
     tags: toStringArray(row.tags),
     usedInProjects: toStringArray(row.used_in_projects),
     notes: row.notes,
-    barcode: row.barcode,
     // Unified timestamps (now same as projects)
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
@@ -334,7 +332,6 @@ export function mapInventoryItemToRow(item: InventoryItem): Partial<InventoryIte
     used_in_projects: item.usedInProjects || [],
     // Location & identification
     location: item.location || '',
-    barcode: item.barcode || '',
     notes: item.notes || '',
     // JSONB fields
     yarn_details: safeJsonStringify(item.yarnDetails),

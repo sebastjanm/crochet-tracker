@@ -11,8 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
-import { QrCode, Barcode, Minus, Plus } from 'lucide-react-native';
+import { Minus, Plus } from 'lucide-react-native';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { AutocompleteInput } from '@/components/AutocompleteInput';
@@ -34,7 +33,7 @@ import { useLanguage } from '@/providers/LanguageProvider';
 
 /**
  * AddInventoryScreen - Form for adding new inventory items.
- * Supports yarn, hooks, and other craft supplies with QR/barcode scanning.
+ * Supports yarn, hooks, and other craft supplies.
  */
 export default function AddInventoryScreen(): React.JSX.Element {
   const params = useLocalSearchParams();
@@ -50,9 +49,6 @@ export default function AddInventoryScreen(): React.JSX.Element {
   const [images, setImages] = useState<ProjectImage[]>([]);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showScanner, setShowScanner] = useState(false);
-  const [scannerMode, setScannerMode] = useState<'qr' | 'barcode'>('qr');
-  const [permission, requestPermission] = useCameraPermissions();
 
   // Yarn specific fields
   const [yarnName, setYarnName] = useState('');
@@ -110,54 +106,6 @@ export default function AddInventoryScreen(): React.JSX.Element {
       setUnit('piece');
     }
   }, [category]);
-
-
-
-  const handleBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
-    if (__DEV__) console.log(`${scannerMode === 'qr' ? 'QR' : 'Bar'}code scanned:`, data);
-    setShowScanner(false);
-
-    if (scannerMode === 'barcode') {
-      // Simple barcode scan - just show the value
-      Alert.alert(t('inventory.barcodeScanned'), `Barcode: ${data}`);
-    } else {
-      // Parse QR code data (Simplified Fields)
-      try {
-        const parsed = JSON.parse(data);
-        if (parsed.name) setYarnName(parsed.name);
-        if (parsed.brand) setBrand(parsed.brand);
-        if (parsed.color) setColor(parsed.color);
-        if (parsed.color_code) setColorCode(parsed.color_code);
-        if (parsed.fiber) setFiber(parsed.fiber);
-        if (parsed.weight_category) setWeightCategory(parsed.weight_category);
-        if (parsed.ball_weight) setBallWeight(parsed.ball_weight.toString());
-        if (parsed.length) setLength(parsed.length.toString());
-        if (parsed.hook_size) setRecommendedHookSize(parsed.hook_size);
-        if (parsed.storage) setStorage(parsed.storage);
-        if (parsed.store) setStore(parsed.store);
-        if (parsed.quantity) setQuantity(parsed.quantity.toString());
-        Alert.alert(t('common.success'), t('inventory.qrImported'));
-      } catch {
-        const lines = data.split('\n');
-        if (lines.length > 0) {
-          setDescription(lines.join(' '));
-        }
-        Alert.alert(t('inventory.qrScanned'), t('inventory.someInfoImported'));
-      }
-    }
-  };
-
-  const openScanner = async (mode: 'qr' | 'barcode') => {
-    if (!permission?.granted) {
-      const result = await requestPermission();
-      if (!result.granted) {
-        Alert.alert(t('inventory.permissionRequired'), t('inventory.cameraPermissionNeeded'));
-        return;
-      }
-    }
-    setScannerMode(mode);
-    setShowScanner(true);
-  };
 
   const handleSubmit = async () => {
     // Validate name based on category
@@ -290,32 +238,6 @@ export default function AddInventoryScreen(): React.JSX.Element {
     }
   };
 
-  if (showScanner && Platform.OS !== 'web') {
-    return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
-        <ModalHeader
-          title={`${t('inventory.scan')} ${scannerMode === 'qr' ? 'QR Code' : t('inventory.barcode')}`}
-          onClose={() => setShowScanner(false)}
-        />
-        <CameraView
-          style={styles.scanner}
-          facing={'back' as CameraType}
-          onBarcodeScanned={handleBarCodeScanned}
-          barcodeScannerSettings={{
-            barcodeTypes: scannerMode === 'qr' 
-              ? ['qr', 'pdf417'] 
-              : ['ean13', 'ean8', 'upc_a', 'upc_e', 'code39', 'code128', 'codabar'],
-          }}
-        >
-          <View style={styles.scannerOverlay}>
-            <View style={styles.scannerFrame} />
-            <Text style={styles.scannerText}>{t('inventory.positionCode')} {scannerMode === 'qr' ? 'QR code' : t('inventory.barcode')} {t('inventory.withinFrame')}</Text>
-          </View>
-        </CameraView>
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ModalHeader
@@ -332,35 +254,6 @@ export default function AddInventoryScreen(): React.JSX.Element {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          {Platform.OS !== 'web' && (
-            <View style={styles.scannerButtons}>
-              <TouchableOpacity
-                style={styles.scanButton}
-                onPress={() => openScanner('qr')}
-                activeOpacity={0.7}
-                accessible={true}
-                accessibilityRole="button"
-                accessibilityLabel={t('inventory.scanQR')}
-                accessibilityHint="Opens camera to scan QR codes for quick item import"
-              >
-                <QrCode size={22} color={Colors.white} strokeWidth={2} />
-                <Text style={styles.scanButtonText}>{t('inventory.scanQR')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.scanButton, styles.barcodeButton]}
-                onPress={() => openScanner('barcode')}
-                activeOpacity={0.7}
-                accessible={true}
-                accessibilityRole="button"
-                accessibilityLabel={t('inventory.scanBarcode')}
-                accessibilityHint="Opens camera to scan product barcodes for automatic lookup"
-              >
-                <Barcode size={22} color={Colors.white} strokeWidth={2} />
-                <Text style={styles.scanButtonText}>{t('inventory.scanBarcode')}</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
           <View style={styles.imageSection}>
             <Text style={styles.sectionLabel}>{t('inventory.photos')}</Text>
             <ImageGallery
@@ -940,58 +833,6 @@ const styles = StyleSheet.create({
   footer: {
     marginTop: 24,
     marginBottom: 32,
-  },
-  scannerButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 24,
-  },
-  scanButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    backgroundColor: Colors.sage,
-    borderRadius: 14,
-    paddingVertical: 16,
-    minHeight: 54,
-    ...Platform.select({
-      ...buttonShadow,
-      default: {},
-    }),
-  },
-  barcodeButton: {
-    backgroundColor: Colors.terracotta,
-  },
-  scanButtonText: {
-    ...Typography.body,
-    color: Colors.white,
-    fontWeight: '600' as const,
-    fontSize: 16,
-    letterSpacing: 0.3,
-  },
-  scanner: {
-    flex: 1,
-  },
-  scannerOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scannerFrame: {
-    width: 250,
-    height: 250,
-    borderWidth: normalizeBorder(2),
-    borderColor: Colors.white,
-    borderRadius: 12,
-    backgroundColor: 'transparent',
-  },
-  scannerText: {
-    ...Typography.body,
-    color: Colors.white,
-    marginTop: 20,
   },
   fieldGroup: {
     marginBottom: 16,

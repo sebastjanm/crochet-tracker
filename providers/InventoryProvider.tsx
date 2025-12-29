@@ -127,33 +127,6 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     if (__DEV__) console.log(`[Inventory] Updated item: ${id}`);
   }, [items, inventory$, queueInventoryImages]);
 
-  /** Add item with barcode - updates quantity if exists */
-  const addItemWithBarcode = useCallback(async (
-    barcode: string,
-    additionalData: Partial<InventoryItem>
-  ): Promise<InventoryItem> => {
-    const existingItem = items.find((item: InventoryItem) => item.barcode === barcode);
-
-    if (existingItem) {
-      const newQuantity = existingItem.quantity + (additionalData.quantity || 1);
-      await updateItem(existingItem.id, { quantity: newQuantity });
-      return { ...existingItem, quantity: newQuantity };
-    }
-
-    const category = additionalData.category || 'other';
-    const itemName = additionalData.name || 'Unknown Item';
-
-    return addItem({
-      name: itemName,
-      description: additionalData.description,
-      images: additionalData.images || [],
-      quantity: additionalData.quantity || 1,
-      category,
-      barcode,
-      ...additionalData,
-    } as Omit<InventoryItem, 'id' | 'dateAdded' | 'lastUpdated'>);
-  }, [items, addItem, updateItem]);
-
   /** Update item quantity by delta */
   const updateQuantity = useCallback(async (id: string, delta: number) => {
     const item = items.find((i: InventoryItem) => i.id === id);
@@ -220,9 +193,6 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
   /** Get items by category */
   const getItemsByCategory = useCallback((category: InventoryItem['category']) => items.filter((i: InventoryItem) => i.category === category), [items]);
 
-  /** Get item by barcode */
-  const getItemByBarcode = useCallback((barcode: string) => items.find((i: InventoryItem) => i.barcode === barcode), [items]);
-
   /** Search items by query */
   const searchItems = useCallback((query: string): InventoryItem[] => {
     const lowerQuery = query.toLowerCase();
@@ -232,8 +202,7 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
         item.description?.toLowerCase().includes(lowerQuery) ||
         item.yarnDetails?.brand?.name?.toLowerCase().includes(lowerQuery) ||
         item.yarnDetails?.colorName?.toLowerCase().includes(lowerQuery) ||
-        item.hookDetails?.brand?.toLowerCase().includes(lowerQuery) ||
-        item.barcode?.includes(query)
+        item.hookDetails?.brand?.toLowerCase().includes(lowerQuery)
     );
   }, [items]);
 
@@ -294,7 +263,6 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     sortBy,
     statistics,
     addItem,
-    addItemWithBarcode,
     updateItem,
     updateQuantity,
     deleteItem,
@@ -303,7 +271,6 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     removeImage,
     getItemById,
     getItemsByCategory,
-    getItemByBarcode,
     searchItems,
     setSearchQuery,
     setSelectedCategory,

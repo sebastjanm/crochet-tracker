@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -80,6 +80,14 @@ export default function InventoryDetailScreen(): React.JSX.Element {
     });
   }, [item, updateItem]);
 
+  // Get projects using this item (for badge display) - must be before early return
+  const relatedProjects = useMemo(
+    () => item?.usedInProjects
+      ? projects.filter(p => item.usedInProjects?.includes(p.id))
+      : [],
+    [item?.usedInProjects, projects]
+  );
+
   // Debug log to verify data flow
   if (item && __DEV__) {
     console.log('[InventoryDetail] Render item:', item.id, 'Images:', item.images?.length);
@@ -109,11 +117,6 @@ export default function InventoryDetailScreen(): React.JSX.Element {
     : item.category === 'hook'
     ? Colors.sage
     : '#9C27B0';
-
-  // Get projects using this item (for badge display)
-  const relatedProjects = item.usedInProjects
-    ? projects.filter(p => item.usedInProjects?.includes(p.id))
-    : [];
 
   return (
     <View style={styles.backgroundContainer}>

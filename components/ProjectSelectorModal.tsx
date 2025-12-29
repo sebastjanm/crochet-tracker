@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -112,7 +112,7 @@ export function ProjectSelectorModal({
   const [searchQuery, setSearchQuery] = useState('');
 
   // Reset local state when modal opens
-  React.useEffect(() => {
+  useEffect(() => {
     if (visible) {
       setLocalSelection(selectedProjectIds);
       setSearchQuery('');

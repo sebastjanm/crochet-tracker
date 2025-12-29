@@ -25,6 +25,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/database.types';
 
+
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
@@ -119,6 +120,13 @@ export function createProjectsStore(userId: string | null, isPro: boolean): any 
         },
         retry: { infinite: true }, // Retry offline changes forever
         as: 'object',
+        // Debug callbacks
+        onError: (error: any) => {
+          console.error('[LegendState] Sync ERROR:', error);
+        },
+        onSaved: () => {
+          if (__DEV__) console.log('[LegendState] Projects SAVED to Supabase');
+        },
       } as any)
     );
   }
@@ -163,6 +171,13 @@ export function createInventoryStore(userId: string | null, isPro: boolean): any
         },
         retry: { infinite: true },
         as: 'object',
+        // Debug callbacks
+        onError: (error: any) => {
+          console.error('[LegendState] Inventory Sync ERROR:', error);
+        },
+        onSaved: () => {
+          if (__DEV__) console.log('[LegendState] Inventory SAVED to Supabase');
+        },
       } as any)
     );
   }
@@ -188,14 +203,16 @@ export function createInventoryStore(userId: string | null, isPro: boolean): any
 // We cache stores by "userId + isPro" signature to detect mode changes
 const storeCache = new Map<string, { projects: any; inventory: any }>();
 
+/**
+ * Get or create stores for a user. Cached by userId + isPro signature.
+ */
 export function getStores(userId: string | null, isPro: boolean) {
   const cacheKey = `${userId || 'guest'}_${isPro ? 'pro' : 'free'}`;
-  
+
   let cached = storeCache.get(cacheKey);
   if (!cached) {
-    // Clear old caches to free memory/prevent conflicts
     storeCache.clear();
-    
+
     cached = {
       projects: createProjectsStore(userId, isPro),
       inventory: createInventoryStore(userId, isPro),

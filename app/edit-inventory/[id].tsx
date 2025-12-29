@@ -481,7 +481,6 @@ export default function EditInventoryScreen(): React.JSX.Element {
 
               <ColorFamilySelect
                 label={t('inventory.colorFamily')}
-                placeholder={t('inventory.selectColorFamily')}
                 value={colorFamily}
                 onChange={setColorFamily}
               />
@@ -558,7 +557,6 @@ export default function EditInventoryScreen(): React.JSX.Element {
 
               <WeightCategorySelect
                 label={t('inventory.weightCategory')}
-                placeholder={t('inventory.weightCategoryPlaceholder')}
                 value={weightCategory}
                 onChange={setWeightCategory}
               />

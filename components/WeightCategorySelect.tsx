@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -28,12 +28,15 @@ export function WeightCategorySelect({
   label,
   value,
   onChange,
-  placeholder = 'Select weight category',
+  placeholder,
   required = false,
   error,
 }: WeightCategorySelectProps) {
   const [showModal, setShowModal] = useState(false);
   const { t } = useLanguage();
+
+  // Use simple "Select…" placeholder if not provided
+  const displayPlaceholder = placeholder || `${t('common.select')}…`;
 
   const selectedWeight = value ? getWeightByName(value) : undefined;
   const hasValue = !!selectedWeight;
@@ -54,12 +57,14 @@ export function WeightCategorySelect({
 
   return (
     <View style={styles.container}>
-      <View style={styles.selectContainer}>
-        <Text style={[styles.label, hasValue && styles.labelFloating]}>
+      <View style={styles.fieldLabelContainer}>
+        <Text style={styles.label}>
           {label}
           {required && <Text style={styles.required}> *</Text>}
         </Text>
+      </View>
 
+      <View style={styles.selectContainer}>
         <TouchableOpacity
           style={[
             styles.selectButton,
@@ -69,7 +74,7 @@ export function WeightCategorySelect({
           activeOpacity={0.7}
           accessible={true}
           accessibilityRole="button"
-          accessibilityLabel={`${label}. ${selectedWeight ? `Selected: ${getWeightLabel(selectedWeight.i18nKey)}` : placeholder}`}
+          accessibilityLabel={`${label}. ${selectedWeight ? `Selected: ${getWeightLabel(selectedWeight.i18nKey)}` : displayPlaceholder}`}
           accessibilityHint="Double tap to change selection"
           accessibilityState={{ disabled: false }}
         >
@@ -88,7 +93,7 @@ export function WeightCategorySelect({
               </View>
             ) : (
               <Text style={[styles.selectText, styles.placeholderText]}>
-                {placeholder}
+                {displayPlaceholder}
               </Text>
             )}
           </View>
@@ -109,7 +114,7 @@ export function WeightCategorySelect({
       <Modal
         visible={showModal}
         animationType="slide"
-        transparent={false}
+        presentationStyle="pageSheet"
         onRequestClose={handleCancel}
       >
         <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
@@ -202,29 +207,19 @@ const styles = StyleSheet.create({
   container: {
     marginBottom: 20,
   },
-  selectContainer: {
-    position: 'relative',
+  fieldLabelContainer: {
+    marginBottom: 8,
   },
   label: {
-    position: 'absolute' as const,
-    left: 16,
-    top: 21,
-    color: Colors.warmGray,
+    ...Typography.body,
+    color: Colors.charcoal,
     fontWeight: '500' as const,
-    fontSize: 17,
-    letterSpacing: 0.2,
-    zIndex: 1,
-    backgroundColor: 'transparent',
-    pointerEvents: 'none' as const,
-  },
-  labelFloating: {
-    top: 12,
-    fontSize: 12,
-    color: Colors.warmGray,
+    fontSize: 14,
   },
   required: {
     color: Colors.error,
   },
+  selectContainer: {},
   selectButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -234,9 +229,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     paddingHorizontal: 16,
-    paddingTop: 32,
-    paddingBottom: 12,
-    minHeight: 64,
+    paddingVertical: 14,
+    minHeight: 52,
   },
   selectButtonError: {
     borderColor: Colors.error,

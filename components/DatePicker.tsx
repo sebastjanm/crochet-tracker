@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -30,7 +30,7 @@ export function DatePicker({
   onChange,
   required = false,
   error,
-  maxDate = new Date(), // Default: can't select future dates
+  maxDate, // No default restriction - allow any date
   minDate,
   disabled = false,
 }: DatePickerProps) {

@@ -114,6 +114,8 @@ export async function uploadImage(
       : (localUri.split('.').pop()?.toLowerCase() || 'jpg');
     const fileName = `${userId}/${itemId}/${Date.now()}.${extension}`;
 
+    if (__DEV__) console.log(`[Storage] UPLOAD PATH: ${bucket}/${fileName}`);
+
     // Determine Content Type
     const contentType = processedUri !== localUri
       ? 'image/jpeg'

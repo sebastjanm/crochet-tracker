@@ -267,7 +267,7 @@ class ImageSyncQueueManager {
 
       this.queue.push(queuedImage);
       added++;
-      if (__DEV__) console.log(`[ImageQueue] Enqueued: ${image.localUri} for ${image.itemType}/${image.itemId}`);
+      if (__DEV__) console.log(`[ImageQueue] Enqueued: ${image.localUri.slice(-40)} for ${image.itemType}/${image.itemId} (index: ${image.imageIndex})`);
     }
 
     if (added > 0) {

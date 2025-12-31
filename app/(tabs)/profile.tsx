@@ -35,6 +35,8 @@ import { useProjects } from '@/providers/ProjectsProvider';
 import { useInventory } from '@/providers/InventoryProvider';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { imageSyncQueue } from '@/lib/legend-state';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
+import { mapProjectToRow } from '@/lib/legend-state/mappers';
 import { useToast } from '@/components/Toast';
 import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
@@ -308,6 +310,98 @@ export default function ProfileScreen(): React.JSX.Element {
     );
   };
 
+  /**
+   * Debug: Find and push orphaned local projects to Supabase
+   * These are projects that exist in local storage but not in the cloud
+   */
+  const handlePushOrphanedProjects = async () => {
+    if (!user?.id || !isPro || !isSupabaseConfigured()) {
+      Alert.alert('Error', 'Must be logged in as Pro with Supabase configured');
+      return;
+    }
+
+    try {
+      // 1. Fetch projects from Supabase
+      const { data: cloudProjects, error } = await supabase!
+        .from('projects')
+        .select('id, title')
+        .eq('user_id', user.id)
+        .is('deleted_at', null);
+
+      if (error) {
+        Alert.alert('Error', `Failed to fetch cloud projects: ${error.message}`);
+        return;
+      }
+
+      const cloudIds = new Set((cloudProjects as { id: string; title: string }[] || []).map(p => p.id));
+
+      // 2. Find local-only projects
+      const orphanedProjects = projects.filter(p => !cloudIds.has(p.id));
+
+      if (orphanedProjects.length === 0) {
+        Alert.alert(
+          '✅ All Synced',
+          `All ${projects.length} projects are in the cloud.\n\nLocal: ${projects.length}\nCloud: ${cloudProjects?.length || 0}`
+        );
+        return;
+      }
+
+      // 3. Show orphaned projects and offer to push
+      const orphanedNames = orphanedProjects.map(p => `• ${p.title}`).join('\n');
+
+      Alert.alert(
+        `⚠️ ${orphanedProjects.length} Local-Only Projects`,
+        `These projects are not in the cloud:\n\n${orphanedNames}\n\nPush them to Supabase?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Push to Cloud',
+            onPress: async () => {
+              let pushed = 0;
+              const errors: string[] = [];
+
+              for (const project of orphanedProjects) {
+                try {
+                  // Map to row format
+                  const row = mapProjectToRow(project);
+
+                  // Insert into Supabase (bypass strict typing for dynamic row)
+                  const { error: insertError } = await (supabase as any)
+                    .from('projects')
+                    .upsert({
+                      ...row,
+                      user_id: user.id,
+                    });
+
+                  if (insertError) {
+                    errors.push(`${project.title}: ${insertError.message}`);
+                  } else {
+                    pushed++;
+                    if (__DEV__) console.log(`[Profile] Pushed project: ${project.title}`);
+                  }
+                } catch (err) {
+                  errors.push(`${project.title}: ${err instanceof Error ? err.message : 'Unknown error'}`);
+                }
+              }
+
+              if (errors.length > 0) {
+                Alert.alert(
+                  'Partial Success',
+                  `Pushed ${pushed}/${orphanedProjects.length} projects.\n\nErrors:\n${errors.join('\n')}`
+                );
+              } else {
+                Alert.alert('Success', `Pushed ${pushed} projects to Supabase!`);
+                showToast(`${pushed} projects synced to cloud`, 'success');
+              }
+            },
+          },
+        ]
+      );
+    } catch (err) {
+      Alert.alert('Error', err instanceof Error ? err.message : 'Unknown error');
+    }
+  };
+
   /** Memoized menu items configuration */
   const menuItems = useMemo(() => [
     {
@@ -553,6 +647,26 @@ export default function ProfileScreen(): React.JSX.Element {
               </TouchableOpacity>
 
               <View style={styles.menuDivider} />
+
+              {/* Push Orphaned Projects - Only for Pro users */}
+              {isPro && (
+                <>
+                  <TouchableOpacity
+                    style={styles.debugItem}
+                    onPress={handlePushOrphanedProjects}
+                    activeOpacity={0.7}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel="Push orphaned projects"
+                  >
+                    <RefreshCw size={20} color={Colors.teal} />
+                    <Text style={styles.debugLabel}>Push Orphaned Projects</Text>
+                    <Text style={styles.debugDescription}>Fix local-only data</Text>
+                  </TouchableOpacity>
+
+                  <View style={styles.menuDivider} />
+                </>
+              )}
 
               <TouchableOpacity
                 style={styles.debugItem}

@@ -9,13 +9,16 @@
     "start:android": "bunx expo start --android",
     "start:web": "bunx expo start --web",
     "lint": "expo lint",
+    "typecheck": "bunx tsc --noEmit",
+    "doctor": "bunx expo-doctor",
+    "check": "bun run lint && bun run typecheck && bun run doctor",
     "postinstall": "simple-git-hooks",
     "android": "expo run:android",
     "ios": "expo run:ios"
   },
   "simple-git-hooks": {
-    "pre-commit": "bun run lint && bunx tsc --noEmit",
-    "pre-push": "bunx expo-doctor"
+    "pre-commit": "bun run lint && bun run typecheck",
+    "pre-push": "bun run doctor"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -25,8 +28,8 @@
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "8.4.4",
     "@react-navigation/native": "^7.1.6",
-    "@sentry/react-native": "^7.8.0",
-    "@shopify/flash-list": "^2.2.0",
+    "@sentry/react-native": "~7.2.0",
+    "@shopify/flash-list": "2.0.2",
     "@stardazed/streams-text-encoding": "^1.0.2",
     "@supabase/supabase-js": "^2.75.1",
     "@tanstack/react-query": "^5.83.0",

@@ -189,7 +189,9 @@
       "Bash(bash -c 'SECRET=$\\(grep SUPABASE_SECRET_KEY /Users/sebastjanm/dev/SeboAI-crochet-tracker/.env | cut -d= -f2 | tr -d \"\"\\\\r\"\"\\) && curl -s \"\"https://wpslbhiecxiwhfncpbgs.supabase.co/rest/v1/projects?user_id=eq.46265084-28e1-4bc6-8f8f-d1d5ea90cd63&select=id,title,status&order=updated_at.desc&limit=10\"\" -H \"\"apikey: $SECRET\"\" -H \"\"Authorization: Bearer $SECRET\"\" | jq \"\".[] | {title: .title[0:30], status}\"\"')",
       "Bash(bash -c 'SECRET=$\\(grep SUPABASE_SECRET_KEY /Users/sebastjanm/dev/SeboAI-crochet-tracker/.env | cut -d= -f2 | tr -d \"\"\\\\r\"\"\\) && curl -s \"\"https://wpslbhiecxiwhfncpbgs.supabase.co/rest/v1/inventory_items?user_id=eq.46265084-28e1-4bc6-8f8f-d1d5ea90cd63&select=id,name,category&order=updated_at.desc&limit=15\"\" -H \"\"apikey: $SECRET\"\" -H \"\"Authorization: Bearer $SECRET\"\" | jq \"\".[] | {name: .name[0:25], category}\"\"')",
       "Bash(~/.bun/bin/bun run lint:*)",
-      "Bash(~/.bun/bin/bunx tsc:*)"
+      "Bash(~/.bun/bin/bunx tsc:*)",
+      "Bash(npx expo install:*)",
+      "Bash(bun run doctor:*)"
     ],
     "deny": [],
     "ask": []

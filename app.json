@@ -74,7 +74,8 @@
           "project": "crochet-tracker",
           "organization": "sebom"
         }
-      ]
+      ],
+      "@sentry/react-native"
     ],
     "experiments": {
       "typedRoutes": true

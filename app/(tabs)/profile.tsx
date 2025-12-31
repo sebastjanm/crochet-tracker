@@ -24,7 +24,6 @@ import {
   Database,
   Trash2,
   Cloud,
-  CloudOff,
   RefreshCw,
 } from 'lucide-react-native';
 import { Card } from '@/components/Card';
@@ -35,8 +34,6 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useProjects } from '@/providers/ProjectsProvider';
 import { useInventory } from '@/providers/InventoryProvider';
 import { useLanguage } from '@/providers/LanguageProvider';
-import { useSupabaseSync } from '@/hooks/useSupabaseSync';
-import { useNetworkState } from '@/hooks/useNetworkState';
 import { imageSyncQueue } from '@/lib/legend-state';
 import { useToast } from '@/components/Toast';
 import { Colors } from '@/constants/colors';
@@ -58,67 +55,11 @@ export default function ProfileScreen(): React.JSX.Element {
   const { projects, completedCount, inProgressCount, refreshProjects } = useProjects();
   const { items, refreshItems } = useInventory();
   const { language, changeLanguage, t } = useLanguage();
-  const {
-    sync,
-    isSyncing,
-    lastSyncedAt,
-    error: syncError,
-    isEnabled: isSyncEnabled,
-  } = useSupabaseSync();
-  const { isConnected } = useNetworkState();
-  const isOnline = isConnected ?? false;
   const [isLoadingMockData, setIsLoadingMockData] = useState(false);
   const [isAvatarPickerVisible, setIsAvatarPickerVisible] = useState(false);
-  const [isManualSyncing, setIsManualSyncing] = useState(false);
   const [isSyncingImages, setIsSyncingImages] = useState(false);
   const { showToast } = useToast();
 
-  const handleSync = async () => {
-    const result = await sync();
-    if (result?.success) {
-      Alert.alert(
-        'Sync Complete',
-        'Legend-State sync is automatic. Your data is up to date.',
-        [{ text: 'OK' }]
-      );
-    } else if (syncError) {
-      Alert.alert('Sync Failed', String(syncError), [{ text: 'OK' }]);
-    }
-  };
-
-  /**
-   * Manual sync for Pro users - uses Legend-State SyncManager
-   */
-  const handleManualSync = async () => {
-    if (!user?.id || !isPro) return;
-
-    setIsManualSyncing(true);
-    try {
-      const result = await sync();
-
-      if (result?.success) {
-        Alert.alert(
-          t('profile.syncComplete'),
-          t('profile.syncAutomatic') || 'Legend-State sync is automatic. Your data is up to date.',
-          [{ text: 'OK' }]
-        );
-      } else if (syncError) {
-        Alert.alert(
-          t('profile.syncFailed'),
-          String(syncError),
-          [{ text: 'OK' }]
-        );
-      }
-    } catch (error) {
-      Alert.alert(
-        t('profile.syncFailed'),
-        error instanceof Error ? error.message : String(error),
-        [{ text: 'OK' }]
-      );
-    } finally {
-      setIsManualSyncing(false);
-    }
-  };
 
   /**
    * Sync all local images to cloud storage.
@@ -494,43 +435,11 @@ export default function ProfileScreen(): React.JSX.Element {
           </Card>
         </View>
 
-        {/* Cloud Sync Section - Pro Users Only */}
+        {/* Cloud Sync Section - Pro Users Only (Image Sync) */}
         {isPro && (
           <View style={styles.syncContainer}>
             <Text style={styles.sectionTitle}>{t('profile.cloudSync')}</Text>
             <Card>
-              <TouchableOpacity
-                style={styles.syncButton}
-                onPress={handleManualSync}
-                disabled={isManualSyncing}
-                activeOpacity={0.7}
-                accessible={true}
-                accessibilityRole="button"
-                accessibilityLabel={t('profile.syncNow')}
-                accessibilityHint={t('profile.syncHint')}
-              >
-                {isManualSyncing ? (
-                  <ActivityIndicator size="small" color={Colors.deepTeal} />
-                ) : (
-                  <Cloud size={24} color={Colors.deepTeal} />
-                )}
-                <View style={styles.syncButtonText}>
-                  <Text style={styles.syncButtonLabel}>
-                    {isManualSyncing ? t('profile.syncing') : t('profile.syncNow')}
-                  </Text>
-                  <Text style={styles.syncButtonDescription}>
-                    {t('profile.syncDescription')}
-                  </Text>
-                </View>
-                <RefreshCw
-                  size={20}
-                  color={isManualSyncing ? Colors.warmGray : Colors.deepTeal}
-                  style={isManualSyncing ? { opacity: 0.5 } : undefined}
-                />
-              </TouchableOpacity>
-
-              <View style={styles.menuDivider} />
-
               {/* Sync Images Button */}
               <TouchableOpacity
                 style={styles.syncButton}
@@ -595,50 +504,6 @@ export default function ProfileScreen(): React.JSX.Element {
           <View style={styles.debugContainer}>
             <Text style={styles.debugTitle}>🛠️ Developer Tools</Text>
             <Card>
-              {/* Cloud Sync Button */}
-              <TouchableOpacity
-                style={styles.debugItem}
-                onPress={handleSync}
-                disabled={isSyncing || !isSyncEnabled || !isOnline}
-                activeOpacity={0.7}
-                accessible={true}
-                accessibilityRole="button"
-                accessibilityLabel="Sync with Supabase cloud"
-              >
-                {isSyncing ? (
-                  <ActivityIndicator size="small" color={Colors.deepTeal} />
-                ) : isSyncEnabled && isOnline ? (
-                  <Cloud size={20} color={Colors.deepTeal} />
-                ) : (
-                  <CloudOff size={20} color={Colors.warmGray} />
-                )}
-                <View style={styles.syncLabelContainer}>
-                  <Text style={[styles.debugLabel, (!isSyncEnabled || !isOnline) && styles.disabledLabel]}>
-                    {isSyncing ? 'Syncing...' : 'Sync Now'}
-                  </Text>
-                  {lastSyncedAt && (
-                    <Text style={styles.syncTimestamp}>
-                      Last: {lastSyncedAt.toLocaleTimeString()}
-                    </Text>
-                  )}
-                  {!isSyncEnabled && (
-                    <Text style={styles.syncWarning}>
-                      Pro + Supabase required
-                    </Text>
-                  )}
-                  {isSyncEnabled && !isOnline && (
-                    <Text style={styles.syncWarning}>
-                      Offline
-                    </Text>
-                  )}
-                </View>
-                <Text style={styles.debugDescription}>
-                  {!isSyncEnabled ? 'Not configured' : !isOnline ? 'No connection' : 'Push to cloud'}
-                </Text>
-              </TouchableOpacity>
-
-              <View style={styles.menuDivider} />
-
               <TouchableOpacity
                 style={styles.debugItem}
                 onPress={handleLoadMockData}
@@ -954,23 +819,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 12,
     fontStyle: 'italic',
-  },
-  syncLabelContainer: {
-    flex: 1,
-  },
-  syncTimestamp: {
-    ...Typography.caption,
-    color: Colors.warmGray,
-    fontSize: 11,
-    marginTop: 2,
-  },
-  syncWarning: {
-    ...Typography.caption,
-    color: Colors.terracotta,
-    fontSize: 11,
-    marginTop: 2,
-  },
-  disabledLabel: {
-    color: Colors.warmGray,
   },
 });

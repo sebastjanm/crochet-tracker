@@ -118,6 +118,16 @@ export default {
     searchProjects: 'Искать проекты...',
     searchInventory: 'Искать в инвентаре...',
   },
+  sort: {
+    recentlyUpdated: 'Недавно обновлено',
+    dateStarted: 'Дата начала',
+    titleAZ: 'Название А-Я',
+    oldestFirst: 'Сначала старые',
+    recentlyAdded: 'Недавно добавлено',
+    nameAZ: 'Имя А-Я',
+    quantityHigh: 'Количество ↓',
+    quantityLow: 'Количество ↑',
+  },
   updates: {
     title: 'Доступно обновление',
     message: 'Новая версия загружена. Перезапустить приложение сейчас?',

@@ -12,7 +12,7 @@ import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Plus, Clock, CheckCircle, Lightbulb, Volleyball, HelpCircle, PauseCircle, RotateCcw, Zap } from 'lucide-react-native';
+import { Plus, Clock, CheckCircle, Lightbulb, Volleyball, HelpCircle, PauseCircle, RotateCcw, Zap, ArrowDownUp } from 'lucide-react-native';
 import { NoProjectsState } from '@/components/NoProjectsState';
 import { SearchableFilterBar } from '@/components/SearchableFilterBar';
 import { Avatar } from '@/components/Avatar';
@@ -29,6 +29,9 @@ import { normalizeBorder, normalizeBorderOpacity, cardShadow, buttonShadow } fro
 const { width } = Dimensions.get('window');
 const isSmallDevice = width < 375;
 const isTablet = width >= 768;
+
+type ProjectSort = 'recent' | 'started' | 'title' | 'oldest';
+const PROJECT_SORT_OPTIONS: ProjectSort[] = ['recent', 'started', 'title', 'oldest'];
 
 /**
  * Projects Screen - Main projects list with filtering, search, and "currently working on" feature.
@@ -56,11 +59,30 @@ export default function ProjectsScreen(): React.JSX.Element {
   const [filter, setFilter] = useState<ProjectStatus | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [sortBy, setSortBy] = useState<ProjectSort>('recent');
 
-  /** Memoized filtered projects based on status filter and search query */
+  /** Cycles to the next sort option */
+  const cycleSort = useCallback(() => {
+    setSortBy(current => {
+      const idx = PROJECT_SORT_OPTIONS.indexOf(current);
+      return PROJECT_SORT_OPTIONS[(idx + 1) % PROJECT_SORT_OPTIONS.length] as ProjectSort;
+    });
+  }, []);
+
+  /** Gets translated label for current sort */
+  const getSortLabel = useCallback((sort: ProjectSort): string => {
+    switch (sort) {
+      case 'recent': return t('sort.recentlyUpdated');
+      case 'started': return t('sort.dateStarted');
+      case 'title': return t('sort.titleAZ');
+      case 'oldest': return t('sort.oldestFirst');
+    }
+  }, [t]);
+
+  /** Memoized filtered and sorted projects */
   const filteredProjects = useMemo(() => {
     const query = searchQuery.toLowerCase();
-    return projects
+    const filtered = projects
       .filter(project => filter === 'all' || project.status === filter)
       .filter(project => {
         if (!query) return true;
@@ -70,7 +92,25 @@ export default function ProjectsScreen(): React.JSX.Element {
           project.notes?.toLowerCase().includes(query)
         );
       });
-  }, [projects, filter, searchQuery]);
+
+    // Apply sorting
+    return [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'recent':
+          return b.updatedAt.getTime() - a.updatedAt.getTime();
+        case 'started':
+          const aStart = a.startDate ? new Date(a.startDate).getTime() : 0;
+          const bStart = b.startDate ? new Date(b.startDate).getTime() : 0;
+          return bStart - aStart;
+        case 'title':
+          return (a.title || '').localeCompare(b.title || '');
+        case 'oldest':
+          return a.createdAt.getTime() - b.createdAt.getTime();
+        default:
+          return 0;
+      }
+    });
+  }, [projects, filter, searchQuery, sortBy]);
 
   /** Pull-to-refresh handler - triggers visual feedback */
   const onRefresh = useCallback(() => {
@@ -292,6 +332,20 @@ export default function ProjectsScreen(): React.JSX.Element {
         onSearchChange={setSearchQuery}
       />
 
+      <View style={styles.sortRow}>
+        <TouchableOpacity
+          style={styles.sortButton}
+          onPress={cycleSort}
+          activeOpacity={0.7}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel={`Sort by ${getSortLabel(sortBy)}. Tap to change.`}
+        >
+          <ArrowDownUp size={16} color={Colors.warmGray} />
+          <Text style={styles.sortButtonText}>{getSortLabel(sortBy)}</Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.container}>
       {/* Skeleton loading state */}
       {isLoading ? (
@@ -365,6 +419,30 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     backgroundColor: Colors.headerBg,
+  },
+  sortRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: Colors.beige,
+  },
+  sortButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: Colors.linen,
+    borderRadius: 16,
+    borderWidth: normalizeBorder(0.5),
+    borderColor: Colors.border,
+  },
+  sortButtonText: {
+    ...Typography.caption,
+    color: Colors.warmGray,
+    fontSize: 13,
+    fontWeight: '500' as const,
   },
   customHeader: {
     backgroundColor: Colors.headerBg,

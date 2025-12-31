@@ -118,6 +118,16 @@ export default {
     searchProjects: 'Išči projekte...',
     searchInventory: 'Išči zaloge...',
   },
+  sort: {
+    recentlyUpdated: 'Nazadnje posodobljeno',
+    dateStarted: 'Datum začetka',
+    titleAZ: 'Naslov A-Ž',
+    oldestFirst: 'Najstarejše najprej',
+    recentlyAdded: 'Nazadnje dodano',
+    nameAZ: 'Ime A-Ž',
+    quantityHigh: 'Količina ↓',
+    quantityLow: 'Količina ↑',
+  },
   updates: {
     title: 'Posodobitev na voljo',
     message: 'Nova različica je bila prenesena. Ali želite znova zagnati aplikacijo?',

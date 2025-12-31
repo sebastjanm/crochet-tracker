@@ -12,7 +12,7 @@ import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { router } from 'expo-router';
-import { Plus, Package, Volleyball, Grid3x3, Wrench, HelpCircle } from 'lucide-react-native';
+import { Plus, Package, Volleyball, Grid3x3, Wrench, HelpCircle, ArrowDownUp } from 'lucide-react-native';
 import { NoInventoryState } from '@/components/NoInventoryState';
 import { SearchableFilterBar } from '@/components/SearchableFilterBar';
 import { InventoryListSkeleton } from '@/components/Skeleton';
@@ -27,6 +27,9 @@ const { width } = Dimensions.get('window');
 const isSmallDevice = width < 375;
 const isTablet = width >= 768;
 
+type InventorySort = 'recent' | 'name' | 'quantityHigh' | 'quantityLow';
+const INVENTORY_SORT_OPTIONS: InventorySort[] = ['recent', 'name', 'quantityHigh', 'quantityLow'];
+
 /**
  * Inventory Screen - Manages yarn, hooks, and other crafting supplies.
  * Displays items in a grid layout with category filtering and search.
@@ -37,11 +40,30 @@ export default function InventoryScreen(): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'yarn' | 'hook' | 'other'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<InventorySort>('recent');
 
-  /** Memoized filtered items based on category and search query */
+  /** Cycles to the next sort option */
+  const cycleSort = useCallback(() => {
+    setSortBy(current => {
+      const idx = INVENTORY_SORT_OPTIONS.indexOf(current);
+      return INVENTORY_SORT_OPTIONS[(idx + 1) % INVENTORY_SORT_OPTIONS.length] as InventorySort;
+    });
+  }, []);
+
+  /** Gets translated label for current sort */
+  const getSortLabel = useCallback((sort: InventorySort): string => {
+    switch (sort) {
+      case 'recent': return t('sort.recentlyAdded');
+      case 'name': return t('sort.nameAZ');
+      case 'quantityHigh': return t('sort.quantityHigh');
+      case 'quantityLow': return t('sort.quantityLow');
+    }
+  }, [t]);
+
+  /** Memoized filtered and sorted items */
   const filteredItems = useMemo(() => {
     const query = searchQuery.toLowerCase();
-    return items
+    const filtered = items
       .filter(item => selectedCategory === 'all' || item.category === selectedCategory)
       .filter(item => {
         if (!query) return true;
@@ -52,7 +74,23 @@ export default function InventoryScreen(): React.JSX.Element {
           item.description?.toLowerCase().includes(query)
         );
       });
-  }, [items, selectedCategory, searchQuery]);
+
+    // Apply sorting
+    return [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'recent':
+          return b.updatedAt.getTime() - a.updatedAt.getTime();
+        case 'name':
+          return (a.name || '').localeCompare(b.name || '');
+        case 'quantityHigh':
+          return b.quantity - a.quantity;
+        case 'quantityLow':
+          return a.quantity - b.quantity;
+        default:
+          return 0;
+      }
+    });
+  }, [items, selectedCategory, searchQuery, sortBy]);
 
   /** Count of "other" category items */
   const otherCount = useMemo(() => items.filter(i => i.category === 'other').length, [items]);
@@ -149,6 +187,20 @@ export default function InventoryScreen(): React.JSX.Element {
         onSearchChange={setSearchQuery}
       />
 
+      <View style={styles.sortRow}>
+        <TouchableOpacity
+          style={styles.sortButton}
+          onPress={cycleSort}
+          activeOpacity={0.7}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel={`Sort by ${getSortLabel(sortBy)}. Tap to change.`}
+        >
+          <ArrowDownUp size={16} color={Colors.warmGray} />
+          <Text style={styles.sortButtonText}>{getSortLabel(sortBy)}</Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.container}>
       {/* Skeleton loading state */}
       {isLoading ? (
@@ -191,6 +243,30 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     backgroundColor: Colors.headerBg,
+  },
+  sortRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: Colors.beige,
+  },
+  sortButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: Colors.linen,
+    borderRadius: 16,
+    borderWidth: normalizeBorder(0.5),
+    borderColor: Colors.border,
+  },
+  sortButtonText: {
+    ...Typography.caption,
+    color: Colors.warmGray,
+    fontSize: 13,
+    fontWeight: '500' as const,
   },
   customHeader: {
     backgroundColor: Colors.headerBg,

@@ -118,6 +118,16 @@ export default {
     searchProjects: 'Projekte suchen...',
     searchInventory: 'Inventar suchen...',
   },
+  sort: {
+    recentlyUpdated: 'Kürzlich aktualisiert',
+    dateStarted: 'Startdatum',
+    titleAZ: 'Titel A-Z',
+    oldestFirst: 'Älteste zuerst',
+    recentlyAdded: 'Kürzlich hinzugefügt',
+    nameAZ: 'Name A-Z',
+    quantityHigh: 'Menge ↓',
+    quantityLow: 'Menge ↑',
+  },
   updates: {
     title: 'Update verfügbar',
     message: 'Eine neue Version wurde heruntergeladen. Jetzt neu starten, um das Update anzuwenden?',

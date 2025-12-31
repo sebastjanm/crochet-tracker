@@ -118,6 +118,16 @@ export default {
     searchProjects: 'Search projects...',
     searchInventory: 'Search inventory...',
   },
+  sort: {
+    recentlyUpdated: 'Recently Updated',
+    dateStarted: 'Date Started',
+    titleAZ: 'Title A-Z',
+    oldestFirst: 'Oldest First',
+    recentlyAdded: 'Recently Added',
+    nameAZ: 'Name A-Z',
+    quantityHigh: 'Quantity ↓',
+    quantityLow: 'Quantity ↑',
+  },
   updates: {
     title: 'Update Available',
     message: 'A new version has been downloaded. Restart now to apply the update?',

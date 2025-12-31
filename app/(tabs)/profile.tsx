@@ -14,7 +14,6 @@ import { router } from 'expo-router';
 import {
   LogOut,
   ChevronRight,
-  Package,
   Scissors,
   Settings,
   HelpCircle,
@@ -25,6 +24,7 @@ import {
   Trash2,
   Cloud,
   RefreshCw,
+  Package,
 } from 'lucide-react-native';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
@@ -42,7 +42,7 @@ import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder } from '@/constants/pixelRatio';
 import { ACCESSIBLE_COLORS } from '@/constants/accessibility';
-import { loadAllMockData, clearAllData, getCurrentDataCounts } from '@/scripts/loadMockData';
+import { loadAllMockData, clearAllData } from '@/scripts/loadMockData';
 
 const { width } = Dimensions.get('window');
 const isSmallDevice = width < 375;
@@ -228,18 +228,6 @@ export default function ProfileScreen(): React.JSX.Element {
     );
   };
 
-  const handleViewDataCounts = async () => {
-    try {
-      const counts = await getCurrentDataCounts();
-      Alert.alert(
-        'Current Data',
-        `User: ${counts.hasUser ? 'Loaded' : 'Not loaded'}\nProjects: ${counts.projectCount}\nInventory: ${counts.inventoryCount}`,
-        [{ text: 'OK' }]
-      );
-    } catch {
-      Alert.alert('Error', 'Failed to get data counts.');
-    }
-  };
 
   /**
    * Debug: Check image sync queue status
@@ -614,21 +602,6 @@ export default function ProfileScreen(): React.JSX.Element {
                 )}
                 <Text style={styles.debugLabel}>Load Mock Data</Text>
                 <Text style={styles.debugDescription}>6 projects, 12 items</Text>
-              </TouchableOpacity>
-
-              <View style={styles.menuDivider} />
-
-              <TouchableOpacity
-                style={styles.debugItem}
-                onPress={handleViewDataCounts}
-                activeOpacity={0.7}
-                accessible={true}
-                accessibilityRole="button"
-                accessibilityLabel="View data counts"
-              >
-                <Package size={20} color={Colors.teal} />
-                <Text style={styles.debugLabel}>View Data Counts</Text>
-                <Text style={styles.debugDescription}>Check current storage</Text>
               </TouchableOpacity>
 
               <View style={styles.menuDivider} />

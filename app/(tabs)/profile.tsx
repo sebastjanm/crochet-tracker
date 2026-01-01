@@ -34,7 +34,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useProjects } from '@/providers/ProjectsProvider';
 import { useInventory } from '@/providers/InventoryProvider';
 import { useLanguage } from '@/providers/LanguageProvider';
-import { imageSyncQueue } from '@/lib/legend-state';
+import { imageSyncQueue, resetUserStores } from '@/lib/legend-state';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { mapProjectToRow } from '@/lib/legend-state/mappers';
 import { useToast } from '@/components/Toast';
@@ -390,6 +390,41 @@ export default function ProfileScreen(): React.JSX.Element {
     }
   };
 
+  /**
+   * Debug: Reset user stores to force fresh fetch from Supabase
+   * Use this when data was modified directly in Supabase (e.g., changed user_id)
+   */
+  const handleResetStores = async () => {
+    if (!user?.id) {
+      Alert.alert('Error', 'Must be logged in to reset stores');
+      return;
+    }
+
+    Alert.alert(
+      '⚠️ Reset Stores',
+      'This will clear your local cache and force a fresh fetch from Supabase.\n\nUse this if you see stale/incorrect data after changes were made directly in the database.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await resetUserStores(user.id);
+              showToast('Stores reset. Please restart the app.', 'success');
+              Alert.alert(
+                'Success',
+                'Local cache cleared. Please close and reopen the app to see fresh data from the server.'
+              );
+            } catch (err) {
+              Alert.alert('Error', err instanceof Error ? err.message : 'Failed to reset stores');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   /** Memoized menu items configuration */
   const menuItems = useMemo(() => [
     {
@@ -635,6 +670,21 @@ export default function ProfileScreen(): React.JSX.Element {
                     <RefreshCw size={20} color={Colors.teal} />
                     <Text style={styles.debugLabel}>Push Orphaned Projects</Text>
                     <Text style={styles.debugDescription}>Fix local-only data</Text>
+                  </TouchableOpacity>
+
+                  <View style={styles.menuDivider} />
+
+                  <TouchableOpacity
+                    style={styles.debugItem}
+                    onPress={handleResetStores}
+                    activeOpacity={0.7}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel="Reset local stores"
+                  >
+                    <Trash2 size={20} color={Colors.teal} />
+                    <Text style={styles.debugLabel}>Reset Stores</Text>
+                    <Text style={styles.debugDescription}>Clear local cache</Text>
                   </TouchableOpacity>
 
                   <View style={styles.menuDivider} />

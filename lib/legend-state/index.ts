@@ -16,6 +16,7 @@ export {
   generateId,
   getStores,
   initializeLegendStateSync,
+  resetUserStores,
   addProject,
   updateProject,
   deleteProject,

@@ -226,6 +226,31 @@ export function getStores(userId: string | null, isPro: boolean) {
   };
 }
 
+/**
+ * Reset stores for a specific user.
+ *
+ * Use this for admin/support scenarios where data was modified directly in
+ * Supabase outside normal app flow (e.g., changing user_id on records).
+ *
+ * IMPORTANT: Legend-State uses changesSince: 'last-sync' for efficiency,
+ * which means it cannot detect records that "disappeared" from a filter.
+ * This function clears local cache, forcing a fresh fetch on next login.
+ *
+ * @see https://legendapp.com/open-source/state/v3/sync/supabase/
+ */
+export async function resetUserStores(userId: string): Promise<void> {
+  // Clear AsyncStorage for this user's stores
+  await AsyncStorage.multiRemove([
+    `projects_${userId}`,
+    `inventory_${userId}`,
+  ]);
+
+  // Clear in-memory store cache to force new Observable creation
+  storeCache.clear();
+
+  if (__DEV__) console.log(`[LegendState] Reset stores for ${userId}`);
+}
+
 // ============================================================================
 // CRUD HELPERS (Now operating purely on Observables)
 // ============================================================================

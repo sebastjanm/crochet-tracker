@@ -240,15 +240,21 @@ export function getStores(userId: string | null, isPro: boolean) {
  */
 export async function resetUserStores(userId: string): Promise<void> {
   // Clear AsyncStorage for this user's stores
+  // Legend-State stores data in ${name} and metadata in ${name}__m
+  // We MUST clear both to force a full re-sync (not incremental)
   await AsyncStorage.multiRemove([
+    // Data
     `projects_${userId}`,
     `inventory_${userId}`,
+    // Metadata (contains last-sync timestamps)
+    `projects_${userId}__m`,
+    `inventory_${userId}__m`,
   ]);
 
   // Clear in-memory store cache to force new Observable creation
   storeCache.clear();
 
-  if (__DEV__) console.log(`[LegendState] Reset stores for ${userId}`);
+  if (__DEV__) console.log(`[LegendState] Reset stores for ${userId} (data + metadata)`);
 }
 
 // ============================================================================
@@ -277,10 +283,14 @@ export async function checkAndClearInvalidatedData(
     const lastValidTime = lastValid ? parseInt(lastValid, 10) : 0;
 
     if (invalidationTime > lastValidTime) {
-      // Clear user's local data
+      // Clear user's local data AND metadata (for full re-sync)
       await AsyncStorage.multiRemove([
+        // Data
         `projects_${userId}`,
         `inventory_${userId}`,
+        // Metadata (contains last-sync timestamps)
+        `projects_${userId}__m`,
+        `inventory_${userId}__m`,
       ]);
 
       // Update last valid timestamp to prevent repeated clears

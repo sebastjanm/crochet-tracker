@@ -96,6 +96,7 @@ export default {
     error: 'Error',
     success: 'Success',
     confirm: 'Confirm',
+    refresh: 'Refresh',
     back: 'Back',
     next: 'Next',
     done: 'Done',
@@ -747,6 +748,14 @@ export default {
     allImagesUploaded: 'All images already uploaded',
     noImagesToSync: 'No images to sync',
     imageUploadFailed: 'Image upload failed',
+    // Refresh from Cloud
+    refreshFromCloud: 'Refresh from Cloud',
+    refreshingFromCloud: 'Refreshing...',
+    refreshFromCloudDescription: 'Re-download all data from server',
+    refreshFromCloudHint: 'Clear local cache and fetch fresh data from Supabase',
+    refreshFromCloudConfirm: 'This will clear your local cache and download fresh data from the server. Continue?',
+    refreshSuccess: 'Data refreshed from cloud',
+    refreshFailed: 'Failed to refresh data',
   },
   accessibility: {
     projectImage: 'Project image',

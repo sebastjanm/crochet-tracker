@@ -96,6 +96,7 @@ export default {
     error: 'Ошибка',
     success: 'Успешно',
     confirm: 'Подтвердить',
+    refresh: 'Обновить',
     back: 'Назад',
     next: 'Далее',
     done: 'Готово',
@@ -734,6 +735,14 @@ export default {
     allImagesUploaded: 'Все изображения уже загружены',
     noImagesToSync: 'Нет изображений для синхронизации',
     imageUploadFailed: 'Ошибка загрузки изображения',
+    // Refresh from Cloud
+    refreshFromCloud: 'Обновить из облака',
+    refreshingFromCloud: 'Обновление...',
+    refreshFromCloudDescription: 'Повторно загрузить все данные с сервера',
+    refreshFromCloudHint: 'Очистить локальный кеш и получить свежие данные',
+    refreshFromCloudConfirm: 'Это очистит локальный кеш и загрузит свежие данные с сервера. Продолжить?',
+    refreshSuccess: 'Данные обновлены из облака',
+    refreshFailed: 'Не удалось обновить данные',
   },
   accessibility: {
     projectImage: 'Изображение проекта',

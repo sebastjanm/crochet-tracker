@@ -60,6 +60,7 @@ export default function ProfileScreen(): React.JSX.Element {
   const [isLoadingMockData, setIsLoadingMockData] = useState(false);
   const [isAvatarPickerVisible, setIsAvatarPickerVisible] = useState(false);
   const [isSyncingImages, setIsSyncingImages] = useState(false);
+  const [isRefreshingFromCloud, setIsRefreshingFromCloud] = useState(false);
   const { showToast } = useToast();
 
 
@@ -102,6 +103,44 @@ export default function ProfileScreen(): React.JSX.Element {
     } finally {
       setIsSyncingImages(false);
     }
+  };
+
+  /**
+   * Refresh all data from cloud (Pro users only).
+   * Clears local cache and forces a fresh sync from Supabase.
+   */
+  const handleRefreshFromCloud = async () => {
+    if (!user?.id || !isPro) return;
+
+    Alert.alert(
+      t('profile.refreshFromCloud'),
+      t('profile.refreshFromCloudConfirm'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.refresh'),
+          onPress: async () => {
+            setIsRefreshingFromCloud(true);
+            try {
+              await resetUserStores(user.id);
+
+              // Refresh contexts to trigger new data fetch
+              await Promise.all([
+                refreshProjects(),
+                refreshItems(),
+              ]);
+
+              showToast(t('profile.refreshSuccess'), 'success');
+            } catch (error) {
+              if (__DEV__) console.error('[Profile] Refresh from cloud error:', error);
+              showToast(t('profile.refreshFailed'), 'error');
+            } finally {
+              setIsRefreshingFromCloud(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleLogout = () => {
@@ -585,6 +624,39 @@ export default function ProfileScreen(): React.JSX.Element {
                   size={20}
                   color={isSyncingImages ? Colors.warmGray : Colors.sage}
                   style={isSyncingImages ? { opacity: 0.5 } : undefined}
+                />
+              </TouchableOpacity>
+
+              <View style={styles.menuDivider} />
+
+              {/* Refresh from Cloud Button */}
+              <TouchableOpacity
+                style={styles.syncButton}
+                onPress={handleRefreshFromCloud}
+                disabled={isRefreshingFromCloud}
+                activeOpacity={0.7}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={t('profile.refreshFromCloud')}
+                accessibilityHint={t('profile.refreshFromCloudHint')}
+              >
+                {isRefreshingFromCloud ? (
+                  <ActivityIndicator size="small" color={Colors.teal} />
+                ) : (
+                  <Cloud size={24} color={Colors.teal} />
+                )}
+                <View style={styles.syncButtonText}>
+                  <Text style={styles.syncButtonLabel}>
+                    {isRefreshingFromCloud ? t('profile.refreshingFromCloud') : t('profile.refreshFromCloud')}
+                  </Text>
+                  <Text style={styles.syncButtonDescription}>
+                    {t('profile.refreshFromCloudDescription')}
+                  </Text>
+                </View>
+                <ChevronRight
+                  size={20}
+                  color={isRefreshingFromCloud ? Colors.warmGray : Colors.teal}
+                  style={isRefreshingFromCloud ? { opacity: 0.5 } : undefined}
                 />
               </TouchableOpacity>
             </Card>

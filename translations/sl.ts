@@ -96,6 +96,7 @@ export default {
     error: 'Napaka',
     success: 'Uspešno',
     confirm: 'Potrdi',
+    refresh: 'Osveži',
     back: 'Nazaj',
     next: 'Naprej',
     done: 'Končano',
@@ -746,6 +747,14 @@ export default {
     allImagesUploaded: 'Vse slike že naložene',
     noImagesToSync: 'Ni slik za sinhronizacijo',
     imageUploadFailed: 'Nalaganje slike ni uspelo',
+    // Refresh from Cloud
+    refreshFromCloud: 'Osveži iz oblaka',
+    refreshingFromCloud: 'Osveževanje...',
+    refreshFromCloudDescription: 'Ponovno prenesi vse podatke s strežnika',
+    refreshFromCloudHint: 'Počisti lokalni predpomnilnik in prenesi sveže podatke',
+    refreshFromCloudConfirm: 'To bo počistilo lokalni predpomnilnik in preneslo sveže podatke s strežnika. Nadaljujem?',
+    refreshSuccess: 'Podatki osveženi iz oblaka',
+    refreshFailed: 'Osveževanje podatkov ni uspelo',
   },
   accessibility: {
     projectImage: 'Slika projekta',

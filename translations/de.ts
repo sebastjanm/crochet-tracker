@@ -96,6 +96,7 @@ export default {
     error: 'Fehler',
     success: 'Erfolgreich',
     confirm: 'Bestätigen',
+    refresh: 'Aktualisieren',
     back: 'Zurück',
     next: 'Weiter',
     done: 'Fertig',
@@ -734,6 +735,14 @@ export default {
     allImagesUploaded: 'Alle Bilder bereits hochgeladen',
     noImagesToSync: 'Keine Bilder zum Synchronisieren',
     imageUploadFailed: 'Bild-Upload fehlgeschlagen',
+    // Refresh from Cloud
+    refreshFromCloud: 'Von Cloud aktualisieren',
+    refreshingFromCloud: 'Aktualisiere...',
+    refreshFromCloudDescription: 'Alle Daten vom Server neu herunterladen',
+    refreshFromCloudHint: 'Lokalen Cache leeren und frische Daten abrufen',
+    refreshFromCloudConfirm: 'Dies leert den lokalen Cache und lädt frische Daten vom Server. Fortfahren?',
+    refreshSuccess: 'Daten von Cloud aktualisiert',
+    refreshFailed: 'Aktualisierung fehlgeschlagen',
   },
   accessibility: {
     projectImage: 'Projektbild',

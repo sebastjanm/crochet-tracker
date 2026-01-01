@@ -130,6 +130,10 @@ export default function ProfileScreen(): React.JSX.Element {
                 refreshItems(),
               ]);
 
+              // Wait for Legend-State syncedSupabase to complete initial fetch
+              // The sync happens async after store creation
+              await new Promise(resolve => setTimeout(resolve, 3000));
+
               showToast(t('profile.refreshSuccess'), 'success');
             } catch (error) {
               if (__DEV__) console.error('[Profile] Refresh from cloud error:', error);

@@ -37,8 +37,15 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'quantity'>('name');
   const { showImagePickerOptions, isPickingImage } = useImagePicker();
 
-  // Get the reactive store
-  const { inventory$ } = getStores(user?.id ?? null, isPro);
+  // Refresh counter - increment to force store re-initialization
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Get the reactive store (re-fetches when refreshKey changes or user/isPro changes)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const { inventory$ } = useMemo(
+    () => getStores(user?.id ?? null, isPro),
+    [user?.id, isPro, refreshKey]
+  );
 
   // Auto-reconciliation: detect orphaned inventory items on app start
   // This catches edge cases where data was modified directly in Supabase
@@ -295,7 +302,10 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     setSortBy,
     showImagePickerOptions,
     isPickingImage,
-    refreshItems: async () => {},
+    refreshItems: async () => {
+      if (__DEV__) console.log('[Inventory] Forcing store refresh...');
+      setRefreshKey(prev => prev + 1);
+    },
     replaceInventoryImage,
     yarnCount: statistics.yarnCount,
     hookCount: statistics.hookCount,

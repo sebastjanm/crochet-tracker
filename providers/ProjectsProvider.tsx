@@ -7,7 +7,7 @@
  * - Sync: Supabase (handled by Legend-State)
  */
 
-import { useCallback, useMemo, useEffect } from 'react';
+import { useCallback, useMemo, useEffect, useState } from 'react';
 import createContextHook from '@nkzw/create-context-hook';
 import { useSelector } from '@legendapp/state/react';
 import { Project, ProjectStatus, ProjectYarn } from '@/types';
@@ -30,8 +30,15 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
   const { user, isPro } = useAuth();
   const { queueProjectImages } = useImageSync();
 
-  // Get the reactive store
-  const { projects$ } = getStores(user?.id ?? null, isPro);
+  // Refresh counter - increment to force store re-initialization
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Get the reactive store (re-fetches when refreshKey changes or user/isPro changes)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const { projects$ } = useMemo(
+    () => getStores(user?.id ?? null, isPro),
+    [user?.id, isPro, refreshKey]
+  );
 
   // Auto-reconciliation: detect orphaned projects on app start
   // This catches edge cases where data was modified directly in Supabase
@@ -224,7 +231,10 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
     deleteProject,
     getProjectById,
     getProjectsByStatus,
-    refreshProjects: async () => {},
+    refreshProjects: async () => {
+      if (__DEV__) console.log('[Projects] Forcing store refresh...');
+      setRefreshKey(prev => prev + 1);
+    },
     replaceProjectImage,
     currentlyWorkingOnProjects,
     toggleCurrentlyWorkingOn,

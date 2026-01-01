@@ -252,6 +252,58 @@ export async function resetUserStores(userId: string): Promise<void> {
 }
 
 // ============================================================================
+// SERVER-TRIGGERED DATA INVALIDATION
+// ============================================================================
+
+const LAST_VALID_DATA_KEY = '@last_valid_data_timestamp';
+
+/**
+ * Check if server has requested local data invalidation.
+ * Admin can set `local_data_invalidated_at` on a user's profile to trigger this.
+ *
+ * @param userId - The user's ID
+ * @param invalidatedAt - The timestamp from profile.local_data_invalidated_at
+ * @returns true if data was cleared, false otherwise
+ */
+export async function checkAndClearInvalidatedData(
+  userId: string,
+  invalidatedAt: string | null
+): Promise<boolean> {
+  if (!invalidatedAt) return false; // No invalidation requested
+
+  try {
+    const lastValid = await AsyncStorage.getItem(LAST_VALID_DATA_KEY);
+    const invalidationTime = new Date(invalidatedAt).getTime();
+    const lastValidTime = lastValid ? parseInt(lastValid, 10) : 0;
+
+    if (invalidationTime > lastValidTime) {
+      // Clear user's local data
+      await AsyncStorage.multiRemove([
+        `projects_${userId}`,
+        `inventory_${userId}`,
+      ]);
+
+      // Update last valid timestamp to prevent repeated clears
+      await AsyncStorage.setItem(LAST_VALID_DATA_KEY, Date.now().toString());
+
+      // Clear store cache to force new Observable creation
+      storeCache.clear();
+
+      if (__DEV__) {
+        console.log('[LegendState] Cleared invalidated local data for', userId);
+      }
+
+      return true; // Data was cleared
+    }
+
+    return false; // No action needed (already processed this invalidation)
+  } catch (error) {
+    if (__DEV__) console.error('[LegendState] Error checking invalidation:', error);
+    return false;
+  }
+}
+
+// ============================================================================
 // RECONCILIATION (Detect orphaned records)
 // ============================================================================
 

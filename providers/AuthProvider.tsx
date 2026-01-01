@@ -12,6 +12,7 @@ import createContextHook from '@nkzw/create-context-hook';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
+import { checkAndClearInvalidatedData } from '@/lib/legend-state/config';
 import { User, UserRole } from '@/types';
 import type { Session } from '@supabase/supabase-js';
 
@@ -102,6 +103,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   /**
    * Fetch user profile from Supabase profiles table
    * Includes a 5-second timeout to prevent hanging
+   * Also checks for server-triggered data invalidation
    */
   const fetchProfile = useCallback(async (userId: string): Promise<User | null> => {
     if (__DEV__) console.log('[Auth] fetchProfile starting for:', userId);
@@ -123,7 +125,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
       const queryPromise = supabase
         .from('profiles')
-        .select('id, email, name, avatar_url, role')
+        .select('id, email, name, avatar_url, role, local_data_invalidated_at')
         .eq('id', userId)
         .single();
 
@@ -144,6 +146,16 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       }
 
       if (profile) {
+        // Check for server-triggered data invalidation
+        // Admin can set local_data_invalidated_at to force-clear user's local data
+        const invalidatedAt = (profile as { local_data_invalidated_at?: string | null }).local_data_invalidated_at;
+        if (invalidatedAt) {
+          const cleared = await checkAndClearInvalidatedData(userId, invalidatedAt);
+          if (cleared && __DEV__) {
+            console.log('[Auth] Local data cleared due to server invalidation');
+          }
+        }
+
         return mapProfileToUser(profile);
       }
 

@@ -207,6 +207,8 @@ export interface Database {
           role: 'ordinary' | 'pro' | 'admin';
           created_at: string;
           updated_at: string;
+          /** When set, app clears local AsyncStorage on next startup. Admin tool for data resets. */
+          local_data_invalidated_at: string | null;
         };
         Insert: {
           id: string;
@@ -216,6 +218,7 @@ export interface Database {
           role?: 'ordinary' | 'pro' | 'admin';
           created_at?: string;
           updated_at?: string;
+          local_data_invalidated_at?: string | null;
         };
         Update: {
           id?: string;
@@ -225,6 +228,7 @@ export interface Database {
           role?: 'ordinary' | 'pro' | 'admin';
           created_at?: string;
           updated_at?: string;
+          local_data_invalidated_at?: string | null;
         };
       };
       yarn_brands: {

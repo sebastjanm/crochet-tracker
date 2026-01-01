@@ -7,7 +7,7 @@
  * - Sync: Supabase (handled by Legend-State)
  */
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useEffect } from 'react';
 import createContextHook from '@nkzw/create-context-hook';
 import { useSelector } from '@legendapp/state/react';
 import { Project, ProjectStatus, ProjectYarn } from '@/types';
@@ -17,6 +17,7 @@ import {
   addProject as addProjectToStore,
   updateProject as updateProjectInStore,
   deleteProject as deleteProjectFromStore,
+  reconcileProjects,
 } from '@/lib/legend-state/config';
 import { useAuth } from '@/providers/AuthProvider';
 import { useImageSync } from '@/hooks/useImageSync';
@@ -31,6 +32,22 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
 
   // Get the reactive store
   const { projects$ } = getStores(user?.id ?? null, isPro);
+
+  // Auto-reconciliation: detect orphaned projects on app start
+  // This catches edge cases where data was modified directly in Supabase
+  useEffect(() => {
+    if (!user?.id || !isPro) return;
+
+    // Wait for initial sync to complete before reconciling
+    const timer = setTimeout(async () => {
+      const result = await reconcileProjects(user.id, projects$);
+      if (result.removed > 0 && __DEV__) {
+        console.log(`[Projects] Reconciliation removed ${result.removed} orphaned projects`);
+      }
+    }, 2000); // 2s delay for initial sync
+
+    return () => clearTimeout(timer);
+  }, [user?.id, isPro, projects$]);
 
   // 2. Reactive Data Selector
   const projects = useSelector(() => {

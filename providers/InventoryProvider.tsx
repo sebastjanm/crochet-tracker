@@ -7,7 +7,7 @@
  * - Sync: Supabase (handled by Legend-State)
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import createContextHook from '@nkzw/create-context-hook';
 import { useSelector } from '@legendapp/state/react';
 import { InventoryItem } from '@/types';
@@ -18,6 +18,7 @@ import {
   addInventoryItem as addItemToStore,
   updateInventoryItem as updateItemInStore,
   deleteInventoryItem as deleteItemFromStore,
+  reconcileInventory,
 } from '@/lib/legend-state/config';
 import { useAuth } from '@/providers/AuthProvider';
 import { useImageSync } from '@/hooks/useImageSync';
@@ -38,6 +39,22 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
 
   // Get the reactive store
   const { inventory$ } = getStores(user?.id ?? null, isPro);
+
+  // Auto-reconciliation: detect orphaned inventory items on app start
+  // This catches edge cases where data was modified directly in Supabase
+  useEffect(() => {
+    if (!user?.id || !isPro) return;
+
+    // Wait for initial sync to complete before reconciling
+    const timer = setTimeout(async () => {
+      const result = await reconcileInventory(user.id, inventory$);
+      if (result.removed > 0 && __DEV__) {
+        console.log(`[Inventory] Reconciliation removed ${result.removed} orphaned items`);
+      }
+    }, 2500); // 2.5s delay (slightly after projects)
+
+    return () => clearTimeout(timer);
+  }, [user?.id, isPro, inventory$]);
 
   // 2. Reactive Data Selector
   const items: InventoryItem[] = useSelector(() => {

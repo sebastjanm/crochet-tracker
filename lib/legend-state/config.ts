@@ -252,6 +252,133 @@ export async function resetUserStores(userId: string): Promise<void> {
 }
 
 // ============================================================================
+// RECONCILIATION (Detect orphaned records)
+// ============================================================================
+
+/**
+ * Reconcile local projects with Supabase.
+ * Removes projects that exist locally but not on the server.
+ *
+ * This handles edge cases where data was modified directly in Supabase
+ * (e.g., admin changed user_id, hard-deleted records, etc.)
+ *
+ * @see https://legendapp.com/open-source/state/v3/sync/supabase/
+ */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+export async function reconcileProjects(
+  userId: string,
+  projects$: any
+): Promise<{ removed: number }> {
+  if (!supabase) return { removed: 0 };
+
+  try {
+    // 1. Get local project IDs (exclude already soft-deleted)
+    const localProjects = projects$.get() || {};
+    const localIds = Object.keys(localProjects).filter(id => {
+      const p = localProjects[id];
+      return p && (p.deleted_at === null || p.deleted_at === undefined);
+    });
+
+    if (localIds.length === 0) return { removed: 0 };
+
+    // 2. Fetch remote IDs (lightweight - only IDs)
+    const { data, error } = await supabase
+      .from('projects')
+      .select('id')
+      .eq('user_id', userId)
+      .is('deleted_at', null);
+
+    if (error) {
+      if (__DEV__) console.error('[Reconcile] Projects failed:', error);
+      return { removed: 0 };
+    }
+
+    const remoteIdSet = new Set(
+      (data as Array<{ id: string }> | null)?.map(r => r.id) || []
+    );
+
+    // 3. Find orphans (local but not remote)
+    const orphanIds = localIds.filter(id => !remoteIdSet.has(id));
+
+    if (orphanIds.length === 0) return { removed: 0 };
+
+    // 4. Soft-delete orphans locally
+    const now = new Date().toISOString();
+    orphanIds.forEach(id => {
+      projects$[id].assign({ deleted_at: now });
+    });
+
+    if (__DEV__) {
+      console.log(`[Reconcile] Removed ${orphanIds.length} orphaned projects`);
+    }
+
+    return { removed: orphanIds.length };
+  } catch (err) {
+    if (__DEV__) console.error('[Reconcile] Projects error:', err);
+    return { removed: 0 };
+  }
+}
+
+/**
+ * Reconcile local inventory items with Supabase.
+ * Removes items that exist locally but not on the server.
+ */
+export async function reconcileInventory(
+  userId: string,
+  inventory$: any
+): Promise<{ removed: number }> {
+  if (!supabase) return { removed: 0 };
+
+  try {
+    // 1. Get local inventory IDs (exclude already soft-deleted)
+    const localItems = inventory$.get() || {};
+    const localIds = Object.keys(localItems).filter(id => {
+      const item = localItems[id];
+      return item && (item.deleted_at === null || item.deleted_at === undefined);
+    });
+
+    if (localIds.length === 0) return { removed: 0 };
+
+    // 2. Fetch remote IDs (lightweight - only IDs)
+    const { data, error } = await supabase
+      .from('inventory_items')
+      .select('id')
+      .eq('user_id', userId)
+      .is('deleted_at', null);
+
+    if (error) {
+      if (__DEV__) console.error('[Reconcile] Inventory failed:', error);
+      return { removed: 0 };
+    }
+
+    const remoteIdSet = new Set(
+      (data as Array<{ id: string }> | null)?.map(r => r.id) || []
+    );
+
+    // 3. Find orphans (local but not remote)
+    const orphanIds = localIds.filter(id => !remoteIdSet.has(id));
+
+    if (orphanIds.length === 0) return { removed: 0 };
+
+    // 4. Soft-delete orphans locally
+    const now = new Date().toISOString();
+    orphanIds.forEach(id => {
+      inventory$[id].assign({ deleted_at: now });
+    });
+
+    if (__DEV__) {
+      console.log(`[Reconcile] Removed ${orphanIds.length} orphaned inventory items`);
+    }
+
+    return { removed: orphanIds.length };
+  } catch (err) {
+    if (__DEV__) console.error('[Reconcile] Inventory error:', err);
+    return { removed: 0 };
+  }
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
+// ============================================================================
 // CRUD HELPERS (Now operating purely on Observables)
 // ============================================================================
 

@@ -17,6 +17,8 @@ export {
   getStores,
   initializeLegendStateSync,
   resetUserStores,
+  reconcileProjects,
+  reconcileInventory,
   addProject,
   updateProject,
   deleteProject,

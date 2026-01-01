@@ -35,8 +35,9 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
 
   // Auto-reconciliation: detect orphaned projects on app start
   // This catches edge cases where data was modified directly in Supabase
+  // Runs for ALL authenticated users (smart safety check protects never-synced users)
   useEffect(() => {
-    if (!user?.id || !isPro) return;
+    if (!user?.id) return;
 
     // Wait for initial sync to complete before reconciling
     const timer = setTimeout(async () => {
@@ -47,7 +48,7 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
     }, 2000); // 2s delay for initial sync
 
     return () => clearTimeout(timer);
-  }, [user?.id, isPro, projects$]);
+  }, [user?.id, projects$]);
 
   // 2. Reactive Data Selector
   const projects = useSelector(() => {

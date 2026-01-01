@@ -42,8 +42,9 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
 
   // Auto-reconciliation: detect orphaned inventory items on app start
   // This catches edge cases where data was modified directly in Supabase
+  // Runs for ALL authenticated users (smart safety check protects never-synced users)
   useEffect(() => {
-    if (!user?.id || !isPro) return;
+    if (!user?.id) return;
 
     // Wait for initial sync to complete before reconciling
     const timer = setTimeout(async () => {
@@ -54,7 +55,7 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     }, 2500); // 2.5s delay (slightly after projects)
 
     return () => clearTimeout(timer);
-  }, [user?.id, isPro, inventory$]);
+  }, [user?.id, inventory$]);
 
   // 2. Reactive Data Selector
   const items: InventoryItem[] = useSelector(() => {

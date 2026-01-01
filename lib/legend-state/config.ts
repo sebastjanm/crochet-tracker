@@ -297,6 +297,27 @@ export async function reconcileProjects(
       (data as Array<{ id: string }> | null)?.map(r => r.id) || []
     );
 
+    // Safety check: If remote has NO data for this user, check if local data was ever synced.
+    // This protects users who were never Pro (never synced) from losing local data,
+    // while still cleaning up orphaned data for users whose data was transferred.
+    if (remoteIdSet.size === 0 && localIds.length > 0) {
+      // Check if ANY of the local IDs exist in Supabase (regardless of user_id)
+      // If they exist under a different user_id, data was transferred → proceed
+      // If they don't exist anywhere, user was never synced → skip
+      const { data: anyExist } = await supabase
+        .from('projects')
+        .select('id')
+        .in('id', localIds.slice(0, 10)) // Check first 10 for efficiency
+        .limit(1);
+
+      if (!anyExist || anyExist.length === 0) {
+        if (__DEV__) console.log('[Reconcile] Local projects were never synced, skipping');
+        return { removed: 0 };
+      }
+      // Data exists in Supabase under different user_id - proceed with reconciliation
+      if (__DEV__) console.log('[Reconcile] Detected transferred projects, proceeding with cleanup');
+    }
+
     // 3. Find orphans (local but not remote)
     const orphanIds = localIds.filter(id => !remoteIdSet.has(id));
 
@@ -354,6 +375,24 @@ export async function reconcileInventory(
     const remoteIdSet = new Set(
       (data as Array<{ id: string }> | null)?.map(r => r.id) || []
     );
+
+    // Safety check: If remote has NO data for this user, check if local data was ever synced.
+    // This protects users who were never Pro (never synced) from losing local data,
+    // while still cleaning up orphaned data for users whose data was transferred.
+    if (remoteIdSet.size === 0 && localIds.length > 0) {
+      // Check if ANY of the local IDs exist in Supabase (regardless of user_id)
+      const { data: anyExist } = await supabase
+        .from('inventory_items')
+        .select('id')
+        .in('id', localIds.slice(0, 10))
+        .limit(1);
+
+      if (!anyExist || anyExist.length === 0) {
+        if (__DEV__) console.log('[Reconcile] Local inventory was never synced, skipping');
+        return { removed: 0 };
+      }
+      if (__DEV__) console.log('[Reconcile] Detected transferred inventory, proceeding with cleanup');
+    }
 
     // 3. Find orphans (local but not remote)
     const orphanIds = localIds.filter(id => !remoteIdSet.has(id));

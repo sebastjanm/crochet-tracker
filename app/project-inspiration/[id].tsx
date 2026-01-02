@@ -8,11 +8,20 @@ import {
   Alert,
   FlatList,
   Platform,
+  Linking,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Plus, Trash2, Lightbulb } from 'lucide-react-native';
+import {
+  Link2,
+  ImagePlus,
+  Trash2,
+  Lightbulb,
+  ExternalLink,
+  Youtube,
+  Globe,
+} from 'lucide-react-native';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { ModalHeader } from '@/components/ModalHeader';
@@ -26,6 +35,18 @@ import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import type { InspirationSource } from '@/types';
 import { normalizeBorder, buttonShadow } from '@/constants/pixelRatio';
+
+/**
+ * Helper to detect URL type for icon display
+ */
+function getUrlType(url: string): 'youtube' | 'generic' {
+  if (!url) return 'generic';
+  const lower = url.toLowerCase();
+  if (lower.includes('youtube.com') || lower.includes('youtu.be')) {
+    return 'youtube';
+  }
+  return 'generic';
+}
 
 export default function ProjectInspirationScreen() {
   const { id } = useLocalSearchParams();
@@ -52,13 +73,15 @@ export default function ProjectInspirationScreen() {
 
   const inspirationSources = project.inspirationSources || [];
 
-  const handleAddInspiration = async () => {
+  /**
+   * Add a new LINK inspiration source
+   */
+  const handleAddLink = async () => {
     const newInspiration: InspirationSource = {
       id: Date.now().toString(),
+      type: 'link',
       url: '',
-      patternSource: '',
       description: '',
-      images: [],
     };
 
     const updatedInspirationSources = [...inspirationSources, newInspiration];
@@ -66,6 +89,28 @@ export default function ProjectInspirationScreen() {
     await updateProject(project.id, {
       inspirationSources: updatedInspirationSources,
     });
+  };
+
+  /**
+   * Add a new IMAGE inspiration source - opens picker immediately
+   */
+  const handleAddImages = async () => {
+    const result = await showImagePickerOptions();
+    if (result.success && result.data) {
+      const uri = result.data;
+      const newInspiration: InspirationSource = {
+        id: Date.now().toString(),
+        type: 'image',
+        images: [uri],
+        description: '',
+      };
+
+      const updatedInspirationSources = [...inspirationSources, newInspiration];
+
+      await updateProject(project.id, {
+        inspirationSources: updatedInspirationSources,
+      });
+    }
   };
 
   const handleUpdateInspiration = async (
@@ -105,7 +150,7 @@ export default function ProjectInspirationScreen() {
     );
   };
 
-  const handleAddInspirationImage = async (inspirationId: string) => {
+  const handleAddMoreImages = async (inspirationId: string) => {
     const result = await showImagePickerOptions();
     if (result.success && result.data) {
       const uri = result.data;
@@ -121,7 +166,7 @@ export default function ProjectInspirationScreen() {
     }
   };
 
-  const handleRemoveInspirationImage = async (inspirationId: string, imageIndex: number) => {
+  const handleRemoveImage = async (inspirationId: string, imageIndex: number) => {
     const updatedInspirationSources = inspirationSources.map((source) =>
       source.id === inspirationId
         ? { ...source, images: (source.images || []).filter((_, i) => i !== imageIndex) }
@@ -133,8 +178,170 @@ export default function ProjectInspirationScreen() {
     });
   };
 
+  const handleOpenUrl = (url: string) => {
+    if (url) {
+      Linking.openURL(url).catch(() => {
+        Alert.alert(t('common.error'), t('projects.cannotOpenUrl'));
+      });
+    }
+  };
+
   // Check if user is Pro
   const isPro = user?.isPro === true;
+
+  /**
+   * Render a LINK type inspiration card
+   */
+  const renderLinkCard = (source: InspirationSource, index: number) => {
+    const urlType = getUrlType(source.url || '');
+    const UrlIcon = urlType === 'youtube' ? Youtube : Globe;
+
+    return (
+      <View key={source.id} style={styles.inspirationCard}>
+        <View style={styles.cardHeader}>
+          <View style={styles.cardTypeIndicator}>
+            <Link2 size={16} color={Colors.teal} />
+            <Text style={styles.cardTypeLabel}>{t('projects.linkSource')}</Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => handleDeleteInspiration(source.id)}
+            style={styles.deleteButton}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.delete')}
+          >
+            <Trash2 size={18} color={Colors.error} />
+          </TouchableOpacity>
+        </View>
+
+        <Input
+          label={t('projects.url')}
+          placeholder={t('projects.urlPlaceholderLink')}
+          value={source.url || ''}
+          onChangeText={(value) => handleUpdateInspiration(source.id, 'url', value)}
+          keyboardType="url"
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+
+        {source.url && (
+          <TouchableOpacity
+            style={styles.openLinkButton}
+            onPress={() => handleOpenUrl(source.url!)}
+            activeOpacity={0.7}
+          >
+            <UrlIcon size={16} color={Colors.teal} />
+            <Text style={styles.openLinkText} numberOfLines={1}>
+              {source.url}
+            </Text>
+            <ExternalLink size={14} color={Colors.teal} />
+          </TouchableOpacity>
+        )}
+
+        <Input
+          label={t('projects.notesOptional')}
+          placeholder={t('projects.notesPlaceholder')}
+          value={source.description || ''}
+          onChangeText={(value) => handleUpdateInspiration(source.id, 'description', value)}
+          multiline
+          numberOfLines={2}
+          style={styles.textAreaSmall}
+        />
+      </View>
+    );
+  };
+
+  /**
+   * Render an IMAGE type inspiration card
+   */
+  const renderImageCard = (source: InspirationSource, index: number) => {
+    const images = source.images || [];
+
+    return (
+      <View key={source.id} style={styles.inspirationCard}>
+        <View style={styles.cardHeader}>
+          <View style={styles.cardTypeIndicator}>
+            <ImagePlus size={16} color={Colors.sage} />
+            <Text style={[styles.cardTypeLabel, { color: Colors.sage }]}>
+              {t('projects.imageSource')}
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => handleDeleteInspiration(source.id)}
+            style={styles.deleteButton}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.delete')}
+          >
+            <Trash2 size={18} color={Colors.error} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.imagesSection}>
+          <FlatList
+            data={images}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(item, idx) => `${source.id}-${idx}`}
+            renderItem={({ item, index: imageIndex }) => (
+              <View style={styles.imageContainer}>
+                <Image
+                  source={{ uri: item }}
+                  style={styles.imagePreview}
+                  contentFit="cover"
+                  transition={200}
+                  cachePolicy="memory-disk"
+                />
+                <TouchableOpacity
+                  style={styles.imageDeleteButton}
+                  onPress={() => handleRemoveImage(source.id, imageIndex)}
+                  activeOpacity={0.7}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('common.delete')}
+                >
+                  <Trash2 size={14} color={Colors.white} />
+                </TouchableOpacity>
+              </View>
+            )}
+            ListFooterComponent={
+              <TouchableOpacity
+                style={styles.addMoreImageButton}
+                onPress={() => handleAddMoreImages(source.id)}
+                activeOpacity={0.7}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={t('projects.addMorePhotos')}
+              >
+                <ImagePlus size={24} color={Colors.sage} />
+              </TouchableOpacity>
+            }
+            contentContainerStyle={styles.imageList}
+          />
+        </View>
+
+        <Input
+          label={t('projects.notesOptional')}
+          placeholder={t('projects.imageNotesPlaceholder')}
+          value={source.description || ''}
+          onChangeText={(value) => handleUpdateInspiration(source.id, 'description', value)}
+          multiline
+          numberOfLines={2}
+          style={styles.textAreaSmall}
+        />
+      </View>
+    );
+  };
+
+  /**
+   * Render inspiration card based on type
+   */
+  const renderInspirationCard = (source: InspirationSource, index: number) => {
+    if (source.type === 'link') {
+      return renderLinkCard(source, index);
+    }
+    return renderImageCard(source, index);
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -150,139 +357,44 @@ export default function ProjectInspirationScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={handleAddInspiration}
-          activeOpacity={0.7}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel={t('projects.addInspiration')}
-          accessibilityHint={t('projects.addInspirationHint')}
-        >
-          <Plus size={20} color={Colors.white} />
-          <Text style={styles.addButtonText}>{t('projects.addInspiration')}</Text>
-        </TouchableOpacity>
+          {/* Two separate action buttons */}
+          <View style={styles.actionButtonsRow}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.linkButton]}
+              onPress={handleAddLink}
+              activeOpacity={0.7}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={t('projects.addLink')}
+              accessibilityHint={t('projects.addLinkHint')}
+            >
+              <Link2 size={20} color={Colors.white} />
+              <Text style={styles.actionButtonText}>{t('projects.addLink')}</Text>
+            </TouchableOpacity>
 
-        {inspirationSources.length === 0 ? (
-          <EmptyState
-            icon={<Lightbulb size={48} color={Colors.warmGray} />}
-            title={t('projects.noInspirationSources')}
-            description={t('projects.noInspirationSourcesDescription')}
-          />
-        ) : (
-          inspirationSources.map((source, index) => (
-            <View key={source.id} style={styles.inspirationCard}>
-              <View style={styles.inspirationHeader}>
-                <Text style={styles.inspirationTitle}>
-                  {t('projects.inspirationSource')} {index + 1}
-                </Text>
-                <TouchableOpacity
-                  onPress={() => handleDeleteInspiration(source.id)}
-                  style={styles.deleteButton}
-                  accessible={true}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('common.delete')}
-                  accessibilityHint={t('projects.deleteThisInspiration')}
-                >
-                  <Trash2 size={18} color={Colors.error} />
-                </TouchableOpacity>
-              </View>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.imageButton]}
+              onPress={handleAddImages}
+              activeOpacity={0.7}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={t('projects.addImages')}
+              accessibilityHint={t('projects.addImagesHint')}
+            >
+              <ImagePlus size={20} color={Colors.white} />
+              <Text style={styles.actionButtonText}>{t('projects.addImages')}</Text>
+            </TouchableOpacity>
+          </View>
 
-              <Input
-                label={t('projects.url')}
-                placeholder={t('projects.urlPlaceholder')}
-                value={source.url || ''}
-                onChangeText={(value) => handleUpdateInspiration(source.id, 'url', value)}
-              />
-
-              <Input
-                label={t('projects.patternSource')}
-                placeholder={t('projects.patternSourcePlaceholder')}
-                value={source.patternSource || ''}
-                onChangeText={(value) =>
-                  handleUpdateInspiration(source.id, 'patternSource', value)
-                }
-              />
-
-              <Input
-                label={t('projects.description')}
-                placeholder={t('projects.descriptionPlaceholder')}
-                value={source.description || ''}
-                onChangeText={(value) =>
-                  handleUpdateInspiration(source.id, 'description', value)
-                }
-                multiline
-                numberOfLines={3}
-                style={styles.textArea}
-              />
-
-              <View style={styles.imagesSection}>
-                <Text style={styles.sectionLabel}>{t('projects.inspirationImages')}</Text>
-
-                {source.images && source.images.length > 0 && (
-                  <FlatList
-                    data={source.images}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    keyExtractor={(item, idx) => `${source.id}-${idx}`}
-                    renderItem={({ item, index: imageIndex }) => (
-                      <View style={styles.imageContainer}>
-                        <Image
-                          source={{ uri: item }}
-                          style={styles.imagePreview}
-                          contentFit="cover"
-                          transition={200}
-                          cachePolicy="memory-disk"
-                        />
-                        <TouchableOpacity
-                          style={styles.imageDeleteButton}
-                          onPress={() => handleRemoveInspirationImage(source.id, imageIndex)}
-                          activeOpacity={0.7}
-                          accessible={true}
-                          accessibilityRole="button"
-                          accessibilityLabel={t('common.delete')}
-                          accessibilityHint={t('projects.removeThisPhoto')}
-                        >
-                          <Trash2 size={16} color={Colors.white} />
-                        </TouchableOpacity>
-                      </View>
-                    )}
-                    ListFooterComponent={
-                      <TouchableOpacity
-                        style={styles.addImageButton}
-                        onPress={() => handleAddInspirationImage(source.id)}
-                        activeOpacity={0.7}
-                        accessible={true}
-                        accessibilityRole="button"
-                        accessibilityLabel={t('projects.addPhoto')}
-                        accessibilityHint="Choose from camera or gallery"
-                      >
-                        <Plus size={24} color={Colors.sage} />
-                        <Text style={styles.addImageText}>{t('common.add')}</Text>
-                      </TouchableOpacity>
-                    }
-                    contentContainerStyle={styles.imageList}
-                  />
-                )}
-
-                {(!source.images || source.images.length === 0) && (
-                  <TouchableOpacity
-                    style={styles.addPhotoButton}
-                    onPress={() => handleAddInspirationImage(source.id)}
-                    activeOpacity={0.7}
-                    accessible={true}
-                    accessibilityRole="button"
-                    accessibilityLabel={t('projects.addPhoto')}
-                    accessibilityHint="Choose to take a photo or select from gallery"
-                  >
-                    <Plus size={32} color={Colors.sage} />
-                    <Text style={styles.addPhotoButtonText}>{t('projects.addPhoto')}</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          ))
-        )}
+          {inspirationSources.length === 0 ? (
+            <EmptyState
+              icon={<Lightbulb size={48} color={Colors.warmGray} />}
+              title={t('projects.noInspirationSources')}
+              description={t('projects.noInspirationSourcesDescriptionNew')}
+            />
+          ) : (
+            inspirationSources.map((source, index) => renderInspirationCard(source, index))
+          )}
         </ScrollView>
       )}
     </SafeAreaView>
@@ -296,6 +408,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
+    paddingBottom: 32,
   },
   errorContainer: {
     flex: 1,
@@ -311,51 +424,71 @@ const styles = StyleSheet.create({
   errorButton: {
     minWidth: 120,
   },
-  addButton: {
+
+  // Action buttons row
+  actionButtonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+  },
+  actionButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: Colors.sage,
     borderRadius: 12,
     paddingVertical: 14,
-    paddingHorizontal: 20,
-    marginBottom: 16,
+    paddingHorizontal: 16,
     minHeight: 50,
     ...Platform.select({
       ...buttonShadow,
       default: {},
     }),
   },
-  addButtonText: {
+  linkButton: {
+    backgroundColor: Colors.teal,
+  },
+  imageButton: {
+    backgroundColor: Colors.sage,
+  },
+  actionButtonText: {
     ...Typography.body,
     color: Colors.white,
     fontWeight: '600' as const,
-    fontSize: 16,
+    fontSize: 15,
   },
+
+  // Inspiration cards
   inspirationCard: {
     backgroundColor: Colors.white,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     borderWidth: normalizeBorder(1),
-    borderColor: Colors.sage,
+    borderColor: Colors.border,
     ...Platform.select({
       ...buttonShadow,
       default: {},
     }),
   },
-  inspirationHeader: {
+  cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 12,
   },
-  inspirationTitle: {
-    ...Typography.title3,
-    color: Colors.sage,
+  cardTypeIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  cardTypeLabel: {
+    ...Typography.caption,
+    color: Colors.teal,
     fontWeight: '600' as const,
-    fontSize: 16,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   deleteButton: {
     padding: 4,
@@ -364,22 +497,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  textArea: {
-    height: 80,
+
+  // Link card specific
+  openLinkButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.cream,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  openLinkText: {
+    ...Typography.caption,
+    color: Colors.teal,
+    flex: 1,
+  },
+
+  // Text areas
+  textAreaSmall: {
+    height: 60,
     textAlignVertical: 'top',
     paddingTop: 12,
   },
+
+  // Images section
   imagesSection: {
-    marginTop: 12,
-  },
-  sectionLabel: {
-    ...Typography.body,
-    color: Colors.charcoal,
-    marginBottom: 8,
-    fontWeight: '500' as const,
+    marginBottom: 12,
   },
   imageList: {
-    paddingVertical: 12,
+    paddingVertical: 8,
     gap: 12,
   },
   imageContainer: {
@@ -394,17 +541,17 @@ const styles = StyleSheet.create({
   },
   imageDeleteButton: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: 6,
+    right: 6,
     backgroundColor: Colors.error,
-    borderRadius: 12,
-    padding: 8,
-    minWidth: 32,
-    minHeight: 32,
+    borderRadius: 10,
+    padding: 6,
+    minWidth: 28,
+    minHeight: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  addImageButton: {
+  addMoreImageButton: {
     width: 100,
     height: 100,
     borderRadius: 12,
@@ -414,29 +561,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.white,
-    gap: 4,
-  },
-  addImageText: {
-    ...Typography.caption,
-    color: Colors.sage,
-    fontWeight: '600' as const,
-  },
-  addPhotoButton: {
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    borderWidth: normalizeBorder(2),
-    borderColor: Colors.sage,
-    borderStyle: 'dashed',
-    padding: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    minHeight: 100,
-  },
-  addPhotoButtonText: {
-    ...Typography.body,
-    color: Colors.sage,
-    fontWeight: '600' as const,
-    fontSize: 16,
   },
 });

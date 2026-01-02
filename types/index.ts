@@ -44,12 +44,15 @@ export interface WorkProgressEntry {
   notes: string; // Combined work notes (what was done + what's next)
 }
 
+/** Type of inspiration source */
+export type InspirationSourceType = 'link' | 'image';
+
 export interface InspirationSource {
   id: string;
-  url?: string; // Optional URL
-  patternSource?: string; // Pattern source text
-  images?: string[]; // Extra inspiration images
-  description?: string; // Multiline description
+  type: InspirationSourceType; // 'link' for URLs, 'image' for photos
+  url?: string; // URL for pattern, blog, Pinterest, YouTube, etc.
+  images?: string[]; // Inspiration images array
+  description?: string; // Optional notes
 }
 
 // Yarn used in a project with quantity tracking

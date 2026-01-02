@@ -342,9 +342,22 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
     deleteProject,
     getProjectById,
     getProjectsByStatus,
-    // Force a full refresh from Supabase using Legend-State's official API
+    // Sync local changes to cloud (does NOT clear local data)
+    syncToCloud: async () => {
+      if (__DEV__) console.log('[Projects] Syncing to cloud...');
+      try {
+        const state = syncState(projects$);
+        await state.sync();
+        if (__DEV__) console.log('[Projects] Sync to cloud complete');
+        return true;
+      } catch (error) {
+        if (__DEV__) console.error('[Projects] Sync to cloud failed:', error);
+        return false;
+      }
+    },
+    // Force a full refresh from Supabase (CLEARS local data first!)
     refreshProjects: async () => {
-      if (__DEV__) console.log('[Projects] Triggering refresh via syncState API...');
+      if (__DEV__) console.log('[Projects] Triggering FULL refresh (clears local)...');
 
       try {
         const state = syncState(projects$);

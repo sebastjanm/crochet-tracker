@@ -433,9 +433,22 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     setSortBy,
     showImagePickerOptions,
     isPickingImage,
-    // Force a full refresh from Supabase using Legend-State's official API
+    // Sync local changes to cloud (does NOT clear local data)
+    syncToCloud: async () => {
+      if (__DEV__) console.log('[Inventory] Syncing to cloud...');
+      try {
+        const state = syncState(inventory$);
+        await state.sync();
+        if (__DEV__) console.log('[Inventory] Sync to cloud complete');
+        return true;
+      } catch (error) {
+        if (__DEV__) console.error('[Inventory] Sync to cloud failed:', error);
+        return false;
+      }
+    },
+    // Force a full refresh from Supabase (CLEARS local data first!)
     refreshItems: async () => {
-      if (__DEV__) console.log('[Inventory] Triggering refresh via syncState API...');
+      if (__DEV__) console.log('[Inventory] Triggering FULL refresh (clears local)...');
 
       try {
         const state = syncState(inventory$);

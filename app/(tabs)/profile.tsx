@@ -54,8 +54,8 @@ const isTablet = width >= 768;
  */
 export default function ProfileScreen(): React.JSX.Element {
   const { user, logout, updateUser, refreshUser, isPro } = useAuth();
-  const { projects, completedCount, inProgressCount, refreshProjects } = useProjects();
-  const { items, refreshItems } = useInventory();
+  const { projects, completedCount, inProgressCount, refreshProjects, syncToCloud: syncProjectsToCloud } = useProjects();
+  const { items, refreshItems, syncToCloud: syncInventoryToCloud } = useInventory();
   const { language, changeLanguage, t } = useLanguage();
   const [isLoadingMockData, setIsLoadingMockData] = useState(false);
   const [isAvatarPickerVisible, setIsAvatarPickerVisible] = useState(false);
@@ -148,19 +148,30 @@ export default function ProfileScreen(): React.JSX.Element {
                 }
               }
 
-              // Use Legend-State's official syncState API for refresh
-              // clearPersist() + sync() handles everything properly
-              if (__DEV__) console.log('[Refresh] Starting refresh via Legend-State API...');
+              // STEP 1: Sync local changes UP to cloud first (preserve local data!)
+              if (__DEV__) console.log('[Refresh] Step 1: Syncing local changes to cloud...');
 
-              // Refresh both stores (they now use clearPersist + sync internally)
+              const [projectsSyncResult, inventorySyncResult] = await Promise.all([
+                syncProjectsToCloud(),
+                syncInventoryToCloud(),
+              ]);
+
+              if (__DEV__) {
+                console.log('[Refresh] Projects sync UP result:', projectsSyncResult);
+                console.log('[Refresh] Inventory sync UP result:', inventorySyncResult);
+              }
+
+              // STEP 2: Now clear and refresh FROM cloud
+              if (__DEV__) console.log('[Refresh] Step 2: Refreshing from cloud...');
+
               const [projectsResult, inventoryResult] = await Promise.all([
                 refreshProjects(),
                 refreshItems(),
               ]);
 
               if (__DEV__) {
-                console.log('[Refresh] Projects result:', projectsResult);
-                console.log('[Refresh] Inventory result:', inventoryResult);
+                console.log('[Refresh] Projects refresh result:', projectsResult);
+                console.log('[Refresh] Inventory refresh result:', inventoryResult);
               }
 
               showToast(t('profile.refreshSuccess'), 'success');

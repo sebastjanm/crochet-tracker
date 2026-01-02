@@ -64,10 +64,11 @@ interface Toast {
   message: string;
   type: ToastType;
   duration: number;
+  onPress?: () => void;
 }
 
 interface ToastContextValue {
-  showToast: (message: string, type?: ToastType, duration?: number) => void;
+  showToast: (message: string, type?: ToastType, duration?: number, onPress?: () => void) => void;
 }
 
 // ============================================================================
@@ -98,6 +99,17 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
   const translateY = useRef(new Animated.Value(-20)).current;
   const translateX = useRef(new Animated.Value(0)).current;
   const dismissedRef = useRef(false);
+
+  const handlePress = useCallback(() => {
+    if (toast.onPress) {
+      toast.onPress();
+      // Dismiss after executing the action
+      if (!dismissedRef.current) {
+        dismissedRef.current = true;
+        onDismiss(toast.id);
+      }
+    }
+  }, [toast, onDismiss]);
 
   const dismiss = useCallback(() => {
     if (dismissedRef.current) return;
@@ -236,6 +248,18 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
 
   const colors = getColors();
 
+  const ContentWrapper = toast.onPress ? TouchableOpacity : View;
+  const contentWrapperProps = toast.onPress
+    ? {
+        onPress: handlePress,
+        style: styles.contentWrapper,
+        activeOpacity: 0.7,
+        accessible: true,
+        accessibilityRole: 'button' as const,
+        accessibilityHint: 'Tap to apply action',
+      }
+    : { style: styles.contentWrapper };
+
   return (
     <Animated.View
       {...panResponder.panHandlers}
@@ -251,14 +275,16 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
       accessible={true}
       accessibilityRole="alert"
       accessibilityLabel={`${toast.type}: ${toast.message}`}
-      accessibilityHint="Swipe left or right to dismiss"
+      accessibilityHint={toast.onPress ? 'Tap to apply action, or swipe to dismiss' : 'Swipe left or right to dismiss'}
     >
-      <View style={styles.iconContainer}>
-        <ToastIcon />
-      </View>
-      <Text style={styles.message} numberOfLines={2}>
-        {toast.message}
-      </Text>
+      <ContentWrapper {...contentWrapperProps}>
+        <View style={styles.iconContainer}>
+          <ToastIcon />
+        </View>
+        <Text style={styles.message} numberOfLines={2}>
+          {toast.message}
+        </Text>
+      </ContentWrapper>
       <TouchableOpacity
         onPress={dismiss}
         style={styles.dismissButton}
@@ -286,11 +312,11 @@ export function ToastProvider({ children }: ToastProviderProps) {
   const insets = useSafeAreaInsets();
 
   const showToast = useCallback(
-    (message: string, type: ToastType = 'info', duration?: number) => {
+    (message: string, type: ToastType = 'info', duration?: number, onPress?: () => void) => {
       // Use type-specific duration if not explicitly provided
       const finalDuration = duration ?? TOAST_DURATIONS[type];
       const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-      setToasts((prev) => [...prev, { id, message, type, duration: finalDuration }]);
+      setToasts((prev) => [...prev, { id, message, type, duration: finalDuration, onPress }]);
     },
     []
   );
@@ -361,6 +387,11 @@ const styles = StyleSheet.create({
         elevation: 8,
       },
     }),
+  },
+  contentWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   iconContainer: {
     marginRight: 10,

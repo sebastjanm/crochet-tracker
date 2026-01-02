@@ -6,8 +6,7 @@ import * as SystemUI from "expo-system-ui";
 import { setButtonStyleAsync } from "expo-navigation-bar";
 import * as Updates from "expo-updates";
 import { useEffect } from "react";
-import type { ReactNode } from "react";
-import { StyleSheet, Platform, Alert } from "react-native";
+import { StyleSheet, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import {
@@ -17,7 +16,7 @@ import {
   LanguageProvider,
   useLanguage,
 } from "@/providers";
-import { ToastProvider } from "@/components/Toast";
+import { ToastProvider, useToast } from "@/components/Toast";
 import { Colors } from "@/constants/colors";
 import * as Sentry from '@sentry/react-native';
 
@@ -52,11 +51,13 @@ const styles = StyleSheet.create({
 });
 
 /**
- * UpdateChecker - Checks for OTA updates and prompts user to restart.
+ * UpdateNotifier - Checks for OTA updates and shows a toast notification.
+ * Uses non-blocking Toast instead of Alert for better UX.
  * Only runs in production builds.
  */
-function UpdateChecker({ children }: { children: ReactNode }): React.JSX.Element {
+function UpdateNotifier(): null {
   const { t } = useLanguage();
+  const { showToast } = useToast();
 
   useEffect(() => {
     async function checkForUpdates() {
@@ -66,18 +67,14 @@ function UpdateChecker({ children }: { children: ReactNode }): React.JSX.Element
         const update = await Updates.checkForUpdateAsync();
         if (update.isAvailable) {
           await Updates.fetchUpdateAsync();
-          Alert.alert(
-            t('updates.title'),
-            t('updates.message'),
-            [
-              { text: t('updates.later'), style: 'cancel' },
-              {
-                text: t('updates.restart'),
-                onPress: async () => {
-                  await Updates.reloadAsync();
-                }
-              },
-            ]
+          // Show non-blocking toast with tap-to-restart action
+          showToast(
+            t('updates.tapToRestart'),
+            'info',
+            8000, // 8 seconds - longer to give user time to notice
+            async () => {
+              await Updates.reloadAsync();
+            }
           );
         }
       } catch (error) {
@@ -86,9 +83,9 @@ function UpdateChecker({ children }: { children: ReactNode }): React.JSX.Element
     }
 
     checkForUpdates();
-  }, [t]);
+  }, [t, showToast]);
 
-  return <>{children}</>;
+  return null;
 }
 
 /**
@@ -120,12 +117,12 @@ export default Sentry.wrap(function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <GestureHandlerRootView style={styles.container}>
           <LanguageProvider>
-            <UpdateChecker>
-              <AuthProvider>
-                <ProjectsProvider>
-                  <InventoryProvider>
-                    <ToastProvider>
-                      <Stack
+            <AuthProvider>
+              <ProjectsProvider>
+                <InventoryProvider>
+                  <ToastProvider>
+                    <UpdateNotifier />
+                    <Stack
                         screenOptions={{
                           headerShown: false,
                         }}
@@ -156,11 +153,10 @@ export default Sentry.wrap(function RootLayout() {
                           options={{ presentation: 'modal' }}
                         />
                       </Stack>
-                    </ToastProvider>
-                  </InventoryProvider>
-                </ProjectsProvider>
-              </AuthProvider>
-            </UpdateChecker>
+                  </ToastProvider>
+                </InventoryProvider>
+              </ProjectsProvider>
+            </AuthProvider>
           </LanguageProvider>
         </GestureHandlerRootView>
       </QueryClientProvider>

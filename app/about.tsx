@@ -2,7 +2,7 @@
  * About Screen
  *
  * Displays app version, build info, and EAS Update status.
- * Uses expo-updates to show current update ID, channel, and status.
+ * Shows version info to help developers identify which build is running.
  *
  * @see https://docs.expo.dev/versions/latest/sdk/updates/
  */
@@ -16,6 +16,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import { X, RefreshCw, CheckCircle, Clock, Package } from 'lucide-react-native';
@@ -41,12 +42,19 @@ export default function AboutScreen() {
   // App version from app.json
   const appVersion = Constants.expoConfig?.version ?? '1.0.0';
   const buildNumber = Application.nativeBuildVersion ?? '-';
+  const platform = Platform.OS === 'ios' ? 'iOS' : 'Android';
 
   // Update info
   const updateId = currentlyRunning?.updateId;
-  const channel = currentlyRunning?.channel ?? (Updates.channel || 'embedded');
+  const channel = currentlyRunning?.channel ?? (Updates.channel || 'development');
   const createdAt = currentlyRunning?.createdAt;
-  const runtimeVersion = currentlyRunning?.runtimeVersion ?? appVersion;
+  const runtimeVersion = currentlyRunning?.runtimeVersion;
+
+  // Truncate hash for display (show first 7 chars like git)
+  const truncateHash = (hash: string | undefined): string => {
+    if (!hash) return '-';
+    return hash.substring(0, 7);
+  };
 
   // Format date
   const formatDate = (date: Date | undefined): string => {
@@ -58,12 +66,6 @@ export default function AboutScreen() {
       hour: '2-digit',
       minute: '2-digit',
     });
-  };
-
-  // Truncate update ID for display
-  const truncateId = (id: string | undefined): string => {
-    if (!id) return '-';
-    return id.substring(0, 8) + '...';
   };
 
   // Get status info
@@ -139,14 +141,15 @@ export default function AboutScreen() {
     }
   };
 
-  // Combined version string: "1.0.0 (42)"
+  // Version string like "1.0.0 (14)"
   const versionDisplay = `${appVersion} (${buildNumber})`;
 
   const infoRows = [
+    { label: t('about.platform'), value: platform },
     { label: t('about.version'), value: versionDisplay },
-    { label: t('about.runtimeVersion'), value: truncateId(runtimeVersion) },
-    { label: t('about.channel'), value: channel },
-    { label: t('about.updateId'), value: truncateId(updateId) },
+    { label: t('about.environment'), value: channel },
+    { label: t('about.fingerprint'), value: truncateHash(runtimeVersion) },
+    { label: t('about.updateId'), value: truncateHash(updateId) },
     { label: t('about.lastUpdated'), value: formatDate(createdAt) },
   ];
 
@@ -368,6 +371,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 12,
     gap: 8,
+    marginTop: 8,
   },
   checkButtonText: {
     color: Colors.white,

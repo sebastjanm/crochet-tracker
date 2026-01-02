@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Lightbulb, Clock, CheckCircle, Star, Trash2, PauseCircle, RotateCcw, FileText, Link } from 'lucide-react-native';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
@@ -30,6 +30,12 @@ import { useLanguage } from '@/providers/LanguageProvider';
 import { useImagePicker } from '@/hooks/useImagePicker';
 import { useImageActions } from '@/hooks/useImageActions';
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
+import {
+  clearProjectDraft,
+  getProjectDraft,
+  saveFormAsDraft,
+  consumeNewlyCreatedInventory,
+} from '@/lib/legend-state';
 import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, buttonShadow } from '@/constants/pixelRatio';
@@ -73,32 +79,93 @@ export default function EditProjectScreen(): React.JSX.Element {
 
   useEffect(() => {
     if (project) {
-      setTitle(project.title);
-      setDescription(project.description || '');
-      setNotes(project.notes || '');
-      setInspirationUrl(project.inspirationUrl || '');
-      setImages(project.images || []);
-      setDefaultImageIndex(project.defaultImageIndex || 0);
-      setPatternImages(project.patternImages || []);
-      setPatternPdf(project.patternPdf || '');
-      setPatternUrl(project.patternUrl || '');
-      setStatus(project.status);
-      setProjectType(project.projectType);
-      setStartDate(project.startDate);
-      // Load yarn materials (use new format, or migrate from legacy yarnUsedIds)
-      if (project.yarnMaterials && project.yarnMaterials.length > 0) {
-        setYarnMaterials(project.yarnMaterials);
-      } else if (project.yarnUsedIds && project.yarnUsedIds.length > 0) {
-        // Migrate legacy format
-        setYarnMaterials(project.yarnUsedIds.map(id => ({ itemId: id, quantity: 1 })));
-      } else {
-        setYarnMaterials([]);
+      // Check for draft first (in case returning from Add Inventory after crash)
+      let restoredFromDraft = false;
+      try {
+        const draft = getProjectDraft();
+        if (draft && draft.screenType === 'edit' && draft.editProjectId === id) {
+          // Restore from draft (had unsaved edits)
+          setTitle(draft.title);
+          setDescription(draft.description);
+          setNotes(draft.notes);
+          setInspirationUrl(draft.inspirationUrl);
+          setImages(draft.images);
+          setDefaultImageIndex(draft.defaultImageIndex);
+          setPatternImages(draft.patternImages);
+          setPatternPdf(draft.patternPdf);
+          setPatternUrl(draft.patternUrl);
+          setStatus(draft.status as ProjectStatus);
+          setProjectType(draft.projectType as ProjectType | undefined);
+          setStartDate(draft.startDate ? new Date(draft.startDate) : undefined);
+          setYarnMaterials(draft.yarnMaterials.map(ym => ({
+            itemId: ym.inventoryItemId,
+            quantity: ym.quantity,
+          })));
+          setHookUsedIds(draft.hookUsedIds);
+          // Clear draft after restoration
+          clearProjectDraft();
+          restoredFromDraft = true;
+          if (__DEV__) console.log('[EditProject] Restored draft from navigation');
+        }
+      } catch (error) {
+        // If draft restoration fails, clear corrupted data and load from project
+        if (__DEV__) console.error('[EditProject] Failed to restore draft:', error);
+        clearProjectDraft();
       }
-      setHookUsedIds(project.hookUsedIds || []);
+
+      if (!restoredFromDraft) {
+        // Load from project (normal case)
+        setTitle(project.title);
+        setDescription(project.description || '');
+        setNotes(project.notes || '');
+        setInspirationUrl(project.inspirationUrl || '');
+        setImages(project.images || []);
+        setDefaultImageIndex(project.defaultImageIndex || 0);
+        setPatternImages(project.patternImages || []);
+        setPatternPdf(project.patternPdf || '');
+        setPatternUrl(project.patternUrl || '');
+        setStatus(project.status);
+        setProjectType(project.projectType);
+        setStartDate(project.startDate);
+        // Load yarn materials (use new format, or migrate from legacy yarnUsedIds)
+        if (project.yarnMaterials && project.yarnMaterials.length > 0) {
+          setYarnMaterials(project.yarnMaterials);
+        } else if (project.yarnUsedIds && project.yarnUsedIds.length > 0) {
+          // Migrate legacy format
+          setYarnMaterials(project.yarnUsedIds.map(ymId => ({ itemId: ymId, quantity: 1 })));
+        } else {
+          setYarnMaterials([]);
+        }
+        setHookUsedIds(project.hookUsedIds || []);
+      }
       // Mark form as initialized so change detection can begin
       isFormInitializedRef.current = true;
     }
-  }, [project]);
+  }, [project, id]);
+
+  // Check for newly created inventory on focus (auto-add feature)
+  useFocusEffect(
+    useCallback(() => {
+      const newItem = consumeNewlyCreatedInventory();
+      if (newItem) {
+        if (newItem.category === 'yarn') {
+          setYarnMaterials(prev => {
+            // Don't add duplicate
+            if (prev.some(m => m.itemId === newItem.id)) return prev;
+            return [...prev, { itemId: newItem.id, quantity: 1 }];
+          });
+          if (__DEV__) console.log('[EditProject] Auto-added new yarn:', newItem.name);
+        } else if (newItem.category === 'hook') {
+          setHookUsedIds(prev => {
+            // Don't add duplicate
+            if (prev.includes(newItem.id)) return prev;
+            return [...prev, newItem.id];
+          });
+          if (__DEV__) console.log('[EditProject] Auto-added new hook:', newItem.name);
+        }
+      }
+    }, [])
+  );
 
   // Create normalized form state for change detection
   const formState = useMemo(() => ({
@@ -130,6 +197,7 @@ export default function EditProjectScreen(): React.JSX.Element {
     dialogMessage: t('common.unsavedChangesMessage'),
     discardText: t('common.discard'),
     keepEditingText: t('common.keepEditing'),
+    onDiscard: clearProjectDraft, // Clean up any saved draft when discarding
   });
 
   /** Opens photo source selection dialog */
@@ -250,10 +318,16 @@ export default function EditProjectScreen(): React.JSX.Element {
         {
           text: t('projects.addNewYarn'),
           onPress: () => {
-            router.dismiss();
+            // Save draft before navigating to Add Inventory
+            saveFormAsDraft({
+              title, description, notes, inspirationUrl, images,
+              defaultImageIndex, patternImages, patternPdf, patternUrl,
+              status, projectType, startDate, yarnMaterials, hookUsedIds,
+            }, 'edit', id as string);
+            // Navigate to Add Inventory (edit form stays in stack)
             router.push({
               pathname: '/add-inventory',
-              params: { category: 'yarn' },
+              params: { category: 'yarn', returnTo: 'project-form' },
             });
           },
         },
@@ -263,7 +337,11 @@ export default function EditProjectScreen(): React.JSX.Element {
         },
       ]
     );
-  }, [t]);
+  }, [
+    t, id, title, description, notes, inspirationUrl, images, defaultImageIndex,
+    patternImages, patternPdf, patternUrl, status, projectType, startDate,
+    yarnMaterials, hookUsedIds
+  ]);
 
   /** Opens hook selection dialog */
   const handleAddHook = useCallback(() => {
@@ -278,10 +356,16 @@ export default function EditProjectScreen(): React.JSX.Element {
         {
           text: t('projects.addNewHook'),
           onPress: () => {
-            router.dismiss();
+            // Save draft before navigating to Add Inventory
+            saveFormAsDraft({
+              title, description, notes, inspirationUrl, images,
+              defaultImageIndex, patternImages, patternPdf, patternUrl,
+              status, projectType, startDate, yarnMaterials, hookUsedIds,
+            }, 'edit', id as string);
+            // Navigate to Add Inventory (edit form stays in stack)
             router.push({
               pathname: '/add-inventory',
-              params: { category: 'hook' },
+              params: { category: 'hook', returnTo: 'project-form' },
             });
           },
         },
@@ -291,7 +375,11 @@ export default function EditProjectScreen(): React.JSX.Element {
         },
       ]
     );
-  }, [t]);
+  }, [
+    t, id, title, description, notes, inspirationUrl, images, defaultImageIndex,
+    patternImages, patternPdf, patternUrl, status, projectType, startDate,
+    yarnMaterials, hookUsedIds
+  ]);
 
   /** Removes a yarn from materials */
   const handleRemoveYarn = useCallback((id: string) => {
@@ -341,7 +429,8 @@ export default function EditProjectScreen(): React.JSX.Element {
         console.log('📤 Submitting update with hookUsedIds:', hookUsedIds);
       }
       await updateProject(project.id, updateData);
-      // Reset form state before navigating back to prevent unsaved changes dialog
+      // Clear any saved draft and reset form state before navigating back
+      clearProjectDraft();
       resetInitialState();
       router.back();
     } catch {

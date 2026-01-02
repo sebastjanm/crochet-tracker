@@ -26,6 +26,7 @@ import { useInventory } from '@/providers/InventoryProvider';
 import { useAuth } from '@/providers/AuthProvider';
 import { useBrandSuggestions } from '@/hooks/useBrandSuggestions';
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
+import { setNewlyCreatedInventory } from '@/lib/legend-state';
 import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, cardShadow, buttonShadow } from '@/constants/pixelRatio';
@@ -278,7 +279,7 @@ export default function AddInventoryScreen(): React.JSX.Element {
         ? hookName.trim()
         : otherName.trim();
 
-      await addItem({
+      const newItem = await addItem({
         name: itemName,
         category,
         description,
@@ -294,6 +295,16 @@ export default function AddInventoryScreen(): React.JSX.Element {
       // Learn the brand for future suggestions (yarn only)
       if (category === 'yarn' && brand.trim()) {
         await learnBrand(brand.trim());
+      }
+
+      // If we came from project form, track this for auto-selection on return
+      if (params.returnTo === 'project-form') {
+        setNewlyCreatedInventory({
+          id: newItem.id,
+          category,
+          name: itemName,
+          createdAt: Date.now(),
+        });
       }
 
       resetInitialState();

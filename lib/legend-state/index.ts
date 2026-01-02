@@ -40,3 +40,22 @@ export {
 
 // Image sync queue - Persistent upload queue for images
 export { imageSyncQueue, type ImageUploadCallbacks } from './image-sync-queue';
+
+// Project draft - Persists form state during navigation to Add Inventory
+export {
+  projectDraft$,
+  clearProjectDraft,
+  getProjectDraft,
+  saveFormAsDraft,
+  type ProjectDraft,
+  type ProjectFormState,
+} from './project-draft';
+
+// New inventory tracker - Tracks newly created items for auto-add on return
+export {
+  newlyCreatedInventory$,
+  setNewlyCreatedInventory,
+  consumeNewlyCreatedInventory,
+  clearNewlyCreatedInventory,
+  type NewlyCreatedInventory,
+} from './new-inventory-tracker';

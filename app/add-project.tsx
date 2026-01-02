@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Lightbulb, Clock, CheckCircle, Star, Trash2, PauseCircle, RotateCcw, FileText, Link } from 'lucide-react-native';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
@@ -30,6 +30,12 @@ import { useLanguage } from '@/providers/LanguageProvider';
 import { useImagePicker } from '@/hooks/useImagePicker';
 import { useImageActions } from '@/hooks/useImageActions';
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
+import {
+  clearProjectDraft,
+  getProjectDraft,
+  saveFormAsDraft,
+  consumeNewlyCreatedInventory,
+} from '@/lib/legend-state';
 import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, buttonShadow } from '@/constants/pixelRatio';
@@ -95,7 +101,73 @@ export default function AddProjectScreen(): React.JSX.Element {
     dialogMessage: t('common.unsavedChangesMessage'),
     discardText: t('common.discard'),
     keepEditingText: t('common.keepEditing'),
+    onDiscard: clearProjectDraft, // Clean up any saved draft when discarding
   });
+
+  // Restore draft on mount (if returning from Add Inventory)
+  useEffect(() => {
+    try {
+      const draft = getProjectDraft();
+      if (draft && draft.screenType === 'add') {
+        // Restore all form fields
+        setTitle(draft.title);
+        setDescription(draft.description);
+        setNotes(draft.notes);
+        // Extract URIs from ProjectImage (can be string or ImageSource object)
+        setImages(draft.images.map(img => {
+          if (typeof img === 'string') return img;
+          // ImageSource object - extract uri property
+          if (typeof img === 'object' && img !== null && 'uri' in img) {
+            return (img as { uri: string }).uri;
+          }
+          return ''; // Fallback for corrupted data
+        }).filter(uri => uri.length > 0)); // Remove empty strings
+        setDefaultImageIndex(draft.defaultImageIndex);
+        setPatternImages(draft.patternImages);
+        setPatternPdf(draft.patternPdf);
+        setPatternUrl(draft.patternUrl);
+        setStatus(draft.status as ProjectStatus);
+        setProjectType(draft.projectType as ProjectType | undefined);
+        setStartDate(draft.startDate ? new Date(draft.startDate) : undefined);
+        setYarnMaterials(draft.yarnMaterials.map(ym => ({
+          itemId: ym.inventoryItemId,
+          quantity: ym.quantity,
+        })));
+        setHookUsedIds(draft.hookUsedIds);
+        // Clear draft after restoration
+        clearProjectDraft();
+        if (__DEV__) console.log('[AddProject] Restored draft from navigation');
+      }
+    } catch (error) {
+      // If draft restoration fails, clear corrupted data and continue with fresh form
+      if (__DEV__) console.error('[AddProject] Failed to restore draft:', error);
+      clearProjectDraft();
+    }
+  }, []);
+
+  // Check for newly created inventory on focus (auto-add feature)
+  useFocusEffect(
+    useCallback(() => {
+      const newItem = consumeNewlyCreatedInventory();
+      if (newItem) {
+        if (newItem.category === 'yarn') {
+          setYarnMaterials(prev => {
+            // Don't add duplicate
+            if (prev.some(m => m.itemId === newItem.id)) return prev;
+            return [...prev, { itemId: newItem.id, quantity: 1 }];
+          });
+          if (__DEV__) console.log('[AddProject] Auto-added new yarn:', newItem.name);
+        } else if (newItem.category === 'hook') {
+          setHookUsedIds(prev => {
+            // Don't add duplicate
+            if (prev.includes(newItem.id)) return prev;
+            return [...prev, newItem.id];
+          });
+          if (__DEV__) console.log('[AddProject] Auto-added new hook:', newItem.name);
+        }
+      }
+    }, [])
+  );
 
   /** Opens photo source selection dialog */
   const handleAddPhoto = useCallback(() => {
@@ -215,26 +287,17 @@ export default function AddProjectScreen(): React.JSX.Element {
         {
           text: t('projects.addNewYarn'),
           onPress: () => {
-            Alert.alert(
-              t('projects.addNewYarn'),
-              t('projects.formWillClose'),
-              [
-                {
-                  text: t('common.cancel'),
-                  style: 'cancel',
-                },
-                {
-                  text: t('common.continue'),
-                  onPress: () => {
-                    router.dismiss();
-                    router.push({
-                      pathname: '/add-inventory',
-                      params: { category: 'yarn' },
-                    });
-                  },
-                },
-              ]
-            );
+            // Save draft before navigating to Add Inventory
+            saveFormAsDraft({
+              title, description, notes, inspirationUrl, images,
+              defaultImageIndex, patternImages, patternPdf, patternUrl,
+              status, projectType, startDate, yarnMaterials, hookUsedIds,
+            }, 'add');
+            // Navigate to Add Inventory (project form stays in stack)
+            router.push({
+              pathname: '/add-inventory',
+              params: { category: 'yarn', returnTo: 'project-form' },
+            });
           },
         },
         {
@@ -243,7 +306,11 @@ export default function AddProjectScreen(): React.JSX.Element {
         },
       ]
     );
-  }, [t]);
+  }, [
+    t, title, description, notes, inspirationUrl, images, defaultImageIndex,
+    patternImages, patternPdf, patternUrl, status, projectType, startDate,
+    yarnMaterials, hookUsedIds
+  ]);
 
   /** Opens hook selection dialog */
   const handleAddHook = useCallback(() => {
@@ -258,26 +325,17 @@ export default function AddProjectScreen(): React.JSX.Element {
         {
           text: t('projects.addNewHook'),
           onPress: () => {
-            Alert.alert(
-              t('projects.addNewHook'),
-              t('projects.formWillClose'),
-              [
-                {
-                  text: t('common.cancel'),
-                  style: 'cancel',
-                },
-                {
-                  text: t('common.continue'),
-                  onPress: () => {
-                    router.dismiss();
-                    router.push({
-                      pathname: '/add-inventory',
-                      params: { category: 'hook' },
-                    });
-                  },
-                },
-              ]
-            );
+            // Save draft before navigating to Add Inventory
+            saveFormAsDraft({
+              title, description, notes, inspirationUrl, images,
+              defaultImageIndex, patternImages, patternPdf, patternUrl,
+              status, projectType, startDate, yarnMaterials, hookUsedIds,
+            }, 'add');
+            // Navigate to Add Inventory (project form stays in stack)
+            router.push({
+              pathname: '/add-inventory',
+              params: { category: 'hook', returnTo: 'project-form' },
+            });
           },
         },
         {
@@ -286,7 +344,11 @@ export default function AddProjectScreen(): React.JSX.Element {
         },
       ]
     );
-  }, [t]);
+  }, [
+    t, title, description, notes, inspirationUrl, images, defaultImageIndex,
+    patternImages, patternPdf, patternUrl, status, projectType, startDate,
+    yarnMaterials, hookUsedIds
+  ]);
 
   /** Removes a yarn from materials */
   const handleRemoveYarn = useCallback((id: string) => {
@@ -330,7 +392,8 @@ export default function AddProjectScreen(): React.JSX.Element {
         yarnMaterials,
         hookUsedIds,
       });
-      // Reset form state before dismissing to prevent unsaved changes dialog
+      // Clear any saved draft and reset form state before dismissing
+      clearProjectDraft();
       resetInitialState();
       router.dismiss();
     } catch {

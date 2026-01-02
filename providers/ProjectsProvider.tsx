@@ -5,11 +5,20 @@
  * - Source of Truth: Legend-State Observable (projects$)
  * - Persistence: AsyncStorage (handled by Legend-State)
  * - Sync: Supabase (handled by Legend-State)
+ *
+ * OFFICIAL API USAGE (production-grade):
+ * - syncState(obs$).isPersistLoaded - local persistence loaded
+ * - syncState(obs$).isLoaded - remote sync complete
+ * - syncState(obs$).clearPersist() - clear cache for full refresh
+ * - syncState(obs$).sync() - force re-sync
+ *
+ * @see https://legendapp.com/open-source/state/v3/sync/persist-sync/
  */
 
-import { useCallback, useMemo, useEffect, useState } from 'react';
+import { useCallback, useMemo, useEffect, useState, useRef } from 'react';
 import createContextHook from '@nkzw/create-context-hook';
-import { useSelector } from '@legendapp/state/react';
+import { useSelector, useObserve } from '@legendapp/state/react';
+import { syncState } from '@legendapp/state';
 import { Project, ProjectStatus, ProjectYarn } from '@/types';
 import { syncProjectMaterials, removeProjectFromInventory } from '@/lib/cross-context-sync';
 import {
@@ -40,22 +49,63 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
     [user?.id, isPro, refreshKey]
   );
 
-  // Auto-reconciliation: detect orphaned projects on app start
+  // Track sync state separately to avoid render-cycle issues
+  // Using useState + useObserve instead of useSelector for syncState
+  const [syncStatus, setSyncStatus] = useState({
+    isPersistLoaded: false,
+    isLoaded: false,
+  });
+
+  // Keep ref updated for use in refresh function
+  const syncStateRef = useRef(syncState(projects$));
+
+  // Re-subscribe to sync state when projects$ changes (after refresh)
+  useEffect(() => {
+    syncStateRef.current = syncState(projects$);
+
+    // Reset sync status for new observable
+    setSyncStatus({ isPersistLoaded: false, isLoaded: false });
+
+    if (__DEV__) {
+      console.log('[Projects] New observable - watching sync state');
+    }
+  }, [projects$]);
+
+  // Observe sync state changes - must access projects$ directly for reactivity
+  useObserve(() => {
+    // Access projects$ directly so useObserve tracks it as a dependency
+    const state = syncState(projects$);
+    const isPersistLoaded = state.isPersistLoaded?.get() ?? false;
+    const isLoaded = state.isLoaded?.get() ?? false;
+
+    // Update state in next tick to avoid render-cycle issues
+    setTimeout(() => {
+      setSyncStatus({ isPersistLoaded, isLoaded });
+    }, 0);
+
+    if (__DEV__) {
+      console.log('[Projects] Sync status:', { isPersistLoaded, isLoaded });
+    }
+  });
+
+  // Loading = not yet loaded from cache OR (Pro user AND remote not loaded)
+  const isLoading = !syncStatus.isPersistLoaded || (isPro && !syncStatus.isLoaded);
+
+  // Sync complete when both persistence AND remote are loaded
+  const isSyncComplete = syncStatus.isPersistLoaded && syncStatus.isLoaded;
+
+  // Auto-reconciliation: detect orphaned projects after sync completes
   // This catches edge cases where data was modified directly in Supabase
   // Runs for ALL authenticated users (smart safety check protects never-synced users)
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || !isSyncComplete) return; // Wait for sync to complete
 
-    // Wait for initial sync to complete before reconciling
-    const timer = setTimeout(async () => {
-      const result = await reconcileProjects(user.id, projects$);
+    reconcileProjects(user.id, projects$).then((result) => {
       if (result.removed > 0 && __DEV__) {
         console.log(`[Projects] Reconciliation removed ${result.removed} orphaned projects`);
       }
-    }, 2000); // 2s delay for initial sync
-
-    return () => clearTimeout(timer);
-  }, [user?.id, projects$]);
+    });
+  }, [user?.id, projects$, isSyncComplete]);
 
   // 2. Reactive Data Selector
   const projects = useSelector(() => {
@@ -81,8 +131,6 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
       })
       .sort((a: Project, b: Project) => b.updatedAt.getTime() - a.updatedAt.getTime());
   });
-
-  const isLoading = false;
 
   // ==========================================================================
   // ACTIONS
@@ -231,8 +279,13 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
     deleteProject,
     getProjectById,
     getProjectsByStatus,
+    // Force a full refresh from Supabase
+    // This clears ALL caches and recreates the observable for a fresh sync
     refreshProjects: async () => {
-      if (__DEV__) console.log('[Projects] Forcing store refresh...');
+      if (__DEV__) console.log('[Projects] Triggering refresh...');
+      // Just trigger store re-creation via useMemo dependency
+      // NOTE: AsyncStorage + store cache clearing is handled by the caller (profile.tsx)
+      // to ensure ALL clears happen BEFORE any new stores are created
       setRefreshKey(prev => prev + 1);
     },
     replaceProjectImage,

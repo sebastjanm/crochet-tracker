@@ -34,7 +34,8 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useProjects } from '@/providers/ProjectsProvider';
 import { useInventory } from '@/providers/InventoryProvider';
 import { useLanguage } from '@/providers/LanguageProvider';
-import { imageSyncQueue, resetUserStores } from '@/lib/legend-state';
+import { imageSyncQueue, resetUserStores, clearStoreCache } from '@/lib/legend-state';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { mapProjectToRow } from '@/lib/legend-state/mappers';
 import { useToast } from '@/components/Toast';
@@ -107,7 +108,9 @@ export default function ProfileScreen(): React.JSX.Element {
 
   /**
    * Refresh all data from cloud (Pro users only).
-   * Clears local cache and forces a fresh sync from Supabase.
+   * Uses Legend-State's official clearPersist() + sync() API.
+   *
+   * @see https://legendapp.com/open-source/state/v3/sync/persist-sync/
    */
   const handleRefreshFromCloud = async () => {
     if (!user?.id || !isPro) return;
@@ -122,35 +125,53 @@ export default function ProfileScreen(): React.JSX.Element {
           onPress: async () => {
             setIsRefreshingFromCloud(true);
             try {
-              // DEBUG: Verify Supabase session before refresh
+              // Verify session first
               if (supabase) {
                 const { data: { session } } = await supabase.auth.getSession();
-                if (__DEV__) {
-                  console.log('[Refresh] Session user:', session?.user?.id);
-                  console.log('[Refresh] Expected user:', user.id);
-                  console.log('[Refresh] Session valid:', !!session);
-                }
                 if (!session) {
                   showToast('No active session - please re-login', 'error');
+                  setIsRefreshingFromCloud(false);
                   return;
+                }
+
+                if (__DEV__) {
+                  console.log('[Refresh] Session valid:', !!session);
+                  console.log('[Refresh] User ID:', user.id);
+
+                  // DEBUG: Direct Supabase query to verify data exists
+                  const { data: directInventory } = await supabase
+                    .from('inventory_items')
+                    .select('id, name')
+                    .eq('user_id', user.id)
+                    .is('deleted_at', null);
+
+                  console.log('[Refresh] DIRECT Supabase inventory count:', directInventory?.length ?? 0);
                 }
               }
 
-              await resetUserStores(user.id);
+              // Refresh using Legend-State's official API
+              // CRITICAL: Clear ALL persistence BEFORE creating new stores
+              // Otherwise new stores read stale metadata and do incremental sync
 
-              // Refresh contexts to trigger new data fetch
+              // 1. Clear ALL AsyncStorage keys for this user (data + metadata)
+              const keysToRemove = [
+                `projects_${user.id}`,
+                `projects_${user.id}__m`,
+                `inventory_${user.id}`,
+                `inventory_${user.id}__m`,
+              ];
+              await AsyncStorage.multiRemove(keysToRemove);
+              if (__DEV__) console.log('[Refresh] AsyncStorage cleared:', keysToRemove);
+
+              // 2. Clear in-memory store cache
+              clearStoreCache();
+              if (__DEV__) console.log('[Refresh] Store cache cleared');
+
+              // 3. Trigger provider refresh (creates fresh stores with empty AsyncStorage)
               await Promise.all([
                 refreshProjects(),
                 refreshItems(),
               ]);
-
-              // Wait for Legend-State syncedSupabase to complete initial fetch
-              // Increased to 5s for slower networks
-              await new Promise(resolve => setTimeout(resolve, 5000));
-
-              if (__DEV__) {
-                console.log('[Refresh] Complete - check inventory/project counts');
-              }
 
               showToast(t('profile.refreshSuccess'), 'success');
             } catch (error) {

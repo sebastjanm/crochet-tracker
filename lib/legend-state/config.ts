@@ -48,7 +48,8 @@ export function initializeLegendStateSync(): void {
   if (supabase) {
     configureSyncedSupabase({
       generateId: () => uuidv4(),
-      changesSince: 'last-sync',
+      // REMOVED: changesSince: 'last-sync' was causing sync issues
+      // Each store can set this individually if needed
       // Standard field names (unified across ALL tables)
       fieldCreatedAt: 'created_at',
       fieldUpdatedAt: 'updated_at',
@@ -103,8 +104,10 @@ export function createProjectsStore(userId: string | null, isPro: boolean): any 
 
   // 2. Cloud Config (Only if Pro + Authed)
   if (userId && isPro && supabase) {
-    if (__DEV__) console.log(`[LegendState] Creating SYNCED projects store for ${userId}`);
-    
+    if (__DEV__) {
+      console.log(`[LegendState] Creating SYNCED projects store for ${userId}`);
+    }
+
     // SyncedSupabase handles both local persistence AND cloud sync
     return observable(
       syncedSupabase({
@@ -113,6 +116,7 @@ export function createProjectsStore(userId: string | null, isPro: boolean): any 
         filter: (query: any) => query.eq('user_id', userId),
         actions: ['read', 'create', 'update', 'delete'],
         realtime: { filter: `user_id=eq.${userId}` },
+        changesSince: 'last-sync',
         persist: {
           plugin: asyncStoragePlugin,
           name: persistKey,
@@ -122,7 +126,7 @@ export function createProjectsStore(userId: string | null, isPro: boolean): any 
         as: 'object',
         // Debug callbacks
         onError: (error: any) => {
-          console.error('[LegendState] Sync ERROR:', error);
+          console.error('[LegendState] Projects Sync ERROR:', error);
         },
         onSaved: () => {
           if (__DEV__) console.log('[LegendState] Projects SAVED to Supabase');
@@ -155,7 +159,11 @@ export function createInventoryStore(userId: string | null, isPro: boolean): any
   const persistKey = userId ? `inventory_${userId}` : 'inventory_guest';
 
   if (userId && isPro && supabase) {
-    if (__DEV__) console.log(`[LegendState] Creating SYNCED inventory store for ${userId}`);
+    if (__DEV__) {
+      console.log(`[LegendState] Creating SYNCED inventory store for ${userId}`);
+      console.log(`[LegendState] Persist key: ${persistKey}`);
+    }
+
     return observable(
       syncedSupabase({
         supabase,
@@ -163,7 +171,8 @@ export function createInventoryStore(userId: string | null, isPro: boolean): any
         filter: (query: any) => query.eq('user_id', userId),
         actions: ['read', 'create', 'update', 'delete'],
         realtime: { filter: `user_id=eq.${userId}` },
-        // No field overrides needed - unified with global config
+        // Full fetch mode (no incremental sync) - simpler and more reliable
+        // Can enable changesSince: 'last-sync' later for efficiency if needed
         persist: {
           plugin: asyncStoragePlugin,
           name: persistKey,
@@ -171,7 +180,6 @@ export function createInventoryStore(userId: string | null, isPro: boolean): any
         },
         retry: { infinite: true },
         as: 'object',
-        // Debug callbacks
         onError: (error: any) => {
           console.error('[LegendState] Inventory Sync ERROR:', error);
         },
@@ -202,6 +210,15 @@ export function createInventoryStore(userId: string | null, isPro: boolean): any
 
 // We cache stores by "userId + isPro" signature to detect mode changes
 const storeCache = new Map<string, { projects: any; inventory: any }>();
+
+/**
+ * Clear the in-memory store cache.
+ * Call this before triggering a store re-creation to ensure fresh observables.
+ */
+export function clearStoreCache(): void {
+  storeCache.clear();
+  if (__DEV__) console.log('[LegendState] Store cache cleared');
+}
 
 /**
  * Get or create stores for a user. Cached by userId + isPro signature.

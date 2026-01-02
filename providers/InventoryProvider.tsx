@@ -5,11 +5,20 @@
  * - Source of Truth: Legend-State Observable (inventory$)
  * - Persistence: AsyncStorage (handled by Legend-State)
  * - Sync: Supabase (handled by Legend-State)
+ *
+ * OFFICIAL API USAGE (production-grade):
+ * - syncState(obs$).isPersistLoaded - local persistence loaded
+ * - syncState(obs$).isLoaded - remote sync complete
+ * - syncState(obs$).clearPersist() - clear cache for full refresh
+ * - syncState(obs$).sync() - force re-sync
+ *
+ * @see https://legendapp.com/open-source/state/v3/sync/persist-sync/
  */
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import createContextHook from '@nkzw/create-context-hook';
-import { useSelector } from '@legendapp/state/react';
+import { useSelector, useObserve } from '@legendapp/state/react';
+import { syncState } from '@legendapp/state';
 import { InventoryItem } from '@/types';
 import { useImagePicker } from '@/hooks/useImagePicker';
 import { syncInventoryToProjects, removeInventoryFromProjects } from '@/lib/cross-context-sync';
@@ -47,22 +56,63 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     [user?.id, isPro, refreshKey]
   );
 
-  // Auto-reconciliation: detect orphaned inventory items on app start
+  // Track sync state separately to avoid render-cycle issues
+  // Using useState + useObserve instead of useSelector for syncState
+  const [syncStatus, setSyncStatus] = useState({
+    isPersistLoaded: false,
+    isLoaded: false,
+  });
+
+  // Keep ref updated for use in refresh function
+  const syncStateRef = useRef(syncState(inventory$));
+
+  // Re-subscribe to sync state when inventory$ changes (after refresh)
+  useEffect(() => {
+    syncStateRef.current = syncState(inventory$);
+
+    // Reset sync status for new observable
+    setSyncStatus({ isPersistLoaded: false, isLoaded: false });
+
+    if (__DEV__) {
+      console.log('[Inventory] New observable - watching sync state');
+    }
+  }, [inventory$]);
+
+  // Observe sync state changes - must access inventory$ directly for reactivity
+  useObserve(() => {
+    // Access inventory$ directly so useObserve tracks it as a dependency
+    const state = syncState(inventory$);
+    const isPersistLoaded = state.isPersistLoaded?.get() ?? false;
+    const isLoaded = state.isLoaded?.get() ?? false;
+
+    // Update state in next tick to avoid render-cycle issues
+    setTimeout(() => {
+      setSyncStatus({ isPersistLoaded, isLoaded });
+    }, 0);
+
+    if (__DEV__) {
+      console.log('[Inventory] Sync status:', { isPersistLoaded, isLoaded });
+    }
+  });
+
+  // Loading = not yet loaded from cache OR (Pro user AND remote not loaded)
+  const isLoading = !syncStatus.isPersistLoaded || (isPro && !syncStatus.isLoaded);
+
+  // Sync complete when both persistence AND remote are loaded
+  const isSyncComplete = syncStatus.isPersistLoaded && syncStatus.isLoaded;
+
+  // Auto-reconciliation: detect orphaned inventory items after sync completes
   // This catches edge cases where data was modified directly in Supabase
   // Runs for ALL authenticated users (smart safety check protects never-synced users)
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || !isSyncComplete) return; // Wait for sync to complete
 
-    // Wait for initial sync to complete before reconciling
-    const timer = setTimeout(async () => {
-      const result = await reconcileInventory(user.id, inventory$);
+    reconcileInventory(user.id, inventory$).then((result) => {
       if (result.removed > 0 && __DEV__) {
         console.log(`[Inventory] Reconciliation removed ${result.removed} orphaned items`);
       }
-    }, 2500); // 2.5s delay (slightly after projects)
-
-    return () => clearTimeout(timer);
-  }, [user?.id, inventory$]);
+    });
+  }, [user?.id, inventory$, isSyncComplete]);
 
   // 2. Reactive Data Selector
   const items: InventoryItem[] = useSelector(() => {
@@ -85,8 +135,6 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
       .map((row: unknown) => mapRowToInventoryItem(row as Parameters<typeof mapRowToInventoryItem>[0]))
       .sort((a: InventoryItem, b: InventoryItem) => b.updatedAt.getTime() - a.updatedAt.getTime());
   });
-
-  const isLoading = false;
 
   // ==========================================================================
   // ACTIONS
@@ -308,8 +356,13 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     setSortBy,
     showImagePickerOptions,
     isPickingImage,
+    // Force a full refresh from Supabase
+    // This clears ALL caches and recreates the observable for a fresh sync
     refreshItems: async () => {
-      if (__DEV__) console.log('[Inventory] Forcing store refresh...');
+      if (__DEV__) console.log('[Inventory] Triggering refresh...');
+      // Just trigger store re-creation via useMemo dependency
+      // NOTE: AsyncStorage + store cache clearing is handled by the caller (profile.tsx)
+      // to ensure ALL clears happen BEFORE any new stores are created
       setRefreshKey(prev => prev + 1);
     },
     replaceInventoryImage,

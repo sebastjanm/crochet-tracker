@@ -43,7 +43,7 @@ export default function AddProjectScreen(): React.JSX.Element {
   const { addProject } = useProjects();
   const { items: inventory } = useInventory();
   const { t } = useLanguage();
-  const { showImagePickerOptionsMultiple, takePhotoWithCamera } = useImagePicker();
+  const { pickImagesFromGallery, takePhotoWithCamera } = useImagePicker();
   const { showImageActions } = useImageActions();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -83,7 +83,7 @@ export default function AddProjectScreen(): React.JSX.Element {
         {
           text: t('projects.chooseFromLibrary'),
           onPress: async () => {
-            const result = await showImagePickerOptionsMultiple();
+            const result = await pickImagesFromGallery();
             if (result.success && result.data.length > 0) {
               setImages(prev => [...prev, ...result.data]);
             }
@@ -95,7 +95,7 @@ export default function AddProjectScreen(): React.JSX.Element {
         },
       ]
     );
-  }, [t, takePhotoWithCamera, showImagePickerOptionsMultiple]);
+  }, [t, takePhotoWithCamera, pickImagesFromGallery]);
 
   /** Removes an image and adjusts default index */
   const removeImage = useCallback((index: number) => {
@@ -114,11 +114,11 @@ export default function AddProjectScreen(): React.JSX.Element {
 
   /** Adds pattern images from library */
   const handleAddPatternImage = useCallback(async () => {
-    const result = await showImagePickerOptionsMultiple();
+    const result = await pickImagesFromGallery();
     if (result.success && result.data.length > 0) {
       setPatternImages(prev => [...prev, ...result.data]);
     }
-  }, [showImagePickerOptionsMultiple]);
+  }, [pickImagesFromGallery]);
 
   /** Removes a pattern image by index */
   const removePatternImage = useCallback((index: number) => {

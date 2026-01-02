@@ -150,18 +150,16 @@ export default function ProfileScreen(): React.JSX.Element {
               }
 
               // Refresh using Legend-State's official API
-              // CRITICAL: Clear ALL persistence BEFORE creating new stores
-              // Otherwise new stores read stale metadata and do incremental sync
+              // Clear only DATA, keep metadata to avoid Legend-State thinking
+              // fetched items are "new" and need to be saved back to Supabase
 
-              // 1. Clear ALL AsyncStorage keys for this user (data + metadata)
+              // 1. Clear data keys (NOT metadata) for this user
               const keysToRemove = [
                 `projects_${user.id}`,
-                `projects_${user.id}__m`,
                 `inventory_${user.id}`,
-                `inventory_${user.id}__m`,
               ];
               await AsyncStorage.multiRemove(keysToRemove);
-              if (__DEV__) console.log('[Refresh] AsyncStorage cleared:', keysToRemove);
+              if (__DEV__) console.log('[Refresh] AsyncStorage data cleared:', keysToRemove);
 
               // 2. Clear in-memory store cache
               clearStoreCache();

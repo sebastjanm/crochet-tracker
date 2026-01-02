@@ -707,7 +707,6 @@ export default {
     yourProgress: 'Ваш прогресс',
     yourCraftingJourney: 'Ваш творческий путь',
     defaultName: 'Мастер',
-    settingsComingSoon: 'Настройки скоро появятся!',
     helpCenter: 'Центр помощи',
     legal: 'Правовая информация',
     chooseAvatar: 'Выбрать аватар',

@@ -719,7 +719,6 @@ export default {
     yourProgress: 'Vaš napredek',
     yourCraftingJourney: 'Vaša ustvarjalna pot',
     defaultName: 'Ustvarjalec',
-    settingsComingSoon: 'Nastavitve kmalu na voljo!',
     helpCenter: 'Center za pomoč',
     legal: 'Pravne informacije',
     chooseAvatar: 'Izberi avatar',

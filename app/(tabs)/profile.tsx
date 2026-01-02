@@ -15,7 +15,6 @@ import {
   LogOut,
   ChevronRight,
   Scissors,
-  Settings,
   HelpCircle,
   Globe,
   FileText,
@@ -540,11 +539,6 @@ export default function ProfileScreen(): React.JSX.Element {
       label: t('profile.currency'),
       value: user?.currency || 'EUR',
       onPress: handleCurrencyChange,
-    },
-    {
-      icon: <Settings size={20} color={Colors.charcoal} />,
-      label: t('profile.settings'),
-      onPress: () => Alert.alert(t('profile.settings'), t('profile.settingsComingSoon')),
     },
     {
       icon: <HelpCircle size={20} color={Colors.charcoal} />,

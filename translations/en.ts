@@ -719,7 +719,6 @@ export default {
     yourProgress: 'Your Progress',
     yourCraftingJourney: 'Your crafting journey',
     defaultName: 'Crafter',
-    settingsComingSoon: 'Settings coming soon!',
     helpCenter: 'Help Center',
     legal: 'Legal',
     chooseAvatar: 'Choose Avatar',

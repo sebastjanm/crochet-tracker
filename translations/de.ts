@@ -707,7 +707,6 @@ export default {
     yourProgress: 'Ihr Fortschritt',
     yourCraftingJourney: 'Ihre kreative Reise',
     defaultName: 'Handwerker',
-    settingsComingSoon: 'Einstellungen kommen bald!',
     helpCenter: 'Hilfezentrum',
     legal: 'Rechtliches',
     chooseAvatar: 'Avatar wählen',

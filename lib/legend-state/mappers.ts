@@ -20,6 +20,7 @@ import {
   YarnDetails,
   HookDetails,
 } from '@/types';
+import { Json } from '@/lib/supabase/database.types';
 import { v4 as uuidv4 } from 'uuid';
 
 // ============================================================================
@@ -43,10 +44,11 @@ export interface ProjectRow {
   yarn_used_ids: string[];
   hook_used_ids: string[];
 
-  // JSONB fields (stored as JSON strings locally)
-  yarn_materials: string;
-  work_progress: string;
-  inspiration_sources: string;
+  // JSONB fields - pass as objects, NOT strings!
+  // Supabase client serializes these automatically
+  yarn_materials: Json | null;
+  work_progress: Json | null;
+  inspiration_sources: Json | null;
 
   // Scalar fields
   default_image_index: number;
@@ -90,10 +92,11 @@ export interface InventoryItemRow {
   location: string;
   notes: string;
 
-  // JSONB fields
-  yarn_details: string | null;
-  hook_details: string | null;
-  other_details: string | null;
+  // JSONB fields - pass as objects, NOT strings!
+  // Supabase client serializes these automatically
+  yarn_details: Json | null;
+  hook_details: Json | null;
+  other_details: Json | null;
 
   // Standard timestamps (unified - same as projects)
   created_at: string;
@@ -118,7 +121,7 @@ export function generateId(): string {
  * Handles: null/undefined, strings, and already-parsed objects.
  * Always returns fallback for null/undefined results.
  */
-function safeJsonParse<T>(json: string | object | null | undefined, fallback: T): T {
+function safeJsonParse<T>(json: Json | undefined, fallback: T): T {
   // Null or undefined input - use fallback
   if (json === null || json === undefined) return fallback;
 
@@ -229,10 +232,12 @@ export function mapProjectToRow(project: Project): Partial<ProjectRow> {
     yarn_used: project.yarnUsed || [],
     yarn_used_ids: project.yarnUsedIds || [],
     hook_used_ids: project.hookUsedIds || [],
-    // JSONB fields - keep as JSON strings
-    yarn_materials: safeJsonStringify(project.yarnMaterials),
-    work_progress: safeJsonStringify(project.workProgress),
-    inspiration_sources: safeJsonStringify(project.inspirationSources),
+    // JSONB fields - pass as objects, NOT strings!
+    // Supabase client handles JSON serialization internally
+    // Cast to Json since domain types are JSON-serializable at runtime
+    yarn_materials: (project.yarnMaterials ?? null) as Json,
+    work_progress: (project.workProgress ?? null) as Json,
+    inspiration_sources: (project.inspirationSources ?? null) as Json,
     // Scalar fields
     default_image_index: project.defaultImageIndex || 0,
     pattern_pdf: project.patternPdf || '',
@@ -333,10 +338,12 @@ export function mapInventoryItemToRow(item: InventoryItem): Partial<InventoryIte
     // Location & identification
     location: item.location || '',
     notes: item.notes || '',
-    // JSONB fields
-    yarn_details: safeJsonStringify(item.yarnDetails),
-    hook_details: safeJsonStringify(item.hookDetails),
-    other_details: safeJsonStringify(item.otherDetails),
+    // JSONB fields - pass as objects, NOT strings!
+    // Supabase client handles JSON serialization internally
+    // Cast to Json since domain types are JSON-serializable at runtime
+    yarn_details: (item.yarnDetails ?? null) as Json,
+    hook_details: (item.hookDetails ?? null) as Json,
+    other_details: (item.otherDetails ?? null) as Json,
     // Unified timestamps
     created_at: item.createdAt.toISOString(),
     updated_at: item.updatedAt.toISOString(),

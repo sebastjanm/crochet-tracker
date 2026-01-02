@@ -17,7 +17,7 @@
 
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
-import { observable } from '@legendapp/state';
+import { observable, syncState } from '@legendapp/state';
 import { configureSynced, syncObservable } from '@legendapp/state/sync';
 import { observablePersistAsyncStorage } from '@legendapp/state/persist-plugins/async-storage';
 import { syncedSupabase, configureSyncedSupabase } from '@legendapp/state/sync-plugins/supabase';
@@ -102,6 +102,16 @@ export function createProjectsStore(userId: string | null, isPro: boolean): any 
   // Use a generic 'guest' key if no user, or user-specific key
   const persistKey = userId ? `projects_${userId}` : 'projects_guest';
 
+  // DEBUG: Log all conditions
+  if (__DEV__) {
+    console.log(`[LegendState] createProjectsStore called:`, {
+      userId: userId ? userId.substring(0, 8) + '...' : null,
+      isPro,
+      hasSupabase: !!supabase,
+      willSync: !!(userId && isPro && supabase),
+    });
+  }
+
   // 2. Cloud Config (Only if Pro + Authed)
   if (userId && isPro && supabase) {
     if (__DEV__) {
@@ -116,17 +126,46 @@ export function createProjectsStore(userId: string | null, isPro: boolean): any 
         filter: (query: any) => query.eq('user_id', userId),
         actions: ['read', 'create', 'update', 'delete'],
         realtime: { filter: `user_id=eq.${userId}` },
-        changesSince: 'last-sync',
+        // REMOVED: changesSince: 'last-sync' was causing missed records
+        // Full fetch is more reliable (can enable incremental later for efficiency)
         persist: {
           plugin: asyncStoragePlugin,
           name: persistKey,
           retrySync: true, // Retry failed syncs on reload
         },
-        retry: { infinite: true }, // Retry offline changes forever
+        // DEBUG: Temporarily DISABLE infinite retry to see actual errors
+        // retry: { infinite: true }, // DISABLED - was masking RLS/sync errors
+        retry: {
+          times: 3,
+          delay: 1000,
+          backoff: 'exponential',
+        },
         as: 'object',
+        // CRITICAL: Transform to strip null timestamp fields before INSERT
+        // PostgreSQL NOT NULL constraint requires timestamps, but we want DB defaults
+        // Legend-State sends null for undefined fields, so we strip them here
+        transform: {
+          save: (value: any) => {
+            if (!value) return value;
+            const result = { ...value };
+            // Strip null/undefined timestamps - let DB set them via DEFAULT now()
+            if (result.created_at === null || result.created_at === undefined) {
+              delete result.created_at;
+            }
+            if (result.updated_at === null || result.updated_at === undefined) {
+              delete result.updated_at;
+            }
+            return result;
+          },
+        },
         // Debug callbacks
         onError: (error: any) => {
           console.error('[LegendState] Projects Sync ERROR:', error);
+          // Log full error details
+          if (error?.message) console.error('[LegendState] Error message:', error.message);
+          if (error?.code) console.error('[LegendState] Error code:', error.code);
+          if (error?.details) console.error('[LegendState] Error details:', error.details);
+          if (error?.hint) console.error('[LegendState] Error hint:', error.hint);
         },
         onSaved: () => {
           if (__DEV__) console.log('[LegendState] Projects SAVED to Supabase');
@@ -178,10 +217,38 @@ export function createInventoryStore(userId: string | null, isPro: boolean): any
           name: persistKey,
           retrySync: true,
         },
-        retry: { infinite: true },
+        // DEBUG: Temporarily DISABLE infinite retry to see actual errors
+        // retry: { infinite: true }, // DISABLED - was masking RLS/sync errors
+        retry: {
+          times: 3,
+          delay: 1000,
+          backoff: 'exponential',
+        },
         as: 'object',
+        // CRITICAL: Transform to strip null timestamp fields before INSERT
+        // PostgreSQL NOT NULL constraint requires timestamps, but we want DB defaults
+        // Legend-State sends null for undefined fields, so we strip them here
+        transform: {
+          save: (value: any) => {
+            if (!value) return value;
+            const result = { ...value };
+            // Strip null/undefined timestamps - let DB set them via DEFAULT now()
+            if (result.created_at === null || result.created_at === undefined) {
+              delete result.created_at;
+            }
+            if (result.updated_at === null || result.updated_at === undefined) {
+              delete result.updated_at;
+            }
+            return result;
+          },
+        },
         onError: (error: any) => {
           console.error('[LegendState] Inventory Sync ERROR:', error);
+          // Log full error details
+          if (error?.message) console.error('[LegendState] Error message:', error.message);
+          if (error?.code) console.error('[LegendState] Error code:', error.code);
+          if (error?.details) console.error('[LegendState] Error details:', error.details);
+          if (error?.hint) console.error('[LegendState] Error hint:', error.hint);
         },
         onSaved: () => {
           if (__DEV__) console.log('[LegendState] Inventory SAVED to Supabase');
@@ -227,6 +294,15 @@ export function getStores(userId: string | null, isPro: boolean) {
   const cacheKey = `${userId || 'guest'}_${isPro ? 'pro' : 'free'}`;
 
   let cached = storeCache.get(cacheKey);
+
+  if (__DEV__) {
+    console.log(`[LegendState] getStores called:`, {
+      cacheKey,
+      hasCached: !!cached,
+      cacheSize: storeCache.size,
+    });
+  }
+
   if (!cached) {
     storeCache.clear();
 
@@ -521,19 +597,33 @@ export function addProject(
   projectData: Partial<Omit<ProjectRow, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'deleted_at'>>
 ): string {
   const id = generateId();
-  const now = new Date().toISOString();
+
+  // CRITICAL: For syncedSupabase with fieldCreatedAt configured,
+  // created_at must be OMITTED (undefined) for CREATE operations.
+  // Legend-State uses !created_at to detect new records.
+  // If created_at has a value, it's treated as an UPDATE (existing record).
+  // The server will set the actual timestamp on insert via DEFAULT now().
+  // NOTE: We cannot pass null because PostgreSQL's NOT NULL constraint rejects it.
+  const dataToSet: Record<string, unknown> = {
+    ...projectData,
+    id,
+    user_id: userId, // Can be null for guest
+    deleted_at: null, // NULL = active (no constraint issue, NULL is allowed)
+  };
+
+  // CRITICAL: Remove timestamps that may have been passed via projectData
+  // The mapper includes them, but we need them ABSENT for CREATE detection
+  delete dataToSet.created_at;
+  delete dataToSet.updated_at;
+
+  if (__DEV__) {
+    console.log('[LegendState] addProject:', { id, title: projectData.title });
+  }
 
   // Just write to the observable.
   // - If Synced: handles cloud + local.
   // - If Local: handles local.
-  projects$[id].set({
-    ...projectData,
-    id,
-    user_id: userId, // Can be null for guest
-    created_at: now,
-    updated_at: now,
-    deleted_at: null, // NULL = active
-  });
+  projects$[id].set(dataToSet);
 
   return id;
 }
@@ -561,16 +651,29 @@ export function addInventoryItem(
   itemData: Partial<Omit<InventoryItemRow, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'deleted_at'>>
 ): string {
   const id = generateId();
-  const now = new Date().toISOString();
 
-  inventory$[id].set({
+  // CRITICAL: For syncedSupabase with fieldCreatedAt configured,
+  // created_at must be OMITTED (undefined) for CREATE operations.
+  // Legend-State uses !created_at to detect new records.
+  // The server will set the actual timestamp on insert via DEFAULT now().
+  const dataToSet: Record<string, unknown> = {
     ...itemData,
     id,
     user_id: userId,
-    created_at: now,
-    updated_at: now,
     deleted_at: null, // NULL = active
-  });
+  };
+
+  // CRITICAL: Remove timestamps that may have been passed via itemData
+  // The mapper includes them, but we need them ABSENT for CREATE detection
+  delete dataToSet.created_at;
+  delete dataToSet.updated_at;
+
+  if (__DEV__) {
+    console.log('[LegendState] addInventoryItem:', { id, name: itemData.name });
+  }
+
+  inventory$[id].set(dataToSet);
+
   return id;
 }
 

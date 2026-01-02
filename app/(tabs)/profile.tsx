@@ -34,7 +34,8 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useProjects } from '@/providers/ProjectsProvider';
 import { useInventory } from '@/providers/InventoryProvider';
 import { useLanguage } from '@/providers/LanguageProvider';
-import { imageSyncQueue, resetUserStores } from '@/lib/legend-state';
+import { imageSyncQueue, resetUserStores, clearStoreCache } from '@/lib/legend-state';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { mapProjectToRow } from '@/lib/legend-state/mappers';
 import { useToast } from '@/components/Toast';
@@ -161,18 +162,33 @@ export default function ProfileScreen(): React.JSX.Element {
                 console.log('[Refresh] Inventory sync UP result:', inventorySyncResult);
               }
 
-              // STEP 2: Now clear and refresh FROM cloud
-              if (__DEV__) console.log('[Refresh] Step 2: Refreshing from cloud...');
+              // STEP 2: Clear AsyncStorage data AND metadata for fresh sync
+              // This is REQUIRED before triggering store recreation
+              if (__DEV__) console.log('[Refresh] Step 2: Clearing local cache...');
 
-              const [projectsResult, inventoryResult] = await Promise.all([
-                refreshProjects(),
-                refreshItems(),
-              ]);
+              const keysToRemove = [
+                // Data keys
+                `projects_${user.id}`,
+                `inventory_${user.id}`,
+                // Metadata keys (used by Legend-State for sync tracking)
+                `projects_${user.id}__m`,
+                `inventory_${user.id}__m`,
+              ];
+              await AsyncStorage.multiRemove(keysToRemove);
+              if (__DEV__) console.log('[Refresh] AsyncStorage cleared:', keysToRemove);
 
-              if (__DEV__) {
-                console.log('[Refresh] Projects refresh result:', projectsResult);
-                console.log('[Refresh] Inventory refresh result:', inventoryResult);
-              }
+              // Clear in-memory store cache
+              clearStoreCache();
+              if (__DEV__) console.log('[Refresh] Store cache cleared');
+
+              // STEP 3: Trigger store re-creation (this creates fresh observables)
+              if (__DEV__) console.log('[Refresh] Step 3: Recreating stores...');
+
+              // These now call setRefreshKey which triggers useMemo to re-run
+              await refreshProjects();
+              await refreshItems();
+
+              if (__DEV__) console.log('[Refresh] Stores recreated - fresh data will load from Supabase');
 
               showToast(t('profile.refreshSuccess'), 'success');
             } catch (error) {

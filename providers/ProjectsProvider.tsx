@@ -356,25 +356,12 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
       }
     },
     // Force a full refresh from Supabase (CLEARS local data first!)
+    // NOTE: Caller (profile.tsx) must clear AsyncStorage and store cache BEFORE calling this
     refreshProjects: async () => {
-      if (__DEV__) console.log('[Projects] Triggering FULL refresh (clears local)...');
-
-      try {
-        const state = syncState(projects$);
-
-        // 1. Clear local persistence (this removes cached data)
-        await state.clearPersist();
-        if (__DEV__) console.log('[Projects] Cleared persist');
-
-        // 2. Force a fresh sync from Supabase
-        await state.sync();
-        if (__DEV__) console.log('[Projects] Sync complete');
-
-        return true;
-      } catch (error) {
-        if (__DEV__) console.error('[Projects] Refresh failed:', error);
-        return false;
-      }
+      if (__DEV__) console.log('[Projects] Triggering store re-creation via setRefreshKey...');
+      // Increment refreshKey to trigger useMemo re-execution and new store creation
+      setRefreshKey(prev => prev + 1);
+      return true;
     },
     replaceProjectImage,
     currentlyWorkingOnProjects,

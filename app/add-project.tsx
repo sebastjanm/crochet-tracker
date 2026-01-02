@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -29,6 +29,7 @@ import { useInventory } from '@/providers/InventoryProvider';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { useImagePicker } from '@/hooks/useImagePicker';
 import { useImageActions } from '@/hooks/useImageActions';
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, buttonShadow } from '@/constants/pixelRatio';
@@ -63,6 +64,38 @@ export default function AddProjectScreen(): React.JSX.Element {
   const [fullscreenImageUri, setFullscreenImageUri] = useState<string | null>(null);
   const [yarnPickerVisible, setYarnPickerVisible] = useState(false);
   const [hookPickerVisible, setHookPickerVisible] = useState(false);
+
+  // Create normalized form state for change detection
+  const formState = useMemo(() => ({
+    title,
+    description,
+    notes,
+    inspirationUrl,
+    images,
+    defaultImageIndex,
+    patternImages,
+    patternPdf,
+    patternUrl,
+    status,
+    projectType,
+    startDate,
+    yarnMaterials,
+    hookUsedIds,
+  }), [
+    title, description, notes, inspirationUrl, images, defaultImageIndex,
+    patternImages, patternPdf, patternUrl, status, projectType, startDate,
+    yarnMaterials, hookUsedIds
+  ]);
+
+  // Detect unsaved changes and prevent accidental navigation away
+  const { resetInitialState } = useUnsavedChanges({
+    formState,
+    isReady: true,
+    dialogTitle: t('common.unsavedChanges'),
+    dialogMessage: t('common.unsavedChangesMessage'),
+    discardText: t('common.discard'),
+    keepEditingText: t('common.keepEditing'),
+  });
 
   /** Opens photo source selection dialog */
   const handleAddPhoto = useCallback(() => {
@@ -297,6 +330,8 @@ export default function AddProjectScreen(): React.JSX.Element {
         yarnMaterials,
         hookUsedIds,
       });
+      // Reset form state before dismissing to prevent unsaved changes dialog
+      resetInitialState();
       router.dismiss();
     } catch {
       Alert.alert(t('common.error'), t('projects.failedToCreate'));
@@ -306,7 +341,7 @@ export default function AddProjectScreen(): React.JSX.Element {
   }, [
     title, description, notes, inspirationUrl, images, defaultImageIndex,
     patternImages, patternPdf, patternUrl, status, projectType, startDate,
-    yarnMaterials, hookUsedIds, addProject, t
+    yarnMaterials, hookUsedIds, addProject, t, resetInitialState
   ]);
 
   return (

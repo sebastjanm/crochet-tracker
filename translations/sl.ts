@@ -118,6 +118,10 @@ export default {
     remove: 'Odstrani',
     searchProjects: 'Išči projekte...',
     searchInventory: 'Išči zaloge...',
+    unsavedChanges: 'Neshranjene spremembe',
+    unsavedChangesMessage: 'Imate neshranjene spremembe. Ali ste prepričani, da jih želite zavreči?',
+    discard: 'Zavrzi',
+    keepEditing: 'Nadaljuj urejanje',
   },
   sort: {
     recentlyUpdated: 'Nazadnje posodobljeno',

@@ -118,6 +118,10 @@ export default {
     remove: 'Удалить',
     searchProjects: 'Искать проекты...',
     searchInventory: 'Искать в инвентаре...',
+    unsavedChanges: 'Несохранённые изменения',
+    unsavedChangesMessage: 'У вас есть несохранённые изменения. Вы уверены, что хотите их отменить?',
+    discard: 'Отменить',
+    keepEditing: 'Продолжить редактирование',
   },
   sort: {
     recentlyUpdated: 'Недавно обновлено',

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -26,6 +26,7 @@ import { useInventory } from '@/providers/InventoryProvider';
 import { useAuth } from '@/providers/AuthProvider';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { useBrandSuggestions } from '@/hooks/useBrandSuggestions';
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, cardShadow, buttonShadow } from '@/constants/pixelRatio';
@@ -203,6 +204,86 @@ export default function EditInventoryScreen(): React.JSX.Element {
     }
   }, [category]);
 
+  // Track when form has been initialized with item data
+  const isFormInitializedRef = useRef(false);
+
+  // Mark form as initialized after item data is loaded
+  useEffect(() => {
+    if (item && !isFormInitializedRef.current) {
+      // Small delay to ensure all state updates have completed
+      const timer = setTimeout(() => {
+        isFormInitializedRef.current = true;
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [item]);
+
+  // Create normalized form state for change detection
+  const formState = useMemo(() => ({
+    category,
+    description,
+    quantity,
+    images,
+    notes,
+    // Yarn fields
+    yarnName,
+    brand,
+    color,
+    colorCode,
+    fiber,
+    weightCategory,
+    ballWeight,
+    length,
+    recommendedHookSize,
+    storage,
+    store,
+    purchaseDate,
+    purchasePrice,
+    yarnLine,
+    yarnNeedleSizeMm,
+    colorFamily,
+    // Hook fields
+    hookName,
+    hookSize,
+    hookBrand,
+    hookModel,
+    hookSizeMm,
+    hookHandleType,
+    hookMaterial,
+    hookStore,
+    hookPurchaseDate,
+    hookPurchasePrice,
+    // Other fields
+    otherName,
+    otherType,
+    otherBrand,
+    otherModel,
+    otherMaterial,
+    otherStore,
+    otherPurchaseDate,
+    otherPurchasePrice,
+    unit,
+  }), [
+    category, description, quantity, images, notes,
+    yarnName, brand, color, colorCode, fiber, weightCategory, ballWeight,
+    length, recommendedHookSize, storage, store, purchaseDate, purchasePrice,
+    yarnLine, yarnNeedleSizeMm, colorFamily,
+    hookName, hookSize, hookBrand, hookModel, hookSizeMm, hookHandleType, hookMaterial,
+    hookStore, hookPurchaseDate, hookPurchasePrice,
+    otherName, otherType, otherBrand, otherModel, otherMaterial, otherStore,
+    otherPurchaseDate, otherPurchasePrice, unit
+  ]);
+
+  // Detect unsaved changes and prevent accidental navigation away
+  const { resetInitialState } = useUnsavedChanges({
+    formState,
+    isReady: isFormInitializedRef.current && !!item,
+    dialogTitle: t('common.unsavedChanges'),
+    dialogMessage: t('common.unsavedChangesMessage'),
+    discardText: t('common.discard'),
+    keepEditingText: t('common.keepEditing'),
+  });
+
   /** Handles form submission with validation and saves the item */
   const handleSave = useCallback(async () => {
     // Validate name based on category
@@ -335,6 +416,7 @@ export default function EditInventoryScreen(): React.JSX.Element {
       await learnBrand(brand.trim());
     }
 
+    resetInitialState();
     router.dismiss();
   }, [
     category, yarnName, hookName, otherName, item, quantity, description, unit,
@@ -344,6 +426,7 @@ export default function EditInventoryScreen(): React.JSX.Element {
     hookHandleType, hookMaterial, hookStore, hookPurchaseDate, hookPurchasePrice,
     hookSize, otherType, otherBrand, otherModel, otherMaterial, otherStore,
     otherPurchaseDate, otherPurchasePrice, user?.currency, updateItem, learnBrand, t,
+    resetInitialState,
   ]);
 
   if (!item) {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -29,6 +29,7 @@ import { useInventory } from '@/providers/InventoryProvider';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { useImagePicker } from '@/hooks/useImagePicker';
 import { useImageActions } from '@/hooks/useImageActions';
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, buttonShadow } from '@/constants/pixelRatio';
@@ -67,6 +68,9 @@ export default function EditProjectScreen(): React.JSX.Element {
   const [yarnPickerVisible, setYarnPickerVisible] = useState(false);
   const [hookPickerVisible, setHookPickerVisible] = useState(false);
 
+  // Track when form data is initialized from project
+  const isFormInitializedRef = useRef(false);
+
   useEffect(() => {
     if (project) {
       setTitle(project.title);
@@ -91,8 +95,42 @@ export default function EditProjectScreen(): React.JSX.Element {
         setYarnMaterials([]);
       }
       setHookUsedIds(project.hookUsedIds || []);
+      // Mark form as initialized so change detection can begin
+      isFormInitializedRef.current = true;
     }
   }, [project]);
+
+  // Create normalized form state for change detection
+  const formState = useMemo(() => ({
+    title,
+    description,
+    notes,
+    inspirationUrl,
+    images,
+    defaultImageIndex,
+    patternImages,
+    patternPdf,
+    patternUrl,
+    status,
+    projectType,
+    startDate,
+    yarnMaterials,
+    hookUsedIds,
+  }), [
+    title, description, notes, inspirationUrl, images, defaultImageIndex,
+    patternImages, patternPdf, patternUrl, status, projectType, startDate,
+    yarnMaterials, hookUsedIds
+  ]);
+
+  // Detect unsaved changes and prevent accidental navigation away
+  const { resetInitialState } = useUnsavedChanges({
+    formState,
+    isReady: isFormInitializedRef.current && !!project,
+    dialogTitle: t('common.unsavedChanges'),
+    dialogMessage: t('common.unsavedChangesMessage'),
+    discardText: t('common.discard'),
+    keepEditingText: t('common.keepEditing'),
+  });
 
   /** Opens photo source selection dialog */
   const handleAddPhoto = useCallback(() => {
@@ -303,6 +341,8 @@ export default function EditProjectScreen(): React.JSX.Element {
         console.log('📤 Submitting update with hookUsedIds:', hookUsedIds);
       }
       await updateProject(project.id, updateData);
+      // Reset form state before navigating back to prevent unsaved changes dialog
+      resetInitialState();
       router.back();
     } catch {
       Alert.alert(t('common.error'), t('projects.failedToUpdate'));
@@ -312,7 +352,7 @@ export default function EditProjectScreen(): React.JSX.Element {
   }, [
     project, title, description, notes, inspirationUrl, images, defaultImageIndex,
     patternImages, patternPdf, patternUrl, status, projectType, startDate,
-    yarnMaterials, hookUsedIds, updateProject, t
+    yarnMaterials, hookUsedIds, updateProject, t, resetInitialState
   ]);
 
   // Early return for missing project - AFTER all hooks

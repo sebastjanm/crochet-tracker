@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -25,6 +25,7 @@ import { DatePicker } from '@/components/DatePicker';
 import { useInventory } from '@/providers/InventoryProvider';
 import { useAuth } from '@/providers/AuthProvider';
 import { useBrandSuggestions } from '@/hooks/useBrandSuggestions';
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, cardShadow, buttonShadow } from '@/constants/pixelRatio';
@@ -106,6 +107,71 @@ export default function AddInventoryScreen(): React.JSX.Element {
       setUnit('piece');
     }
   }, [category]);
+
+  // Create normalized form state for change detection
+  const formState = useMemo(() => ({
+    category,
+    description,
+    quantity,
+    images,
+    notes,
+    // Yarn fields
+    yarnName,
+    brand,
+    color,
+    colorCode,
+    fiber,
+    weightCategory,
+    ballWeight,
+    length,
+    recommendedHookSize,
+    storage,
+    store,
+    purchaseDate,
+    purchasePrice,
+    yarnLine,
+    yarnNeedleSizeMm,
+    colorFamily,
+    // Hook fields
+    hookName,
+    hookBrand,
+    hookModel,
+    hookSizeMm,
+    hookHandleType,
+    hookMaterial,
+    hookStore,
+    hookPurchaseDate,
+    hookPurchasePrice,
+    // Other fields
+    otherName,
+    otherType,
+    otherBrand,
+    otherModel,
+    otherMaterial,
+    otherStore,
+    otherPurchaseDate,
+    otherPurchasePrice,
+    unit,
+  }), [
+    category, description, quantity, images, notes,
+    yarnName, brand, color, colorCode, fiber, weightCategory, ballWeight,
+    length, recommendedHookSize, storage, store, purchaseDate, purchasePrice,
+    yarnLine, yarnNeedleSizeMm, colorFamily,
+    hookName, hookBrand, hookModel, hookSizeMm, hookHandleType, hookMaterial,
+    hookStore, hookPurchaseDate, hookPurchasePrice,
+    otherName, otherType, otherBrand, otherModel, otherMaterial, otherStore,
+    otherPurchaseDate, otherPurchasePrice, unit
+  ]);
+
+  // Detect unsaved changes and prevent accidental navigation away
+  const { resetInitialState } = useUnsavedChanges({
+    formState,
+    isReady: true,
+    dialogTitle: t('common.unsavedChanges'),
+    dialogMessage: t('common.unsavedChangesMessage'),
+    discardText: t('common.discard'),
+    keepEditingText: t('common.keepEditing'),
+  });
 
   const handleSubmit = async () => {
     // Validate name based on category
@@ -230,6 +296,7 @@ export default function AddInventoryScreen(): React.JSX.Element {
         await learnBrand(brand.trim());
       }
 
+      resetInitialState();
       router.dismiss();
     } catch {
       Alert.alert(t('common.error'), t('inventory.failedToAddItem'));

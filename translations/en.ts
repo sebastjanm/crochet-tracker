@@ -118,6 +118,10 @@ export default {
     remove: 'Remove',
     searchProjects: 'Search projects...',
     searchInventory: 'Search inventory...',
+    unsavedChanges: 'Unsaved Changes',
+    unsavedChangesMessage: 'You have unsaved changes. Are you sure you want to discard them?',
+    discard: 'Discard',
+    keepEditing: 'Keep Editing',
   },
   sort: {
     recentlyUpdated: 'Recently Updated',

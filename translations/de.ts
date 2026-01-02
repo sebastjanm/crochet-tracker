@@ -118,6 +118,10 @@ export default {
     remove: 'Entfernen',
     searchProjects: 'Projekte suchen...',
     searchInventory: 'Inventar suchen...',
+    unsavedChanges: 'Ungespeicherte Änderungen',
+    unsavedChangesMessage: 'Sie haben ungespeicherte Änderungen. Möchten Sie diese wirklich verwerfen?',
+    discard: 'Verwerfen',
+    keepEditing: 'Weiter bearbeiten',
   },
   sort: {
     recentlyUpdated: 'Kürzlich aktualisiert',

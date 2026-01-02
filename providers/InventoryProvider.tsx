@@ -19,7 +19,16 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import createContextHook from '@nkzw/create-context-hook';
 import { useSelector, useObserve } from '@legendapp/state/react';
 import { syncState } from '@legendapp/state';
-import { InventoryItem } from '@/types';
+import { InventoryItem, ProjectImage } from '@/types';
+
+// Helper to extract URL string from ProjectImage (which can be string | ImageSource)
+function getImageUrlString(image: ProjectImage): string | undefined {
+  if (typeof image === 'string') return image;
+  if (typeof image === 'object' && image !== null && 'uri' in image && typeof image.uri === 'string') {
+    return image.uri;
+  }
+  return undefined;
+}
 import { useImagePicker } from '@/hooks/useImagePicker';
 import { syncInventoryToProjects, removeInventoryFromProjects } from '@/lib/cross-context-sync';
 import {
@@ -35,6 +44,11 @@ import {
   mapRowToInventoryItem,
   mapInventoryItemToRow,
 } from '@/lib/legend-state/mappers';
+import {
+  deleteImage,
+  extractPathFromUrl,
+  isSupabaseStorageUrl,
+} from '@/lib/supabase/storage';
 
 export const [InventoryProvider, useInventory] = createContextHook(() => {
   const { user, isPro } = useAuth();
@@ -194,6 +208,31 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
       }
     }
 
+    // Handle removed images - delete from Supabase Storage
+    if (updates.images !== undefined) {
+      const oldUrls = (existingItem.images || []).map(getImageUrlString).filter(Boolean) as string[];
+      const newUrls = (updates.images || []).map(getImageUrlString).filter(Boolean) as string[];
+
+      // Find images that were removed
+      const removedUrls = oldUrls.filter(url => !newUrls.includes(url));
+
+      for (const imageUrl of removedUrls) {
+        if (isSupabaseStorageUrl(imageUrl)) {
+          const path = extractPathFromUrl(imageUrl, 'inventory-images');
+          if (path) {
+            const result = await deleteImage(path, 'inventory-images');
+            if (__DEV__) {
+              if (result.success) {
+                console.log(`[Inventory] Deleted removed image from storage: ${path}`);
+              } else {
+                console.error(`[Inventory] Failed to delete image: ${result.error}`);
+              }
+            }
+          }
+        }
+      }
+    }
+
     const mergedItem: InventoryItem = { ...existingItem, ...updates, updatedAt: new Date() };
     const rowUpdates = mapInventoryItemToRow(mergedItem);
 
@@ -237,24 +276,62 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     }
   }, [items, updateItem]);
 
-  /** Remove an image from an item */
+  /** Remove an image from an item (also deletes from Supabase Storage) */
   const removeImage = useCallback(async (itemId: string, imageIndex: number) => {
     const item = items.find((i: InventoryItem) => i.id === itemId);
     if (item && item.images) {
+      const imageUrl = getImageUrlString(item.images[imageIndex]);
+
+      // Delete from Supabase Storage if it's a cloud URL
+      if (imageUrl && isSupabaseStorageUrl(imageUrl)) {
+        const path = extractPathFromUrl(imageUrl, 'inventory-images');
+        if (path) {
+          const result = await deleteImage(path, 'inventory-images');
+          if (__DEV__) {
+            if (result.success) {
+              console.log(`[Inventory] Deleted image from storage: ${path}`);
+            } else {
+              console.error(`[Inventory] Failed to delete image: ${result.error}`);
+            }
+          }
+        }
+      }
+
       const newImages = [...item.images];
       newImages.splice(imageIndex, 1);
       await updateItem(itemId, { images: newImages });
     }
   }, [items, updateItem]);
 
-  /** Delete an inventory item (soft delete) */
+  /** Delete an inventory item (soft delete + delete images from storage) */
   const deleteItem = useCallback(async (id: string) => {
     const itemToDelete = items.find((item: InventoryItem) => item.id === id);
     if (itemToDelete) {
+      // Clean up project references
       try {
         await removeInventoryFromProjects(id, itemToDelete.category);
       } catch (error) {
         if (__DEV__) console.error('[Inventory] Failed to clean up project references:', error);
+      }
+
+      // Delete all images from Supabase Storage
+      if (itemToDelete.images?.length) {
+        for (const image of itemToDelete.images) {
+          const imageUrl = getImageUrlString(image);
+          if (imageUrl && isSupabaseStorageUrl(imageUrl)) {
+            const path = extractPathFromUrl(imageUrl, 'inventory-images');
+            if (path) {
+              const result = await deleteImage(path, 'inventory-images');
+              if (__DEV__) {
+                if (result.success) {
+                  console.log(`[Inventory] Deleted image from storage: ${path}`);
+                } else {
+                  console.error(`[Inventory] Failed to delete image: ${result.error}`);
+                }
+              }
+            }
+          }
+        }
       }
     }
     deleteItemFromStore(inventory$, id);

@@ -19,8 +19,17 @@ import { useCallback, useMemo, useEffect, useState, useRef } from 'react';
 import createContextHook from '@nkzw/create-context-hook';
 import { useSelector, useObserve } from '@legendapp/state/react';
 import { syncState } from '@legendapp/state';
-import { Project, ProjectStatus, ProjectYarn } from '@/types';
+import { Project, ProjectStatus, ProjectYarn, ProjectImage } from '@/types';
 import { syncProjectMaterials, removeProjectFromInventory } from '@/lib/cross-context-sync';
+
+// Helper to extract URL string from ProjectImage (which can be string | ImageSource)
+function getImageUrlString(image: ProjectImage): string | undefined {
+  if (typeof image === 'string') return image;
+  if (typeof image === 'object' && image !== null && 'uri' in image && typeof image.uri === 'string') {
+    return image.uri;
+  }
+  return undefined;
+}
 import {
   getStores,
   addProject as addProjectToStore,
@@ -34,6 +43,11 @@ import {
   mapRowToProject,
   mapProjectToRow,
 } from '@/lib/legend-state/mappers';
+import {
+  deleteImage,
+  extractPathFromUrl,
+  isSupabaseStorageUrl,
+} from '@/lib/supabase/storage';
 
 export const [ProjectsProvider, useProjects] = createContextHook(() => {
   const { user, isPro } = useAuth();
@@ -201,6 +215,31 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
       }
     }
 
+    // Handle removed images - delete from Supabase Storage
+    if (updates.images !== undefined) {
+      const oldUrls = (existingProject.images || []).map(getImageUrlString).filter(Boolean) as string[];
+      const newUrls = (updates.images || []).map(getImageUrlString).filter(Boolean) as string[];
+
+      // Find images that were removed
+      const removedUrls = oldUrls.filter(url => !newUrls.includes(url));
+
+      for (const imageUrl of removedUrls) {
+        if (isSupabaseStorageUrl(imageUrl)) {
+          const path = extractPathFromUrl(imageUrl, 'project-images');
+          if (path) {
+            const result = await deleteImage(path, 'project-images');
+            if (__DEV__) {
+              if (result.success) {
+                console.log(`[Projects] Deleted removed image from storage: ${path}`);
+              } else {
+                console.error(`[Projects] Failed to delete image: ${result.error}`);
+              }
+            }
+          }
+        }
+      }
+    }
+
     // Handle Status
     let completedDate = updates.completedDate ?? existingProject.completedDate;
     if (updates.status === 'completed' && existingProject.status !== 'completed') {
@@ -223,16 +262,40 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
     if (__DEV__) console.log(`[Projects] Updated project: ${id}`);
   }, [projects, projects$, queueProjectImages]);
 
-  /** Delete a project (soft delete) */
+  /** Delete a project (soft delete + delete images from storage) */
   const deleteProject = useCallback(async (id: string) => {
+    const projectToDelete = projects.find((p: Project) => p.id === id);
+
+    // Clean up inventory references
     try {
       await removeProjectFromInventory(id);
     } catch (error) {
       if (__DEV__) console.error('[Projects] Failed to clean up inventory references:', error);
     }
+
+    // Delete all images from Supabase Storage
+    if (projectToDelete?.images?.length) {
+      for (const image of projectToDelete.images) {
+        const imageUrl = getImageUrlString(image);
+        if (imageUrl && isSupabaseStorageUrl(imageUrl)) {
+          const path = extractPathFromUrl(imageUrl, 'project-images');
+          if (path) {
+            const result = await deleteImage(path, 'project-images');
+            if (__DEV__) {
+              if (result.success) {
+                console.log(`[Projects] Deleted image from storage: ${path}`);
+              } else {
+                console.error(`[Projects] Failed to delete image: ${result.error}`);
+              }
+            }
+          }
+        }
+      }
+    }
+
     deleteProjectFromStore(projects$, id);
     if (__DEV__) console.log(`[Projects] Deleted project: ${id}`);
-  }, [projects$]);
+  }, [projects, projects$]);
 
   /** Toggle the "currently working on" status for a project */
   const toggleCurrentlyWorkingOn = useCallback(async (projectId: string): Promise<boolean> => {

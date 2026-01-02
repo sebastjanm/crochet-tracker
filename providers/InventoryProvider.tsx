@@ -433,14 +433,26 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     setSortBy,
     showImagePickerOptions,
     isPickingImage,
-    // Force a full refresh from Supabase
-    // This clears ALL caches and recreates the observable for a fresh sync
+    // Force a full refresh from Supabase using Legend-State's official API
     refreshItems: async () => {
-      if (__DEV__) console.log('[Inventory] Triggering refresh...');
-      // Just trigger store re-creation via useMemo dependency
-      // NOTE: AsyncStorage + store cache clearing is handled by the caller (profile.tsx)
-      // to ensure ALL clears happen BEFORE any new stores are created
-      setRefreshKey(prev => prev + 1);
+      if (__DEV__) console.log('[Inventory] Triggering refresh via syncState API...');
+
+      try {
+        const state = syncState(inventory$);
+
+        // 1. Clear local persistence (this removes cached data)
+        await state.clearPersist();
+        if (__DEV__) console.log('[Inventory] Cleared persist');
+
+        // 2. Force a fresh sync from Supabase
+        await state.sync();
+        if (__DEV__) console.log('[Inventory] Sync complete');
+
+        return true;
+      } catch (error) {
+        if (__DEV__) console.error('[Inventory] Refresh failed:', error);
+        return false;
+      }
     },
     replaceInventoryImage,
     yarnCount: statistics.yarnCount,

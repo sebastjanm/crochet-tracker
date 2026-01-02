@@ -34,8 +34,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useProjects } from '@/providers/ProjectsProvider';
 import { useInventory } from '@/providers/InventoryProvider';
 import { useLanguage } from '@/providers/LanguageProvider';
-import { imageSyncQueue, resetUserStores, clearStoreCache } from '@/lib/legend-state';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { imageSyncQueue, resetUserStores } from '@/lib/legend-state';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { mapProjectToRow } from '@/lib/legend-state/mappers';
 import { useToast } from '@/components/Toast';
@@ -149,27 +148,20 @@ export default function ProfileScreen(): React.JSX.Element {
                 }
               }
 
-              // Refresh using Legend-State's official API
-              // Clear only DATA, keep metadata to avoid Legend-State thinking
-              // fetched items are "new" and need to be saved back to Supabase
+              // Use Legend-State's official syncState API for refresh
+              // clearPersist() + sync() handles everything properly
+              if (__DEV__) console.log('[Refresh] Starting refresh via Legend-State API...');
 
-              // 1. Clear data keys (NOT metadata) for this user
-              const keysToRemove = [
-                `projects_${user.id}`,
-                `inventory_${user.id}`,
-              ];
-              await AsyncStorage.multiRemove(keysToRemove);
-              if (__DEV__) console.log('[Refresh] AsyncStorage data cleared:', keysToRemove);
-
-              // 2. Clear in-memory store cache
-              clearStoreCache();
-              if (__DEV__) console.log('[Refresh] Store cache cleared');
-
-              // 3. Trigger provider refresh (creates fresh stores with empty AsyncStorage)
-              await Promise.all([
+              // Refresh both stores (they now use clearPersist + sync internally)
+              const [projectsResult, inventoryResult] = await Promise.all([
                 refreshProjects(),
                 refreshItems(),
               ]);
+
+              if (__DEV__) {
+                console.log('[Refresh] Projects result:', projectsResult);
+                console.log('[Refresh] Inventory result:', inventoryResult);
+              }
 
               showToast(t('profile.refreshSuccess'), 'success');
             } catch (error) {

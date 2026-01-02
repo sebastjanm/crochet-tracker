@@ -122,6 +122,20 @@ export default function ProfileScreen(): React.JSX.Element {
           onPress: async () => {
             setIsRefreshingFromCloud(true);
             try {
+              // DEBUG: Verify Supabase session before refresh
+              if (supabase) {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (__DEV__) {
+                  console.log('[Refresh] Session user:', session?.user?.id);
+                  console.log('[Refresh] Expected user:', user.id);
+                  console.log('[Refresh] Session valid:', !!session);
+                }
+                if (!session) {
+                  showToast('No active session - please re-login', 'error');
+                  return;
+                }
+              }
+
               await resetUserStores(user.id);
 
               // Refresh contexts to trigger new data fetch
@@ -131,8 +145,12 @@ export default function ProfileScreen(): React.JSX.Element {
               ]);
 
               // Wait for Legend-State syncedSupabase to complete initial fetch
-              // The sync happens async after store creation
-              await new Promise(resolve => setTimeout(resolve, 3000));
+              // Increased to 5s for slower networks
+              await new Promise(resolve => setTimeout(resolve, 5000));
+
+              if (__DEV__) {
+                console.log('[Refresh] Complete - check inventory/project counts');
+              }
 
               showToast(t('profile.refreshSuccess'), 'success');
             } catch (error) {

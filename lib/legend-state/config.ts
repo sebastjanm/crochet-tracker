@@ -239,14 +239,25 @@ export function getStores(userId: string | null, isPro: boolean) {
  * @see https://legendapp.com/open-source/state/v3/sync/supabase/
  */
 export async function resetUserStores(userId: string): Promise<void> {
-  // Clear AsyncStorage for this user's stores
-  // Legend-State stores data in ${name} and metadata in ${name}__m
-  // We MUST clear both to force a full re-sync (not incremental)
+  // DEBUG: List all keys before clearing
+  const allKeys = await AsyncStorage.getAllKeys();
+  const userKeys = allKeys.filter(k => k.includes(userId));
+
+  if (__DEV__) {
+    console.log('[LegendState] All AsyncStorage keys:', allKeys);
+    console.log('[LegendState] User-related keys to clear:', userKeys);
+  }
+
+  // AGGRESSIVE: Clear ALL keys containing userId
+  // This catches any variation in key naming
+  if (userKeys.length > 0) {
+    await AsyncStorage.multiRemove(userKeys);
+  }
+
+  // Also clear the known standard keys (in case userId format differs)
   await AsyncStorage.multiRemove([
-    // Data
     `projects_${userId}`,
     `inventory_${userId}`,
-    // Metadata (contains last-sync timestamps)
     `projects_${userId}__m`,
     `inventory_${userId}__m`,
   ]);
@@ -254,7 +265,7 @@ export async function resetUserStores(userId: string): Promise<void> {
   // Clear in-memory store cache to force new Observable creation
   storeCache.clear();
 
-  if (__DEV__) console.log(`[LegendState] Reset stores for ${userId} (data + metadata)`);
+  if (__DEV__) console.log(`[LegendState] Reset complete for ${userId}`);
 }
 
 // ============================================================================

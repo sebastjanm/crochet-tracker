@@ -69,13 +69,19 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     const itemsMap = inventory$.get();
     if (!itemsMap) return [] as InventoryItem[];
 
-    return Object.values(itemsMap)
-      // Soft delete: deleted_at is NULL for active, timestamp for deleted
-      .filter((row: unknown) => {
-        const r = row as { deleted_at?: string | null };
-        return r.deleted_at === null || r.deleted_at === undefined;
-      })
-      // Trust the mapper - no double date conversion needed
+    const allItems = Object.values(itemsMap);
+    const activeItems = allItems.filter((row: unknown) => {
+      const r = row as { deleted_at?: string | null };
+      return r.deleted_at === null || r.deleted_at === undefined;
+    });
+
+    // DEBUG: Log item counts
+    if (__DEV__) {
+      console.log('[Inventory] Raw items in store:', allItems.length);
+      console.log('[Inventory] Active items (not deleted):', activeItems.length);
+    }
+
+    return activeItems
       .map((row: unknown) => mapRowToInventoryItem(row as Parameters<typeof mapRowToInventoryItem>[0]))
       .sort((a: InventoryItem, b: InventoryItem) => b.updatedAt.getTime() - a.updatedAt.getTime());
   });

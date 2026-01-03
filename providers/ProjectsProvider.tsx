@@ -334,6 +334,15 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
   /** Projects currently being worked on */
   const currentlyWorkingOnProjects = useMemo(() => projects.filter((p: Project) => p.isCurrentlyWorkingOn), [projects]);
 
+  // Memoize status counts to avoid recalculating on every render
+  const statusCounts = useMemo(() => ({
+    toDoCount: projects.filter((p: Project) => p.status === 'to-do').length,
+    inProgressCount: projects.filter((p: Project) => p.status === 'in-progress').length,
+    onHoldCount: projects.filter((p: Project) => p.status === 'on-hold').length,
+    completedCount: projects.filter((p: Project) => p.status === 'completed').length,
+    froggedCount: projects.filter((p: Project) => p.status === 'frogged').length,
+  }), [projects]);
+
   return {
     projects,
     isLoading,
@@ -366,10 +375,6 @@ export const [ProjectsProvider, useProjects] = createContextHook(() => {
     replaceProjectImage,
     currentlyWorkingOnProjects,
     toggleCurrentlyWorkingOn,
-    toDoCount: projects.filter((p: Project) => p.status === 'to-do').length,
-    inProgressCount: projects.filter((p: Project) => p.status === 'in-progress').length,
-    onHoldCount: projects.filter((p: Project) => p.status === 'on-hold').length,
-    completedCount: projects.filter((p: Project) => p.status === 'completed').length,
-    froggedCount: projects.filter((p: Project) => p.status === 'frogged').length,
+    ...statusCounts,
   } as const;
 });

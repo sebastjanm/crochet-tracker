@@ -12,6 +12,7 @@ import {
   Pressable,
 } from 'react-native';
 import { Image, ImageSource } from 'expo-image';
+import ImageViewer from 'react-native-image-zoom-viewer';
 import { X, ImageIcon, Trash2, Plus } from 'lucide-react-native';
 import type { ProjectImage } from '@/types';
 import { useImagePicker } from '@/hooks/useImagePicker';
@@ -20,7 +21,7 @@ import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { useLanguage } from '@/providers/LanguageProvider';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
 // Helper to get image source for expo-image
 function getImageSource(image: ProjectImage): ImageSource {
@@ -185,6 +186,11 @@ export const ImageGallery = memo(function ImageGallery({
   const renderFullScreenModal = () => {
     if (selectedImageIndex === null) return null;
 
+    // Convert images to format expected by ImageViewer
+    const imageUrls = images.map((image) => ({
+      url: typeof image === 'string' ? image : (image as { uri: string }).uri,
+    }));
+
     return (
       <Modal
         visible={true}
@@ -192,66 +198,50 @@ export const ImageGallery = memo(function ImageGallery({
         animationType="fade"
         onRequestClose={() => setSelectedImageIndex(null)}
       >
-        <View style={styles.fullScreenContainer}>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={() => setSelectedImageIndex(null)}
-          >
-            <X size={24} color={Colors.white} />
-          </TouchableOpacity>
-
-          {editable && (
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() => removeImage(selectedImageIndex)}
-            >
-              <Trash2 size={24} color={Colors.white} />
-            </TouchableOpacity>
-          )}
-
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            removeClippedSubviews={true}
-            scrollEventThrottle={16}
-            snapToInterval={screenWidth}
-            snapToAlignment="start"
-            decelerationRate="fast"
-            contentOffset={{ x: selectedImageIndex * screenWidth, y: 0 }}
-            onMomentumScrollEnd={(event) => {
-              const newIndex = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
-              setSelectedImageIndex(newIndex);
-            }}
-          >
-            {images.map((image, index) => (
-              <View key={`${image}-${index}-fullscreen`} style={styles.fullScreenImageContainer}>
-                <Image
-                  source={getImageSource(image)}
-                  style={styles.fullScreenImage}
-                  contentFit="contain"
-                  transition={200}
-                  cachePolicy="memory-disk"
-                  priority="high"
-                  onLoadStart={() => handleImageLoadStart(index)}
-                  onLoad={() => handleImageLoad(index)}
-                  onError={() => handleImageLoad(index)}
-                />
-                {loadingImages[index] && (
-                  <View style={styles.fullScreenLoadingOverlay}>
-                    <ActivityIndicator size="large" color={Colors.white} />
-                  </View>
-                )}
+        <ImageViewer
+          imageUrls={imageUrls}
+          index={selectedImageIndex}
+          onChange={(index) => index !== undefined && setSelectedImageIndex(index)}
+          onSwipeDown={() => setSelectedImageIndex(null)}
+          enableSwipeDown
+          backgroundColor="rgba(0, 0, 0, 0.95)"
+          renderIndicator={(currentIndex, allSize) =>
+            allSize && allSize > 1 ? (
+              <View style={styles.imageCounter}>
+                <Text style={styles.imageCounterText}>
+                  {currentIndex} / {allSize}
+                </Text>
               </View>
-            ))}
-          </ScrollView>
+            ) : (
+              <></>
+            )
+          }
+          renderHeader={() => (
+            <View style={styles.fullScreenHeader}>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setSelectedImageIndex(null)}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={t('common.close')}
+              >
+                <X size={24} color={Colors.white} />
+              </TouchableOpacity>
 
-          <View style={styles.imageCounter}>
-            <Text style={styles.imageCounterText}>
-              {selectedImageIndex + 1} / {images.length}
-            </Text>
-          </View>
-        </View>
+              {editable && (
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => removeImage(selectedImageIndex)}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('common.delete')}
+                >
+                  <Trash2 size={24} color={Colors.white} />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+        />
       </Modal>
     );
   };
@@ -369,61 +359,38 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: 'center',
   },
-  fullScreenContainer: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
-  },
-  closeButton: {
+  fullScreenHeader: {
     position: 'absolute',
     top: 50,
-    left: 20,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
     zIndex: 10,
+  },
+  closeButton: {
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     borderRadius: 20,
     padding: 8,
   },
   deleteButton: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    zIndex: 10,
     backgroundColor: 'rgba(220, 38, 38, 0.8)',
     borderRadius: 20,
     padding: 8,
   },
-  fullScreenImageContainer: {
-    width: screenWidth,
-    height: screenHeight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fullScreenImage: {
-    width: screenWidth,
-    height: screenHeight - 150, // Full height minus controls
-  },
   imageCounter: {
     position: 'absolute',
-    bottom: 50,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
+    bottom: 60,
+    alignSelf: 'center',
   },
   imageCounterText: {
     ...Typography.body,
     color: Colors.white,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-  },
-  fullScreenLoadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    overflow: 'hidden',
   },
 });

@@ -31,7 +31,7 @@ export interface QueuedImage {
   /** Project or inventory item ID */
   itemId: string;
   /** Type of item (for callback routing) */
-  itemType: 'project' | 'inventory';
+  itemType: 'project' | 'inventory' | 'project-inspiration';
   /** Index in the images array */
   imageIndex: number;
   /** Number of upload attempts */
@@ -44,37 +44,43 @@ export interface QueuedImage {
   lastError?: string;
   /** Resulting URL after successful upload */
   resultUrl?: string;
+  /** Inspiration source ID (only for project-inspiration type) */
+  inspirationSourceId?: string;
 }
 
 export interface EnqueueOptions {
   localUri: string;
   bucket: StorageBucket;
   itemId: string;
-  itemType: 'project' | 'inventory';
+  itemType: 'project' | 'inventory' | 'project-inspiration';
   imageIndex: number;
+  /** Inspiration source ID (required for project-inspiration type) */
+  inspirationSourceId?: string;
 }
 
 export interface ImageUploadCallbacks {
   /** Called when an image is successfully uploaded */
   onImageUploaded?: (
     itemId: string,
-    itemType: 'project' | 'inventory',
+    itemType: 'project' | 'inventory' | 'project-inspiration',
     imageIndex: number,
     newUrl: string,
-    oldUri: string
+    oldUri: string,
+    inspirationSourceId?: string
   ) => Promise<void>;
   /** Called when an image permanently fails */
   onImageFailed?: (
     itemId: string,
-    itemType: 'project' | 'inventory',
+    itemType: 'project' | 'inventory' | 'project-inspiration',
     imageIndex: number,
     error: string
   ) => void;
   /** Called when a stale image reference is found (file no longer exists) */
   onStaleImageFound?: (
     itemId: string,
-    itemType: 'project' | 'inventory',
-    staleUri: string
+    itemType: 'project' | 'inventory' | 'project-inspiration',
+    staleUri: string,
+    inspirationSourceId?: string
   ) => Promise<void>;
 }
 
@@ -234,7 +240,7 @@ class ImageSyncQueueManager {
           if (__DEV__) console.warn(`[ImageQueue] Skipping non-existent file: ${image.localUri.slice(-50)}`);
           // Notify caller to clean up the stale reference
           if (this.callbacks.onStaleImageFound) {
-            this.callbacks.onStaleImageFound(image.itemId, image.itemType, image.localUri)
+            this.callbacks.onStaleImageFound(image.itemId, image.itemType, image.localUri, image.inspirationSourceId)
               .catch(err => { if (__DEV__) console.error('[ImageQueue] Failed to clean stale image:', err); });
           }
           continue;
@@ -263,6 +269,7 @@ class ImageSyncQueueManager {
         retryCount: 0,
         status: 'pending',
         createdAt: Date.now(),
+        inspirationSourceId: image.inspirationSourceId,
       };
 
       this.queue.push(queuedImage);
@@ -318,6 +325,7 @@ class ImageSyncQueueManager {
             imageIndex: item.imageIndex,
             newUrl: item.resultUrl,
             oldUri: item.localUri,
+            inspirationSourceId: item.inspirationSourceId,
           });
           try {
             await this.callbacks.onImageUploaded(
@@ -325,7 +333,8 @@ class ImageSyncQueueManager {
               item.itemType,
               item.imageIndex,
               item.resultUrl,
-              item.localUri
+              item.localUri,
+              item.inspirationSourceId
             );
             if (__DEV__) console.log('[ImageQueue] Callback executed successfully');
           } catch (error) {

@@ -21,7 +21,7 @@ export function useImageSync() {
     if (!user?.id) return;
 
     imageSyncQueue.initialize(user.id, {
-      onImageUploaded: async (itemId, itemType, imageIndex, newUrl, oldUri) => {
+      onImageUploaded: async (itemId, itemType, imageIndex, newUrl, oldUri, inspirationSourceId) => {
         if (__DEV__) console.log(`[ImageSync] Image uploaded for ${itemType} ${itemId}: ${newUrl}`);
 
         // Helper to parse images (handles both array and JSON string for backward compat)
@@ -46,6 +46,27 @@ export function useImageSync() {
              // Write back to store as array (DB uses TEXT[], not JSON string)
              updateProject(projects$, itemId, { images: updated });
            }
+        } else if (itemType === 'project-inspiration') {
+           // Handle inspiration image upload
+           const project = projects$[itemId].get();
+           if (project && project.inspiration_sources && inspirationSourceId) {
+             const sources = typeof project.inspiration_sources === 'string'
+               ? JSON.parse(project.inspiration_sources)
+               : (project.inspiration_sources || []);
+
+             const updatedSources = sources.map((source: { id: string; images?: string[] }) => {
+               if (source.id === inspirationSourceId && source.images) {
+                 return {
+                   ...source,
+                   images: source.images.map((img: string) => img === oldUri ? newUrl : img)
+                 };
+               }
+               return source;
+             });
+
+             updateProject(projects$, itemId, { inspiration_sources: updatedSources });
+             if (__DEV__) console.log(`[ImageSync] Updated inspiration source ${inspirationSourceId} with new URL`);
+           }
         } else if (itemType === 'inventory') {
            const item = inventory$[itemId].get();
            if (item) {
@@ -60,7 +81,7 @@ export function useImageSync() {
       onImageFailed: (itemId, error) => {
         if (__DEV__) console.warn(`[ImageSync] Upload failed for ${itemId}: ${error}`);
       },
-      onStaleImageFound: async (itemId, itemType, staleUri) => {
+      onStaleImageFound: async (itemId, itemType, staleUri, inspirationSourceId) => {
         if (__DEV__) console.log(`[ImageSync] Cleaning stale image from ${itemType} ${itemId}`);
 
         // Helper to parse images (handles both array and JSON string for backward compat)
@@ -83,6 +104,27 @@ export function useImageSync() {
               updateProject(projects$, itemId, { images: filtered });
               if (__DEV__) console.log(`[ImageSync] Removed stale image from project ${itemId}`);
             }
+          }
+        } else if (itemType === 'project-inspiration') {
+          // Handle stale inspiration image
+          const project = projects$[itemId].get();
+          if (project && project.inspiration_sources && inspirationSourceId) {
+            const sources = typeof project.inspiration_sources === 'string'
+              ? JSON.parse(project.inspiration_sources)
+              : (project.inspiration_sources || []);
+
+            const updatedSources = sources.map((source: { id: string; images?: string[] }) => {
+              if (source.id === inspirationSourceId && source.images) {
+                const filtered = source.images.filter((img: string) => img !== staleUri);
+                if (filtered.length !== source.images.length) {
+                  return { ...source, images: filtered };
+                }
+              }
+              return source;
+            });
+
+            updateProject(projects$, itemId, { inspiration_sources: updatedSources });
+            if (__DEV__) console.log(`[ImageSync] Removed stale image from inspiration source ${inspirationSourceId}`);
           }
         } else if (itemType === 'inventory') {
           const item = inventory$[itemId].get();
@@ -109,12 +151,13 @@ export function useImageSync() {
   const queueProjectImages = useCallback(async (project: Project) => {
     if (!user?.id) return;
 
-    const images = typeof project.images === 'string' 
-      ? JSON.parse(project.images) 
+    // Queue main project images
+    const images = typeof project.images === 'string'
+      ? JSON.parse(project.images)
       : (project.images || []);
-      
+
     const localImages = getLocalImagesToUpload(images);
-    
+
     if (localImages.length > 0) {
       if (__DEV__) console.log(`[ImageSync] Queuing ${localImages.length} images for project ${project.id}`);
       await imageSyncQueue.enqueue(
@@ -126,6 +169,29 @@ export function useImageSync() {
           imageIndex: index,
         }))
       );
+    }
+
+    // Queue inspiration images
+    if (project.inspirationSources) {
+      for (const source of project.inspirationSources) {
+        if (source.type === 'image' && source.images) {
+          const localInspirationImages = getLocalImagesToUpload(source.images);
+
+          if (localInspirationImages.length > 0) {
+            if (__DEV__) console.log(`[ImageSync] Queuing ${localInspirationImages.length} inspiration images for project ${project.id}, source ${source.id}`);
+            await imageSyncQueue.enqueue(
+              localInspirationImages.map(({ uri, index }) => ({
+                localUri: uri,
+                bucket: 'project-images',
+                itemId: project.id,
+                itemType: 'project-inspiration',
+                imageIndex: index,
+                inspirationSourceId: source.id,
+              }))
+            );
+          }
+        }
+      }
     }
   }, [user?.id]);
 

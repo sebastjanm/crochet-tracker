@@ -39,9 +39,24 @@ export default function ProjectJournalScreen() {
   const { getProjectById, updateProject } = useProjects();
   const { t } = useLanguage();
   const { user } = useAuth();
-  const { getSessionsForProject, addManualSession, deleteSession } = useTimeSessions();
+  const { getSessionsForProject, addManualSession, deleteSession, getTotalMinutes } = useTimeSessions();
   const project = getProjectById(projectId);
   const timeSessions = getSessionsForProject(projectId);
+  const totalMinutes = getTotalMinutes(projectId);
+
+  // Format total time for display
+  const formattedTotalTime = useMemo(() => {
+    if (totalMinutes === 0) return null;
+    const hours = Math.floor(totalMinutes / 60);
+    const mins = totalMinutes % 60;
+    if (hours === 0) {
+      return `${mins}${t('timeTracking.minutes')}`;
+    }
+    if (mins === 0) {
+      return `${hours}${t('timeTracking.hours')}`;
+    }
+    return `${hours}${t('timeTracking.hours')} ${mins}${t('timeTracking.minutes')}`;
+  }, [totalMinutes, t]);
 
   // Modal state for unified work entry
   const [showWorkEntryModal, setShowWorkEntryModal] = useState(false);
@@ -197,6 +212,17 @@ export default function ProjectJournalScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
+          {/* Total time summary */}
+          {formattedTotalTime && (
+            <View style={styles.totalTimeCard}>
+              <Clock size={20} color={Colors.deepTeal} />
+              <View style={styles.totalTimeContent}>
+                <Text style={styles.totalTimeLabel}>{t('timeTracking.totalTimeWorked')}</Text>
+                <Text style={styles.totalTimeValue}>{formattedTotalTime}</Text>
+              </View>
+            </View>
+          )}
+
           {/* Add Work Entry button */}
           <TouchableOpacity
             style={styles.addButton}
@@ -638,6 +664,36 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
+  },
+  totalTimeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    gap: 12,
+    borderWidth: normalizeBorder(1),
+    borderColor: Colors.deepTeal,
+    ...Platform.select({
+      ...buttonShadow,
+      default: {},
+    }),
+  },
+  totalTimeContent: {
+    flex: 1,
+  },
+  totalTimeLabel: {
+    ...Typography.caption,
+    color: Colors.warmGray,
+    fontSize: 12,
+    marginBottom: 2,
+  },
+  totalTimeValue: {
+    ...Typography.title2,
+    color: Colors.deepTeal,
+    fontWeight: '700' as const,
+    fontSize: 20,
   },
   errorContainer: {
     flex: 1,

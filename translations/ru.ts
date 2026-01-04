@@ -1099,6 +1099,7 @@ export default {
     deleteWorkEntry: 'Удалить запись',
     deleteWorkEntryConfirm: 'Вы уверены, что хотите удалить эту запись? Это действие нельзя отменить.',
     deleteThisEntry: 'Удаляет эту рабочую запись',
+    totalTimeWorked: 'Общее время работы',
   },
   about: {
     title: 'О приложении',

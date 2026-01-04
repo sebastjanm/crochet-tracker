@@ -1099,6 +1099,7 @@ export default {
     deleteWorkEntry: 'Arbeitseintrag löschen',
     deleteWorkEntryConfirm: 'Möchtest du diesen Arbeitseintrag wirklich löschen? Dies kann nicht rückgängig gemacht werden.',
     deleteThisEntry: 'Löscht diesen Arbeitseintrag',
+    totalTimeWorked: 'Gesamte Arbeitszeit',
   },
   about: {
     title: 'Über',

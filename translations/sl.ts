@@ -1104,6 +1104,7 @@ export default {
     deleteWorkEntry: 'Izbriši vnos',
     deleteWorkEntryConfirm: 'Ali ste prepričani, da želite izbrisati ta vnos? Tega ni mogoče razveljaviti.',
     deleteThisEntry: 'Izbriše ta delovni vnos',
+    totalTimeWorked: 'Skupni delovni čas',
   },
   about: {
     title: 'O aplikaciji',

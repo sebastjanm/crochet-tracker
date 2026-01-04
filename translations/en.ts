@@ -1105,6 +1105,7 @@ export default {
     deleteWorkEntry: 'Delete Work Entry',
     deleteWorkEntryConfirm: 'Are you sure you want to delete this work entry? This cannot be undone.',
     deleteThisEntry: 'Deletes this work entry',
+    totalTimeWorked: 'Total time worked',
   },
   about: {
     title: 'About',

@@ -43,6 +43,7 @@ import { useProjects } from '@/providers/ProjectsProvider';
 import { useInventory } from '@/providers/InventoryProvider';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { useAuth } from '@/providers/AuthProvider';
+import { useTimeSessions } from '@/providers/TimeSessionsProvider';
 import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, normalizeBorderOpacity } from '@/constants/pixelRatio';
@@ -59,9 +60,11 @@ export default function ProjectDetailScreen(): React.JSX.Element {
   const { getItemById } = useInventory();
   const { t } = useLanguage();
   const { user } = useAuth();
-  
+  const { getSessionsForProject } = useTimeSessions();
+
   // Use reactive selector directly - NO local state
   const project = getProjectById(id as string);
+  const timeSessions = getSessionsForProject(id as string);
 
   // Enable LayoutAnimation on Android (run once on mount)
   useEffect(() => {
@@ -527,9 +530,9 @@ export default function ProjectDetailScreen(): React.JSX.Element {
                   <Lock size={10} color={Colors.white} />
                   <Text style={styles.proBadgeText}>PRO</Text>
                 </View>
-              ) : project.workProgress && project.workProgress.length > 0 ? (
+              ) : ((project.workProgress?.length ?? 0) + timeSessions.length) > 0 ? (
                 <View style={styles.countBadge}>
-                  <Text style={styles.countText}>{project.workProgress.length}</Text>
+                  <Text style={styles.countText}>{(project.workProgress?.length ?? 0) + timeSessions.length}</Text>
                 </View>
               ) : null}
               <ChevronRight size={18} color={Colors.warmGray} />

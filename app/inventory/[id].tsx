@@ -232,7 +232,7 @@ export default function InventoryDetailScreen(): React.JSX.Element {
         <View style={styles.content}>
           {/* Used in Projects - Compact summary */}
           <View style={styles.projectsSection}>
-            <Text style={styles.projectsSectionLabel}>{t('inventory.usedInProjects')}</Text>
+            <SectionHeader title={t('inventory.usedInProjects')} />
 
             <ProjectLinksSummary
               selectedProjectIds={item.usedInProjects || []}
@@ -702,12 +702,6 @@ const styles = StyleSheet.create({
   projectsSection: {
     marginBottom: 16,
   },
-  projectsSectionLabel: {
-    ...Typography.body,
-    color: Colors.charcoal,
-    marginBottom: 8,
-    fontWeight: '500' as const,
-  },
   descriptionCard: {
     marginBottom: 16,
   },
@@ -715,9 +709,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   description: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontWeight: '400',
+    ...Typography.body,
     color: Colors.warmGray,
   },
   detailsCard: {
@@ -734,8 +726,7 @@ const styles = StyleSheet.create({
     borderBottomColor: `rgba(0, 0, 0, ${normalizeBorderOpacity(0.15)})`,
   },
   detailLabel: {
-    fontSize: 16,
-    fontWeight: '400',
+    ...Typography.callout,
     color: Colors.warmGray,
   },
   labelWithIcon: {
@@ -744,8 +735,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   detailValue: {
-    fontSize: 16,
-    fontWeight: '500',
+    ...Typography.callout,
+    fontWeight: '500' as const,
     color: Colors.charcoal,
     textAlign: 'right',
     flex: 1,
@@ -757,9 +748,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   notes: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontWeight: '400',
+    ...Typography.body,
     color: Colors.warmGray,
   },
   metadata: {
@@ -770,8 +759,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   metaText: {
-    fontSize: 14,
-    fontWeight: '400',
+    ...Typography.caption,
     color: Colors.warmGray,
     marginBottom: 4,
     textAlign: 'center',

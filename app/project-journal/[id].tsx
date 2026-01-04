@@ -256,7 +256,7 @@ export default function ProjectJournalScreen() {
                     >
                       <View style={styles.entryHeader}>
                         <View style={styles.entryTypeRow}>
-                          {hasDuration ? (
+                          {session.source === 'timer' ? (
                             <Clock size={14} color={Colors.deepTeal} />
                           ) : (
                             <PenLine size={14} color={Colors.sage} />

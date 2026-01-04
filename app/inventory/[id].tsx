@@ -15,6 +15,8 @@ import {
   Package,
   Calendar,
   Pencil,
+  Volleyball,
+  Wrench,
 } from 'lucide-react-native';
 import { Button } from '@/components/Button';
 import { UniversalHeader } from '@/components/UniversalHeader';
@@ -147,47 +149,87 @@ export default function InventoryDetailScreen(): React.JSX.Element {
               style={styles.titleOverlay}
               pointerEvents="none"
             >
-              <Text style={styles.overlayTitle} numberOfLines={2}>
-                {displayName}
-              </Text>
+              <View style={styles.titleOverlayContent}>
+                {/* Category badge in overlay */}
+                <View
+                  style={[styles.overlayCategoryBadge, { backgroundColor: categoryColor }]}
+                  accessible={true}
+                  accessibilityRole="text"
+                  accessibilityLabel={`${t('inventory.category')}: ${
+                    item.category === 'yarn' ? t('inventory.yarn') :
+                    item.category === 'hook' ? t('inventory.hooks') :
+                    t('inventory.other')
+                  }`}
+                >
+                  {item.category === 'yarn' ? (
+                    <Volleyball size={14} color={Colors.white} />
+                  ) : item.category === 'hook' ? (
+                    <Wrench size={14} color={Colors.white} />
+                  ) : (
+                    <Package size={14} color={Colors.white} />
+                  )}
+                  <Text style={styles.overlayCategoryText}>
+                    {item.category === 'yarn' ? t('inventory.yarn') :
+                     item.category === 'hook' ? t('inventory.hooks') :
+                     t('inventory.other')}
+                  </Text>
+                </View>
+
+                <Text style={styles.overlayTitle} numberOfLines={2}>
+                  {displayName}
+                </Text>
+
+                {/* Quantity + projects subtitle */}
+                <Text style={styles.itemSubtitle}>
+                  {[
+                    `${t('inventory.qty')}: ${item.quantity}`,
+                    relatedProjects.length > 0 ? `${t('tabs.projects')}: ${relatedProjects.length}` : null,
+                  ].filter(Boolean).join(' · ')}
+                </Text>
+              </View>
             </LinearGradient>
           </View>
         ) : (
           /* Large title when no images (Apple HIG pattern) */
           <View style={styles.noImageTitleContainer}>
-            <Text style={styles.largeTitle}>{displayName}</Text>
-          </View>
-        )}
-
-        <View style={styles.content}>
-
-          {/* Category Badge with Inline Quantity */}
-          <View style={styles.categoryContainer}>
-            <View style={[styles.categoryBadge, { backgroundColor: categoryColor }]}>
-              <Package size={14} color={Colors.white} />
-              <Text style={styles.categoryText}>
+            {/* Category badge - dark-friendly styling */}
+            <View
+              style={[styles.noImageCategoryBadge, { backgroundColor: `${categoryColor}20` }]}
+              accessible={true}
+              accessibilityRole="text"
+              accessibilityLabel={`${t('inventory.category')}: ${
+                item.category === 'yarn' ? t('inventory.yarn') :
+                item.category === 'hook' ? t('inventory.hooks') :
+                t('inventory.other')
+              }`}
+            >
+              {item.category === 'yarn' ? (
+                <Volleyball size={14} color={categoryColor} />
+              ) : item.category === 'hook' ? (
+                <Wrench size={14} color={categoryColor} />
+              ) : (
+                <Package size={14} color={categoryColor} />
+              )}
+              <Text style={[styles.noImageCategoryText, { color: categoryColor }]}>
                 {item.category === 'yarn' ? t('inventory.yarn') :
                  item.category === 'hook' ? t('inventory.hooks') :
                  t('inventory.other')}
               </Text>
             </View>
 
-            {/* Quantity Badge - Inline */}
-            <View style={styles.quantityBadge}>
-              <Text style={styles.quantityBadgeLabel}>{t('inventory.quantity')}</Text>
-              <Text style={styles.quantityBadgeValue}>{item.quantity}</Text>
-            </View>
+            <Text style={styles.largeTitle}>{displayName}</Text>
 
-            {/* Used in Projects Badge */}
-            {relatedProjects.length > 0 && (
-              <View style={styles.usedInProjectsBadge}>
-                <Text style={styles.usedInProjectsText}>
-                  {t('projects.projects')}: {relatedProjects.length}
-                </Text>
-              </View>
-            )}
+            {/* Quantity + projects subtitle */}
+            <Text style={styles.noImageSubtitle}>
+              {[
+                `${t('inventory.qty')}: ${item.quantity}`,
+                relatedProjects.length > 0 ? `${t('tabs.projects')}: ${relatedProjects.length}` : null,
+              ].filter(Boolean).join(' · ')}
+            </Text>
           </View>
+        )}
 
+        <View style={styles.content}>
           {/* Used in Projects - Compact summary */}
           <View style={styles.projectsSection}>
             <Text style={styles.projectsSectionLabel}>{t('inventory.usedInProjects')}</Text>
@@ -581,8 +623,30 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     paddingHorizontal: 20,
-    paddingTop: 40,
+    paddingTop: 60,
     paddingBottom: 16,
+  },
+  titleOverlayContent: {
+    gap: 4,
+  },
+  overlayCategoryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    marginBottom: 4,
+  },
+  overlayCategoryText: {
+    ...Typography.caption,
+    color: Colors.white,
+    fontSize: 12,
+    fontWeight: '600' as const,
+    textShadowColor: 'rgba(0,0,0,0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   overlayTitle: {
     ...Typography.title1,
@@ -592,76 +656,48 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },
+  itemSubtitle: {
+    ...Typography.body,
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 14,
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
   noImageTitleContainer: {
     paddingHorizontal: 24,
     paddingTop: 8,
     paddingBottom: 16,
+    gap: 6,
+  },
+  noImageCategoryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    marginBottom: 4,
+  },
+  noImageCategoryText: {
+    ...Typography.caption,
+    fontSize: 12,
+    fontWeight: '600' as const,
   },
   largeTitle: {
     ...Typography.largeTitle,
     color: Colors.charcoal,
   },
+  noImageSubtitle: {
+    ...Typography.body,
+    color: Colors.warmGray,
+    fontSize: 14,
+  },
   content: {
     paddingHorizontal: 24,
     paddingTop: 8,
     paddingBottom: 24,
-  },
-  categoryContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 16,
-  },
-  categoryBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
-    minHeight: 28,
-  },
-  categoryText: {
-    color: Colors.white,
-    fontWeight: '600' as const,
-    fontSize: 12,
-    letterSpacing: -0.1,
-  },
-  quantityBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    backgroundColor: Colors.deepSage,
-    borderRadius: 14,
-    minHeight: 28,
-  },
-  quantityBadgeLabel: {
-    color: Colors.white,
-    fontWeight: '600',
-    fontSize: 12,
-  },
-  quantityBadgeValue: {
-    color: Colors.white,
-    fontWeight: '600',
-    fontSize: 12,
-  },
-  usedInProjectsBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    backgroundColor: Colors.deepSage,
-    borderRadius: 14,
-    minHeight: 28,
-  },
-  usedInProjectsText: {
-    color: Colors.white,
-    fontWeight: '600',
-    fontSize: 12,
   },
   projectsSection: {
     marginBottom: 16,

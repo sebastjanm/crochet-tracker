@@ -837,6 +837,9 @@ export default {
   },
   home: {
     greeting: 'Hallo',
+    greetingMorning: 'Guten Morgen',
+    greetingAfternoon: 'Guten Tag',
+    greetingEvening: 'Guten Abend',
     beautifulDay: 'was für ein schöner Tag, nicht wahr',
   },
   help: {

@@ -837,6 +837,9 @@ export default {
   },
   home: {
     greeting: 'Привет',
+    greetingMorning: 'Доброе утро',
+    greetingAfternoon: 'Добрый день',
+    greetingEvening: 'Добрый вечер',
     beautifulDay: 'какой прекрасный день, правда',
   },
   help: {

@@ -935,6 +935,9 @@ export default {
   },
   home: {
     greeting: 'Hi',
+    greetingMorning: 'Good morning',
+    greetingAfternoon: 'Good afternoon',
+    greetingEvening: 'Good evening',
     beautifulDay: 'what a beautiful day eh',
   },
   tools: {

@@ -56,6 +56,18 @@ export default function ProjectsScreen(): React.JSX.Element {
 
   const userName = user?.name?.split(' ')[0] || t('profile.defaultName');
 
+  // Helper function to get time-based greeting key
+  const getTimeBasedGreetingKey = (): string => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) {
+      return 'home.greetingMorning';
+    } else if (hour >= 12 && hour < 18) {
+      return 'home.greetingAfternoon';
+    } else {
+      return 'home.greetingEvening';
+    }
+  };
+
   const [filter, setFilter] = useState<ProjectStatus | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -302,7 +314,7 @@ export default function ProjectsScreen(): React.JSX.Element {
             </View>
             <View style={styles.textContainer}>
               <Text style={styles.headerGreeting} numberOfLines={1} ellipsizeMode="tail">
-                {t('home.greeting')}
+                {t(getTimeBasedGreetingKey())}
               </Text>
               <Text style={styles.headerUserName} numberOfLines={1} ellipsizeMode="tail">
                 {userName}
@@ -486,11 +498,10 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   headerGreeting: {
-    ...Typography.body,
     color: Colors.warmGray,
-    fontWeight: '400' as const,
-    fontSize: isSmallDevice ? 13 : isTablet ? 16 : 14,
-    lineHeight: isSmallDevice ? 17 : isTablet ? 21 : 18,
+    fontWeight: '500' as const,
+    fontSize: isSmallDevice ? 16 : isTablet ? 20 : 18,
+    lineHeight: isSmallDevice ? 20 : isTablet ? 26 : 24,
     letterSpacing: 0.2,
     marginBottom: 2,
   },

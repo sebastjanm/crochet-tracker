@@ -934,6 +934,9 @@ export default {
   },
   home: {
     greeting: 'Živjo',
+    greetingMorning: 'Dobro jutro',
+    greetingAfternoon: 'Dober dan',
+    greetingEvening: 'Dober večer',
     beautifulDay: 'kakšen čudovit dan, kajne',
   },
   tools: {

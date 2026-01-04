@@ -903,6 +903,8 @@ export default {
     // Yarn FAQ
     faqYarnQ1: 'What yarn details can I track?',
     faqYarnA1: 'You can track brand, product line, color, fiber content, weight category, ball weight, length, dye lot, recommended hook/needle sizes, and purchase information.',
+    faqYarnQ2: 'How do I link yarn to projects?',
+    faqYarnA2: 'When editing a project, go to the Materials section and select yarn from your inventory. You can specify the quantity used. From yarn detail screen, use "Used in Projects" to see all linked projects.',
     // Hooks FAQ
     faqHooksQ1: 'What hook information can I store?',
     faqHooksA1: 'Track brand, model, size (mm and US/UK), material (steel, aluminum, bamboo, etc.), handle type (standard, ergonomic, Tunisian), and purchase details.',

@@ -902,6 +902,8 @@ export default {
     // Yarn FAQ
     faqYarnQ1: 'Katere podrobnosti preje lahko sledim?',
     faqYarnA1: 'Lahko sledite znamki, liniji izdelkov, barvi, sestavi vlaken, kategoriji teže, teži klobčiča, dolžini, seriji barvanja, priporočenim velikostim kvačke/igel in informacijam o nakupu.',
+    faqYarnQ2: 'Kako povežem prejo s projekti?',
+    faqYarnA2: 'Pri urejanju projekta pojdite v razdelek Materiali in izberite prejo iz svoje zaloge. Lahko določite uporabljeno količino. Na zaslonu podrobnosti preje uporabite "Uporabljeno v projektih" za ogled vseh povezanih projektov.',
     // Hooks FAQ
     faqHooksQ1: 'Katere informacije o kvačkah lahko shranjujem?',
     faqHooksA1: 'Sledite znamki, modelu, velikosti (mm in US/UK), materialu (jeklo, aluminij, bambus itd.), tipu ročaja (standardni, ergonomski, tunizijski) in podrobnostim o nakupu.',

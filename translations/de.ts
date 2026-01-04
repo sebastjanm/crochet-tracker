@@ -897,6 +897,8 @@ export default {
     // Yarn FAQ
     faqYarnQ1: 'Welche Garndetails kann ich verfolgen?',
     faqYarnA1: 'Sie können Marke, Produktlinie, Farbe, Faseranteil, Gewichtskategorie, Knäuelgewicht, Länge, Farbpartie und empfohlene Haken-/Nadelgrößen verfolgen.',
+    faqYarnQ2: 'Wie verknüpfe ich Garn mit Projekten?',
+    faqYarnA2: 'Bearbeiten Sie ein Projekt und wählen Sie im Materialbereich Garn aus Ihrem Inventar. Sie können die verwendete Menge angeben. Auf dem Garn-Detailbildschirm sehen Sie unter "Verwendet in Projekten" alle verknüpften Projekte.',
     // Hooks FAQ
     faqHooksQ1: 'Welche Haken-Informationen kann ich speichern?',
     faqHooksA1: 'Verfolgen Sie Marke, Modell, Größe (mm und US/UK), Material (Stahl, Aluminium, Bambus, etc.), Griffart und Kaufdetails.',

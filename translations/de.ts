@@ -1041,8 +1041,6 @@ export default {
     imageGeneratorSubtitle: 'Erstellen Sie visuelle Inspiration für Ihre Projekte',
     voiceAssistant: 'Sprachassistent',
     voiceAssistantSubtitle: 'Sprechen Sie freihändig mit YarnAI',
-    unitConversion: 'Einheitenumrechnung',
-    unitConversionSubtitle: 'Maße und Garnmengen umrechnen',
     moreComing: 'Mehr kommt bald',
     moreComingSubtitle: 'Wir arbeiten an weiteren hilfreichen Werkzeugen',
     soon: 'Bald',

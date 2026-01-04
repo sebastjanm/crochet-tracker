@@ -1041,8 +1041,6 @@ export default {
     imageGeneratorSubtitle: 'Создавайте визуальное вдохновение для проектов',
     voiceAssistant: 'Голосовой помощник',
     voiceAssistantSubtitle: 'Говорите с YarnAI без рук',
-    unitConversion: 'Конвертер единиц',
-    unitConversionSubtitle: 'Конвертируйте размеры и количество пряжи',
     moreComing: 'Скоро будет больше',
     moreComingSubtitle: 'Мы работаем над дополнительными полезными инструментами',
     soon: 'Скоро',

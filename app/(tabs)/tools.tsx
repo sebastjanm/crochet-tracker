@@ -14,7 +14,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import {
   MessageSquare,
   Lightbulb,
-  Ruler,
   ImageIcon,
   Mic,
   Sparkles,
@@ -54,15 +53,6 @@ export default function ToolsScreen(): React.JSX.Element {
 
   /** Memoized tools configuration with icons and routes */
   const tools = useMemo(() => [
-    {
-      id: 'unit-conversion',
-      title: t('tools.unitConversion'),
-      subtitle: t('tools.unitConversionSubtitle'),
-      icon: Ruler,
-      iconColor: Colors.deepTeal,
-      gradientColors: ['#F0F9FF', '#E0F2FE'] as const,
-      route: null, // TODO: Create unit conversion screen
-    },
     {
       id: 'yarnai-chat',
       title: t('tools.yarnaiChat'),

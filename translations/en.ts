@@ -943,8 +943,6 @@ export default {
   tools: {
     title: 'Tools',
     subtitle: 'Helpful utilities for crocheters',
-    unitConversion: 'Unit Conversion',
-    unitConversionSubtitle: 'Convert yarn & crochet measurements',
     yarnaiChat: 'YarnAI Chat',
     yarnaiChatSubtitle: 'AI assistant for crochet help',
     projectIdeas: 'Project Ideas',

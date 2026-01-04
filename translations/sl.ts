@@ -942,8 +942,6 @@ export default {
   tools: {
     title: 'Orodja',
     subtitle: 'Koristna orodja za kvačkarje',
-    unitConversion: 'Pretvorba enot',
-    unitConversionSubtitle: 'Pretvorite mere za prejo in kvačkanje',
     yarnaiChat: 'YarnAI Klepet',
     yarnaiChatSubtitle: 'AI asistent za pomoč pri kvačkanju',
     projectIdeas: 'Ideje za projekte',

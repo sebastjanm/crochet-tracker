@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -238,12 +238,26 @@ export default function ProjectDetailScreen(): React.JSX.Element {
               pointerEvents="none"
             >
               <View style={styles.titleOverlayContent}>
+                {/* Status badge in overlay */}
+                <View
+                  style={[styles.overlayStatusBadge, { backgroundColor: getStatusColor(project.status) }]}
+                  accessible={true}
+                  accessibilityRole="text"
+                  accessibilityLabel={`${t('projects.status')}: ${getStatusLabel(project.status)}`}
+                >
+                  {getStatusIcon(project.status)}
+                  <Text style={styles.overlayStatusText}>{getStatusLabel(project.status)}</Text>
+                </View>
+
                 <Text style={styles.projectTitle} numberOfLines={2}>{project.title}</Text>
-                {project.projectType && (
-                  <Text style={styles.projectTypeSubtitle}>
-                    {t(`projects.projectTypes.${project.projectType}`)}
-                  </Text>
-                )}
+
+                {/* Combined type + date subtitle */}
+                <Text style={styles.projectTypeSubtitle}>
+                  {[
+                    project.projectType ? t(`projects.projectTypes.${project.projectType}`) : null,
+                    project.startDate ? new Date(project.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : null,
+                  ].filter(Boolean).join(' · ')}
+                </Text>
               </View>
               {project.images.length > 1 && (
                 <Text style={styles.imageCounter}>
@@ -255,49 +269,32 @@ export default function ProjectDetailScreen(): React.JSX.Element {
         ) : (
           /* Large title when no images (Apple HIG pattern) */
           <View style={styles.noImageTitleContainer}>
-            <Text style={styles.largeTitle}>{project.title}</Text>
-            {project.projectType && (
-              <Text style={styles.projectTypeSubtitleDark}>
-                {t(`projects.projectTypes.${project.projectType}`)}
-              </Text>
-            )}
-          </View>
-        )}
-
-        <View style={styles.content}>
-          {/* Compact Status Bar */}
-          <View style={styles.statusBar}>
-            {/* Status Badge */}
+            {/* Status badge for no-image */}
             <View
-              style={[styles.statusBadge, { backgroundColor: `${getStatusColor(project.status)}15` }]}
+              style={[styles.noImageStatusBadge, { backgroundColor: `${getStatusColor(project.status)}20` }]}
               accessible={true}
               accessibilityRole="text"
               accessibilityLabel={`${t('projects.status')}: ${getStatusLabel(project.status)}`}
             >
-              {getStatusIcon(project.status)}
-              <Text style={[styles.statusBadgeText, { color: getStatusColor(project.status) }]}>
+              {React.cloneElement(getStatusIcon(project.status), { color: getStatusColor(project.status) })}
+              <Text style={[styles.noImageStatusText, { color: getStatusColor(project.status) }]}>
                 {getStatusLabel(project.status)}
               </Text>
             </View>
 
-            {/* Dates */}
-            <View style={styles.datesRow}>
-              {project.startDate && (
-                <Text style={styles.dateText}>
-                  {new Date(project.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                </Text>
-              )}
-              {project.status === 'completed' && project.completedDate && (
-                <>
-                  <Text style={styles.dateSeparator}>→</Text>
-                  <Text style={styles.dateText}>
-                    {new Date(project.completedDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </Text>
-                </>
-              )}
-            </View>
-          </View>
+            <Text style={styles.largeTitle}>{project.title}</Text>
 
+            {/* Combined type + date subtitle */}
+            <Text style={styles.projectTypeSubtitleDark}>
+              {[
+                project.projectType ? t(`projects.projectTypes.${project.projectType}`) : null,
+                project.startDate ? new Date(project.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : null,
+              ].filter(Boolean).join(' · ')}
+            </Text>
+          </View>
+        )}
+
+        <View style={styles.content}>
           {/* Time Tracking (UI Mockup - tap title to cycle states) */}
           <TimeTrackingMockup />
 
@@ -760,42 +757,41 @@ const styles = StyleSheet.create({
     fontSize: 15,
     marginTop: 4,
   },
-  statusBar: {
+  // Overlay status badge (white text on colored bg)
+  overlayStatusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-    paddingBottom: 12,
-    borderBottomWidth: normalizeBorder(0.5),
-    borderBottomColor: `rgba(0, 0, 0, ${normalizeBorderOpacity(0.15)})`,
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    alignSelf: 'flex-start',
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    marginBottom: 8,
   },
-  statusBadgeText: {
+  overlayStatusText: {
     ...Typography.caption,
-    fontSize: 13,
-    fontWeight: '600' as const,
-  },
-  datesRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  dateText: {
-    ...Typography.caption,
-    color: Colors.warmGray,
-    fontSize: 13,
-  },
-  dateSeparator: {
-    ...Typography.caption,
-    color: Colors.warmGray,
+    color: Colors.white,
     fontSize: 12,
+    fontWeight: '600' as const,
+    textShadowColor: 'rgba(0,0,0,0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  // No-image status badge (colored text on tinted bg)
+  noImageStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  noImageStatusText: {
+    ...Typography.caption,
+    fontSize: 12,
+    fontWeight: '600' as const,
   },
   yarnList: {
     gap: 8,

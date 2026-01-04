@@ -32,11 +32,13 @@ import {
   Pencil,
   Lock,
   Wrench,
+  Volleyball,
 } from 'lucide-react-native';
 import { Button } from '@/components/Button';
 import { UniversalHeader } from '@/components/UniversalHeader';
 import { ImageGallery } from '@/components/ImageGallery';
 import { SectionHeader } from '@/components/SectionHeader';
+import { TimeTrackingMockup } from '@/components/TimeTrackingMockup';
 import { useProjects } from '@/providers/ProjectsProvider';
 import { useInventory } from '@/providers/InventoryProvider';
 import { useLanguage } from '@/providers/LanguageProvider';
@@ -263,44 +265,41 @@ export default function ProjectDetailScreen(): React.JSX.Element {
         )}
 
         <View style={styles.content}>
-          {/* Combined Info Section */}
-          <View style={styles.infoSection}>
-            {/* Status Row */}
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>{t('projects.status')}</Text>
-              <View
-                style={styles.statusValue}
-                accessible={true}
-                accessibilityRole="text"
-                accessibilityLabel={`${t('projects.status')}: ${getStatusLabel(project.status)}`}
-              >
-                {getStatusIcon(project.status)}
-                <Text style={[styles.infoValue, { color: getStatusColor(project.status) }]}>
-                  {getStatusLabel(project.status)}
-                </Text>
-              </View>
+          {/* Compact Status Bar */}
+          <View style={styles.statusBar}>
+            {/* Status Badge */}
+            <View
+              style={[styles.statusBadge, { backgroundColor: `${getStatusColor(project.status)}15` }]}
+              accessible={true}
+              accessibilityRole="text"
+              accessibilityLabel={`${t('projects.status')}: ${getStatusLabel(project.status)}`}
+            >
+              {getStatusIcon(project.status)}
+              <Text style={[styles.statusBadgeText, { color: getStatusColor(project.status) }]}>
+                {getStatusLabel(project.status)}
+              </Text>
             </View>
 
-            {/* Start Date Row */}
-            {project.startDate && (
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>{t('projects.started')}</Text>
-                <Text style={styles.infoValue}>
-                  {new Date(project.startDate).toLocaleDateString()}
+            {/* Dates */}
+            <View style={styles.datesRow}>
+              {project.startDate && (
+                <Text style={styles.dateText}>
+                  {new Date(project.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                 </Text>
-              </View>
-            )}
-
-            {/* Completed Date Row */}
-            {project.status === 'completed' && project.completedDate && (
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>{t('projects.completedDate')}</Text>
-                <Text style={styles.infoValue}>
-                  {new Date(project.completedDate).toLocaleDateString()}
-                </Text>
-              </View>
-            )}
+              )}
+              {project.status === 'completed' && project.completedDate && (
+                <>
+                  <Text style={styles.dateSeparator}>→</Text>
+                  <Text style={styles.dateText}>
+                    {new Date(project.completedDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </Text>
+                </>
+              )}
+            </View>
           </View>
+
+          {/* Time Tracking (UI Mockup - tap title to cycle states) */}
+          <TimeTrackingMockup />
 
           {/* Pattern Section - only show if has content */}
           {((project.patternImages && project.patternImages.length > 0) ||
@@ -395,62 +394,62 @@ export default function ProjectDetailScreen(): React.JSX.Element {
             (project.yarnUsedIds && project.yarnUsedIds.length > 0)) && (
           <>
           <SectionHeader title={t('projects.materialsYarn')} />
-                <View style={styles.yarnSection}>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.materialsScroll}
-                  >
-                    {(project.yarnMaterials || project.yarnUsedIds?.map(id => ({ itemId: id, quantity: 1 })) || []).map((yarnEntry) => {
-                      const yarnId = typeof yarnEntry === 'string' ? yarnEntry : yarnEntry.itemId;
-                      const quantity = typeof yarnEntry === 'string' ? 1 : yarnEntry.quantity;
-                      const yarn = getItemById(yarnId);
-                      if (!yarn) {
-                        if (__DEV__) console.warn(`Yarn ${yarnId} not found in inventory!`);
-                        return null;
-                      }
-                      return (
-                        <TouchableOpacity
-                          key={yarnId}
-                          style={styles.materialCard}
-                          onPress={() => router.push(`/inventory/${yarnId}`)}
-                          activeOpacity={0.8}
-                        >
-                          {yarn.images && yarn.images.length > 0 ? (
-                            <Image
-                              source={getImageSource(yarn.images[0])}
-                              style={styles.materialImage}
-                              contentFit="cover"
-                              transition={200}
-                            />
-                          ) : (
-                            <View style={[styles.materialImage, styles.materialImagePlaceholder]}>
-                              <FileText size={32} color={Colors.warmGray} />
-                            </View>
-                          )}
-                          {/* Quantity badge */}
-                          <View style={styles.quantityBadge}>
-                            <Text style={styles.quantityBadgeText}>×{quantity}</Text>
+                <View style={styles.yarnList}>
+                  {(project.yarnMaterials || project.yarnUsedIds?.map(id => ({ itemId: id, quantity: 1 })) || []).map((yarnEntry, index, arr) => {
+                    const yarnId = typeof yarnEntry === 'string' ? yarnEntry : yarnEntry.itemId;
+                    const quantity = typeof yarnEntry === 'string' ? 1 : yarnEntry.quantity;
+                    const yarn = getItemById(yarnId);
+                    if (!yarn) {
+                      if (__DEV__) console.warn(`Yarn ${yarnId} not found in inventory!`);
+                      return null;
+                    }
+                    const isLast = index === arr.length - 1;
+                    return (
+                      <TouchableOpacity
+                        key={yarnId}
+                        style={[styles.yarnListRow, !isLast && styles.yarnListRowBorder]}
+                        onPress={() => router.push(`/inventory/${yarnId}`)}
+                        activeOpacity={0.7}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${yarn.name}${yarn.yarnDetails?.brand?.name ? `, ${yarn.yarnDetails.brand.name}` : ''}`}
+                      >
+                        {yarn.images && yarn.images.length > 0 ? (
+                          <Image
+                            source={getImageSource(yarn.images[0])}
+                            style={styles.yarnListThumb}
+                            contentFit="cover"
+                            transition={200}
+                          />
+                        ) : (
+                          <View style={[styles.yarnListThumb, styles.yarnListThumbPlaceholder]}>
+                            <Volleyball size={24} color={Colors.warmGray} />
                           </View>
+                        )}
+                        <View style={styles.yarnListInfo}>
+                          <Text style={styles.yarnListName} numberOfLines={1}>
+                            {yarn.name}
+                          </Text>
                           {yarn.yarnDetails?.brand?.name && (
-                            <View style={styles.brandBadge}>
-                              <Text style={styles.brandBadgeText} numberOfLines={1}>
-                                {yarn.yarnDetails.brand.name}
-                              </Text>
-                            </View>
+                            <Text style={styles.yarnListBrand} numberOfLines={1}>
+                              {yarn.yarnDetails.brand.name}
+                              {yarn.yarnDetails.line ? ` · ${yarn.yarnDetails.line}` : ''}
+                            </Text>
                           )}
-                          <View style={styles.materialInfo}>
-                            <Text style={styles.materialName} numberOfLines={1}>
-                              {yarn.name}
-                            </Text>
-                            <Text style={styles.materialDetail} numberOfLines={1}>
-                              {yarn.yarnDetails?.colorName || yarn.yarnDetails?.weight?.name || ''}
-                            </Text>
-                          </View>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
+                          <Text style={styles.yarnListDetail} numberOfLines={1}>
+                            {[
+                              yarn.yarnDetails?.colorName,
+                              yarn.yarnDetails?.weight?.name,
+                              yarn.yarnDetails?.grams ? `${yarn.yarnDetails.grams}g` : null,
+                            ].filter(Boolean).join(' · ')}
+                          </Text>
+                        </View>
+                        <View style={styles.yarnQuantityBadge}>
+                          <Text style={styles.yarnQuantityText}>×{quantity}</Text>
+                        </View>
+                        <ChevronRight size={20} color={Colors.warmGray} />
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
           </>
           )}
@@ -486,7 +485,7 @@ export default function ProjectDetailScreen(): React.JSX.Element {
                           />
                         ) : (
                           <View style={[styles.hookListThumb, styles.hookListThumbPlaceholder]}>
-                            <FileText size={18} color={Colors.warmGray} />
+                            <Wrench size={24} color={Colors.warmGray} />
                           </View>
                         )}
                         <View style={styles.hookListInfo}>
@@ -499,7 +498,7 @@ export default function ProjectDetailScreen(): React.JSX.Element {
                             </Text>
                           )}
                         </View>
-                        <ChevronRight size={18} color={Colors.warmGray} />
+                        <ChevronRight size={20} color={Colors.warmGray} />
                       </TouchableOpacity>
                     );
                   })}
@@ -697,7 +696,7 @@ const styles = StyleSheet.create({
     minWidth: 120,
   },
   imageGalleryContainer: {
-    marginBottom: 16,
+    marginBottom: 2,
     position: 'relative',
   },
   titleOverlay: {
@@ -761,66 +760,94 @@ const styles = StyleSheet.create({
     fontSize: 15,
     marginTop: 4,
   },
-  infoSection: {
-    marginBottom: 16,
-    paddingBottom: 16,
-    gap: 12,
+  statusBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    paddingBottom: 12,
     borderBottomWidth: normalizeBorder(0.5),
     borderBottomColor: `rgba(0, 0, 0, ${normalizeBorderOpacity(0.15)})`,
   },
-  infoRow: {
+  statusBadge: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    minHeight: 24,
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
-  infoLabel: {
-    ...Typography.body,
-    color: Colors.warmGray,
-    fontSize: 15,
+  statusBadgeText: {
+    ...Typography.caption,
+    fontSize: 13,
+    fontWeight: '600' as const,
   },
-  infoValue: {
-    ...Typography.body,
-    color: Colors.charcoal,
-    fontSize: 15,
-    fontWeight: '500' as const,
-  },
-  statusValue: {
+  datesRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
-  yarnSection: {
+  dateText: {
+    ...Typography.caption,
+    color: Colors.warmGray,
+    fontSize: 13,
+  },
+  dateSeparator: {
+    ...Typography.caption,
+    color: Colors.warmGray,
+    fontSize: 12,
+  },
+  yarnList: {
+    gap: 8,
     marginBottom: 16,
     paddingBottom: 16,
     borderBottomWidth: normalizeBorder(0.5),
     borderBottomColor: `rgba(0, 0, 0, ${normalizeBorderOpacity(0.15)})`,
   },
-  materialsScroll: {
-    paddingRight: 24,
+  yarnListRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    minHeight: 88,
+    gap: 14,
   },
-  materialCard: {
-    width: 140,
-    marginRight: 12,
-    borderRadius: 14,
-    overflow: 'hidden',
+  yarnListRowBorder: {
+    borderBottomWidth: normalizeBorder(1),
+    borderBottomColor: Colors.border,
+  },
+  yarnListThumb: {
+    width: 64,
+    height: 80,
+    borderRadius: 10,
     backgroundColor: Colors.linen,
-    borderWidth: normalizeBorder(0.5),
-    borderColor: 'rgba(139, 154, 123, 0.12)',
   },
-  materialImage: {
-    width: 140,
-    height: 187,
-    backgroundColor: Colors.beige,
-  },
-  materialImagePlaceholder: {
+  yarnListThumbPlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  quantityBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
+  yarnListInfo: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  yarnListName: {
+    ...Typography.body,
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: Colors.charcoal,
+  },
+  yarnListBrand: {
+    ...Typography.caption,
+    fontSize: 13,
+    color: Colors.deepSage,
+    marginTop: 2,
+  },
+  yarnListDetail: {
+    ...Typography.caption,
+    fontSize: 12,
+    color: Colors.warmGray,
+    marginTop: 2,
+  },
+  yarnQuantityBadge: {
     backgroundColor: Colors.deepSage,
     borderRadius: 10,
     paddingHorizontal: 8,
@@ -828,42 +855,11 @@ const styles = StyleSheet.create({
     minWidth: 32,
     alignItems: 'center',
   },
-  quantityBadgeText: {
+  yarnQuantityText: {
     ...Typography.caption,
     color: Colors.white,
     fontSize: 13,
     fontWeight: '600' as const,
-  },
-  brandBadge: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-    maxWidth: 124,
-  },
-  brandBadgeText: {
-    ...Typography.caption,
-    fontSize: 12,
-    fontWeight: '600' as const,
-    color: Colors.charcoal,
-  },
-  materialInfo: {
-    padding: 12,
-  },
-  materialName: {
-    ...Typography.caption,
-    color: Colors.charcoal,
-    fontWeight: '600' as const,
-    marginBottom: 4,
-    fontSize: 14,
-  },
-  materialDetail: {
-    ...Typography.caption,
-    color: Colors.warmGray,
-    fontSize: 12,
   },
   hooksList: {
     gap: 8,
@@ -875,17 +871,17 @@ const styles = StyleSheet.create({
   hookListRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    minHeight: 56,
-    gap: 12,
+    paddingVertical: 12,
+    minHeight: 88,
+    gap: 14,
   },
   hookListRowBorder: {
     borderBottomWidth: normalizeBorder(1),
     borderBottomColor: Colors.border,
   },
   hookListThumb: {
-    width: 48,
-    height: 48,
+    width: 64,
+    height: 80,
     borderRadius: 10,
     backgroundColor: Colors.linen,
   },
@@ -899,15 +895,15 @@ const styles = StyleSheet.create({
   },
   hookListSize: {
     ...Typography.body,
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600' as const,
     color: Colors.charcoal,
   },
   hookListBrand: {
     ...Typography.caption,
-    fontSize: 13,
+    fontSize: 14,
     color: Colors.warmGray,
-    marginTop: 2,
+    marginTop: 3,
   },
   patternImagesScroll: {
     marginBottom: 8,

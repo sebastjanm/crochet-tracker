@@ -295,8 +295,10 @@ export default function ProjectDetailScreen(): React.JSX.Element {
         )}
 
         <View style={styles.content}>
-          {/* Time Tracking (UI Mockup - tap title to cycle states) */}
-          <TimeTrackingMockup />
+          {/* Time Tracking */}
+          <TimeTrackingMockup
+            isCompleted={project.status === 'completed' || project.status === 'frogged'}
+          />
 
           {/* Pattern Section - only show if has content */}
           {((project.patternImages && project.patternImages.length > 0) ||
@@ -719,7 +721,9 @@ const styles = StyleSheet.create({
     color: Colors.charcoal,
   },
   content: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 24,
   },
   projectTitle: {
     ...Typography.title1,
@@ -797,6 +801,7 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 16,
     paddingBottom: 16,
+    paddingLeft: 12,
     borderBottomWidth: normalizeBorder(0.5),
     borderBottomColor: `rgba(0, 0, 0, ${normalizeBorderOpacity(0.15)})`,
   },
@@ -861,6 +866,7 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 16,
     paddingBottom: 16,
+    paddingLeft: 12,
     borderBottomWidth: normalizeBorder(0.5),
     borderBottomColor: `rgba(0, 0, 0, ${normalizeBorderOpacity(0.15)})`,
   },
@@ -903,6 +909,7 @@ const styles = StyleSheet.create({
   },
   patternImagesScroll: {
     marginBottom: 8,
+    marginLeft: 12,
   },
   patternImagesContent: {
     paddingRight: 24,
@@ -922,6 +929,7 @@ const styles = StyleSheet.create({
   resourcesList: {
     gap: 10,
     paddingBottom: 16,
+    paddingLeft: 12,
     marginBottom: 16,
     borderBottomWidth: normalizeBorder(0.5),
     borderBottomColor: `rgba(0, 0, 0, ${normalizeBorderOpacity(0.15)})`,
@@ -971,6 +979,7 @@ const styles = StyleSheet.create({
   // PRO Features List Styles
   proFeaturesList: {
     marginBottom: 16,
+    paddingLeft: 12,
   },
   proFeatureRow: {
     flexDirection: 'row',

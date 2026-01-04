@@ -711,6 +711,7 @@ const styles = StyleSheet.create({
   description: {
     ...Typography.body,
     color: Colors.warmGray,
+    paddingLeft: 12,
   },
   detailsCard: {
     marginBottom: 16,
@@ -750,6 +751,7 @@ const styles = StyleSheet.create({
   notes: {
     ...Typography.body,
     color: Colors.warmGray,
+    paddingLeft: 12,
   },
   metadata: {
     marginBottom: 32,

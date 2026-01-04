@@ -30,9 +30,15 @@ type MockState = 'idle' | 'running';
 
 interface TimeTrackingMockupProps {
   initialState?: MockState;
+  isCompleted?: boolean;
+  totalTime?: string;
 }
 
-export function TimeTrackingMockup({ initialState = 'idle' }: TimeTrackingMockupProps) {
+export function TimeTrackingMockup({
+  initialState = 'idle',
+  isCompleted = false,
+  totalTime = '12:45',
+}: TimeTrackingMockupProps) {
   const [mockState, setMockState] = useState<MockState>(initialState);
   const [showStoppedModal, setShowStoppedModal] = useState(false);
   const [showManualModal, setShowManualModal] = useState(false);
@@ -46,6 +52,19 @@ export function TimeTrackingMockup({ initialState = 'idle' }: TimeTrackingMockup
       setShowStoppedModal(true);
     }
   };
+
+  // Completed state - read-only display of total time
+  if (isCompleted) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.completedRow}>
+          <Clock size={18} color={Colors.sage} />
+          <Text style={styles.completedLabel}>Time spent:</Text>
+          <Text style={styles.completedValue}>{totalTime}</Text>
+        </View>
+      </View>
+    );
+  }
 
   if (mockState === 'running') {
     return (
@@ -212,6 +231,26 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     borderBottomWidth: normalizeBorder(0.5),
     borderBottomColor: `rgba(0, 0, 0, ${normalizeBorderOpacity(0.15)})`,
+  },
+
+  // Completed State
+  completedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingLeft: 12,
+  },
+  completedLabel: {
+    ...Typography.body,
+    color: Colors.warmGray,
+    fontSize: 15,
+  },
+  completedValue: {
+    ...Typography.body,
+    color: Colors.charcoal,
+    fontSize: 17,
+    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
   },
 
   // Idle State

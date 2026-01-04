@@ -257,10 +257,58 @@ export interface Database {
           updated_at?: string;
         };
       };
+      project_time_sessions: {
+        Row: {
+          id: string;
+          user_id: string;
+          project_id: string;
+          started_at: string;
+          ended_at: string;
+          duration_minutes: number | null; // null = note-only entry
+          source: 'timer' | 'manual';
+          note: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          project_id: string;
+          started_at: string;
+          ended_at: string;
+          duration_minutes?: number | null; // null = note-only entry
+          source: 'timer' | 'manual';
+          note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          project_id?: string;
+          started_at?: string;
+          ended_at?: string;
+          duration_minutes?: number | null;
+          source?: 'timer' | 'manual';
+          note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      [_ in never]: never;
     };
     Enums: {
       project_status: ProjectStatus;
       inventory_category: InventoryCategory;
+      time_session_source: 'timer' | 'manual';
+    };
+    CompositeTypes: {
+      [_ in never]: never;
     };
   };
 }
@@ -282,3 +330,7 @@ export type Profile = Database['public']['Tables']['profiles']['Row'];
 export type YarnBrand = Database['public']['Tables']['yarn_brands']['Row'];
 export type YarnBrandInsert = Database['public']['Tables']['yarn_brands']['Insert'];
 export type YarnBrandUpdate = Database['public']['Tables']['yarn_brands']['Update'];
+
+export type TimeSession = Database['public']['Tables']['project_time_sessions']['Row'];
+export type TimeSessionInsert = Database['public']['Tables']['project_time_sessions']['Insert'];
+export type TimeSessionUpdate = Database['public']['Tables']['project_time_sessions']['Update'];

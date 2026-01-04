@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,32 +8,94 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Modal,
+  TextInput,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Plus, Trash2, BookOpen } from 'lucide-react-native';
+import { Plus, Trash2, BookOpen, Clock, PenLine } from 'lucide-react-native';
 import { Button } from '@/components/Button';
-import { Input } from '@/components/Input';
 import { ModalHeader } from '@/components/ModalHeader';
 import { EmptyState } from '@/components/EmptyState';
 import { LockedProFeature } from '@/components/LockedProFeature';
 import { useProjects } from '@/providers/ProjectsProvider';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { useAuth } from '@/providers/AuthProvider';
+import { useTimeSessions } from '@/providers/TimeSessionsProvider';
 import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
-import type { WorkProgressEntry } from '@/types';
+import type { WorkProgressEntry, ProjectTimeSession } from '@/types';
 import { normalizeBorder, buttonShadow } from '@/constants/pixelRatio';
+
+// Unified timeline entry type
+type TimelineEntry =
+  | { type: 'journal'; data: WorkProgressEntry }
+  | { type: 'time'; data: ProjectTimeSession };
 
 export default function ProjectJournalScreen() {
   const { id } = useLocalSearchParams();
+  const projectId = id as string;
   const { getProjectById, updateProject } = useProjects();
   const { t } = useLanguage();
   const { user } = useAuth();
-  const project = getProjectById(id as string);
+  const { getSessionsForProject, addManualSession, deleteSession } = useTimeSessions();
+  const project = getProjectById(projectId);
+  const timeSessions = getSessionsForProject(projectId);
 
-  const [isAddingEntry, setIsAddingEntry] = useState(false);
-  const [editingEntry, setEditingEntry] = useState('');
+  // Modal state for unified work entry
+  const [showWorkEntryModal, setShowWorkEntryModal] = useState(false);
+
+  // Create unified timeline from journal entries + time sessions
+  const timeline = useMemo((): TimelineEntry[] => {
+    const entries: TimelineEntry[] = [];
+
+    // Add journal entries
+    const workProgress = project?.workProgress || [];
+    workProgress.forEach((entry) => {
+      entries.push({ type: 'journal', data: entry });
+    });
+
+    // Add time sessions
+    timeSessions.forEach((session) => {
+      entries.push({ type: 'time', data: session });
+    });
+
+    // Sort by date, newest first
+    entries.sort((a, b) => {
+      const dateA = a.type === 'journal' ? new Date(a.data.date) : new Date(a.data.startedAt);
+      const dateB = b.type === 'journal' ? new Date(b.data.date) : new Date(b.data.startedAt);
+      return dateB.getTime() - dateA.getTime();
+    });
+
+    return entries;
+  }, [project?.workProgress, timeSessions]);
+
+  // Format duration for time sessions (handles null for note-only entries)
+  const formatSessionDuration = (minutes: number | null): string | null => {
+    if (minutes === null) return null;
+    if (minutes < 60) {
+      return `${minutes}${t('timeTracking.minutes')}`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (mins === 0) {
+      return `${hours}${t('timeTracking.hours')}`;
+    }
+    return `${hours}${t('timeTracking.hours')} ${mins}${t('timeTracking.minutes')}`;
+  };
+
+  // Handle work entry save (unified: note and/or duration)
+  const handleSaveWorkEntry = async (hours: number, minutes: number, note?: string) => {
+    const totalMinutes = hours * 60 + minutes;
+    await addManualSession(
+      projectId,
+      new Date(),
+      totalMinutes > 0 ? totalMinutes : null,
+      note
+    );
+    setShowWorkEntryModal(false);
+  };
 
   if (!project) {
     return (
@@ -52,35 +114,7 @@ export default function ProjectJournalScreen() {
 
   const workProgress = project.workProgress || [];
 
-  const handleAddEntry = () => {
-    setIsAddingEntry(true);
-    setEditingEntry('');
-  };
-
-  const handleSaveEntry = async () => {
-    if (editingEntry.trim()) {
-      const newEntry: WorkProgressEntry = {
-        id: Date.now().toString(),
-        date: new Date(),
-        notes: editingEntry.trim(),
-      };
-
-      const updatedWorkProgress = [...workProgress, newEntry];
-
-      await updateProject(project.id, {
-        workProgress: updatedWorkProgress,
-      });
-
-      setEditingEntry('');
-      setIsAddingEntry(false);
-    }
-  };
-
-  const handleCancelEntry = () => {
-    setEditingEntry('');
-    setIsAddingEntry(false);
-  };
-
+  // Delete legacy journal entry
   const handleDeleteEntry = (entryId: string) => {
     Alert.alert(
       t('projects.deleteJournalEntry'),
@@ -95,6 +129,24 @@ export default function ProjectJournalScreen() {
             await updateProject(project.id, {
               workProgress: updatedWorkProgress.length > 0 ? updatedWorkProgress : undefined,
             });
+          },
+        },
+      ]
+    );
+  };
+
+  // Delete time session / work entry
+  const handleDeleteTimeSession = (sessionId: string) => {
+    Alert.alert(
+      t('timeTracking.deleteWorkEntry'),
+      t('timeTracking.deleteWorkEntryConfirm'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            await deleteSession(sessionId);
           },
         },
       ]
@@ -145,63 +197,20 @@ export default function ProjectJournalScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          {!isAddingEntry && (
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={handleAddEntry}
-              activeOpacity={0.7}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel={t('projects.addJournalEntry')}
-              accessibilityHint={t('projects.addJournalEntryHint')}
-            >
-              <Plus size={20} color={Colors.white} />
-              <Text style={styles.addButtonText}>{t('projects.addJournalEntry')}</Text>
-            </TouchableOpacity>
-          )}
+          {/* Add Work Entry button */}
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => setShowWorkEntryModal(true)}
+            activeOpacity={0.7}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel={t('timeTracking.addWorkEntry')}
+          >
+            <Plus size={20} color={Colors.white} />
+            <Text style={styles.addButtonText}>{t('timeTracking.addWorkEntry')}</Text>
+          </TouchableOpacity>
 
-          {isAddingEntry && (
-            <View style={styles.entryForm}>
-              <Text style={styles.formTitle}>{t('projects.newJournalEntry')}</Text>
-              <Input
-                label={t('projects.workEntryLabel')}
-                placeholder={t('projects.workEntryPlaceholder')}
-                value={editingEntry}
-                onChangeText={setEditingEntry}
-                multiline
-                numberOfLines={6}
-                style={styles.textArea}
-                autoFocus
-              />
-              <View style={styles.formButtons}>
-                <TouchableOpacity
-                  style={styles.cancelButton}
-                  onPress={handleCancelEntry}
-                  accessible={true}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('common.cancel')}
-                >
-                  <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.saveButton,
-                    !editingEntry.trim() && styles.saveButtonDisabled,
-                  ]}
-                  onPress={handleSaveEntry}
-                  disabled={!editingEntry.trim()}
-                  accessible={true}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('projects.saveEntry')}
-                  accessibilityState={{ disabled: !editingEntry.trim() }}
-                >
-                  <Text style={styles.saveButtonText}>{t('projects.saveEntry')}</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-
-          {workProgress.length === 0 && !isAddingEntry ? (
+          {timeline.length === 0 ? (
             <EmptyState
               icon={<BookOpen size={48} color={Colors.warmGray} />}
               title={t('projects.noJournalEntries')}
@@ -209,34 +218,415 @@ export default function ProjectJournalScreen() {
             />
           ) : (
             <View style={styles.entriesList}>
-              {[...workProgress]
-                .reverse()
-                .map((entry) => (
-                  <View key={entry.id} style={styles.entryCard}>
-                    <View style={styles.entryHeader}>
-                      <Text style={styles.entryDate}>{formatDate(entry.date)}</Text>
-                      <TouchableOpacity
-                        onPress={() => handleDeleteEntry(entry.id)}
-                        style={styles.deleteButton}
-                        accessible={true}
-                        accessibilityRole="button"
-                        accessibilityLabel={t('common.delete')}
-                        accessibilityHint={t('projects.deleteThisEntry')}
-                      >
-                        <Trash2 size={18} color={Colors.error} />
-                      </TouchableOpacity>
+              {timeline.map((entry) => {
+                if (entry.type === 'journal') {
+                  // Journal entry
+                  return (
+                    <View key={`journal-${entry.data.id}`} style={styles.entryCard}>
+                      <View style={styles.entryHeader}>
+                        <View style={styles.entryTypeRow}>
+                          <PenLine size={14} color={Colors.sage} />
+                          <Text style={styles.entryDate}>{formatDate(entry.data.date)}</Text>
+                        </View>
+                        <TouchableOpacity
+                          onPress={() => handleDeleteEntry(entry.data.id)}
+                          style={styles.deleteButton}
+                          accessible={true}
+                          accessibilityRole="button"
+                          accessibilityLabel={t('common.delete')}
+                          accessibilityHint={t('projects.deleteThisEntry')}
+                        >
+                          <Trash2 size={18} color={Colors.error} />
+                        </TouchableOpacity>
+                      </View>
+                      <Text style={styles.entryNotes}>{entry.data.notes}</Text>
                     </View>
-                    <Text style={styles.entryNotes}>{entry.notes}</Text>
-                  </View>
-                ))}
+                  );
+                } else {
+                  // Time session / work entry
+                  const session = entry.data;
+                  const durationText = formatSessionDuration(session.durationMinutes);
+                  const hasNote = session.note && session.note.trim().length > 0;
+                  const hasDuration = durationText !== null;
+
+                  return (
+                    <View
+                      key={`time-${session.id}`}
+                      style={hasDuration ? styles.timeSessionCard : styles.workEntryCard}
+                    >
+                      <View style={styles.entryHeader}>
+                        <View style={styles.entryTypeRow}>
+                          {hasDuration ? (
+                            <Clock size={14} color={Colors.deepTeal} />
+                          ) : (
+                            <PenLine size={14} color={Colors.sage} />
+                          )}
+                          <Text style={styles.entryDate}>{formatDate(session.startedAt)}</Text>
+                        </View>
+                        <View style={styles.entryActions}>
+                          {hasDuration && (
+                            <View style={styles.sessionBadge}>
+                              <Text style={styles.sessionBadgeText}>{durationText}</Text>
+                            </View>
+                          )}
+                          <TouchableOpacity
+                            onPress={() => handleDeleteTimeSession(session.id)}
+                            style={styles.deleteButton}
+                            accessible={true}
+                            accessibilityRole="button"
+                            accessibilityLabel={t('common.delete')}
+                            accessibilityHint={t('timeTracking.deleteThisEntry')}
+                          >
+                            <Trash2 size={18} color={Colors.error} />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                      {hasNote && (
+                        <Text style={styles.entryNotes}>{session.note}</Text>
+                      )}
+                      {!hasNote && hasDuration && (
+                        <Text style={styles.sessionSource}>
+                          {session.source === 'timer'
+                            ? t('timeTracking.timerSession')
+                            : t('timeTracking.manualEntry')}
+                        </Text>
+                      )}
+                    </View>
+                  );
+                }
+              })}
             </View>
           )}
         </ScrollView>
+
+        {/* Work Entry Modal */}
+        <WorkEntryModal
+          visible={showWorkEntryModal}
+          onSave={handleSaveWorkEntry}
+          onClose={() => setShowWorkEntryModal(false)}
+        />
       </KeyboardAvoidingView>
       )}
     </SafeAreaView>
   );
 }
+
+// ============================================================================
+// WORK ENTRY MODAL (unified: note and/or duration)
+// ============================================================================
+
+interface WorkEntryModalProps {
+  visible: boolean;
+  onSave: (hours: number, minutes: number, note?: string) => void;
+  onClose: () => void;
+}
+
+function WorkEntryModal({ visible, onSave, onClose }: WorkEntryModalProps) {
+  const [hours, setHours] = useState('0');
+  const [minutes, setMinutes] = useState('0');
+  const [note, setNote] = useState('');
+  const [showDuration, setShowDuration] = useState(false);
+  const [validationError, setValidationError] = useState(false);
+
+  // Reset state when modal opens
+  useEffect(() => {
+    if (visible) {
+      setHours('0');
+      setMinutes('0');
+      setNote('');
+      setShowDuration(false);
+      setValidationError(false);
+    }
+  }, [visible]);
+
+  const handleHoursChange = (text: string) => {
+    const numeric = text.replace(/[^0-9]/g, '');
+    setHours(numeric);
+    setValidationError(false);
+  };
+
+  const handleMinutesChange = (text: string) => {
+    const numeric = text.replace(/[^0-9]/g, '');
+    const num = parseInt(numeric, 10);
+    if (numeric === '' || (num >= 0 && num <= 59)) {
+      setMinutes(numeric);
+      setValidationError(false);
+    }
+  };
+
+  const handleNoteChange = (text: string) => {
+    setNote(text);
+    setValidationError(false);
+  };
+
+  const handleSave = () => {
+    const h = parseInt(hours, 10) || 0;
+    const m = parseInt(minutes, 10) || 0;
+    const hasNote = note.trim().length > 0;
+    const hasDuration = h > 0 || m > 0;
+
+    if (!hasNote && !hasDuration) {
+      setValidationError(true);
+      return;
+    }
+
+    onSave(h, m, note.trim() || undefined);
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={modalStyles.overlay}>
+        <Pressable style={modalStyles.backdrop} onPress={onClose} />
+        <View style={modalStyles.sheet}>
+          <View style={modalStyles.handle} />
+          <View style={modalStyles.content}>
+            <Text style={modalStyles.title}>Add Work Entry</Text>
+
+            {/* Note field first */}
+            <View style={modalStyles.formGroup}>
+              <Text style={modalStyles.label}>What did you work on?</Text>
+              <TextInput
+                style={[modalStyles.noteInput, validationError && modalStyles.inputError]}
+                placeholder="Describe your progress..."
+                placeholderTextColor={Colors.warmGray}
+                value={note}
+                onChangeText={handleNoteChange}
+                multiline
+                autoFocus
+              />
+            </View>
+
+            {/* Duration toggle */}
+            {!showDuration ? (
+              <TouchableOpacity
+                style={modalStyles.addTimeButton}
+                onPress={() => setShowDuration(true)}
+                activeOpacity={0.7}
+              >
+                <Plus size={16} color={Colors.deepSage} />
+                <Text style={modalStyles.addTimeText}>Add time</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={modalStyles.formGroup}>
+                <View style={modalStyles.durationHeader}>
+                  <Text style={modalStyles.label}>Duration (optional)</Text>
+                  <TouchableOpacity onPress={() => {
+                    setShowDuration(false);
+                    setHours('0');
+                    setMinutes('0');
+                  }}>
+                    <Text style={modalStyles.removeText}>Remove</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={modalStyles.durationRow}>
+                  <View style={modalStyles.durationInput}>
+                    <TextInput
+                      style={modalStyles.durationField}
+                      value={hours}
+                      onChangeText={handleHoursChange}
+                      keyboardType="number-pad"
+                      maxLength={2}
+                    />
+                    <Text style={modalStyles.durationUnit}>hr</Text>
+                  </View>
+                  <Text style={modalStyles.durationSep}>:</Text>
+                  <View style={modalStyles.durationInput}>
+                    <TextInput
+                      style={modalStyles.durationField}
+                      value={minutes}
+                      onChangeText={handleMinutesChange}
+                      keyboardType="number-pad"
+                      maxLength={2}
+                    />
+                    <Text style={modalStyles.durationUnit}>min</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {validationError && (
+              <Text style={modalStyles.errorText}>Please add a note or time worked</Text>
+            )}
+
+            <View style={modalStyles.buttons}>
+              <TouchableOpacity style={modalStyles.btnSecondary} onPress={onClose}>
+                <Text style={modalStyles.btnSecondaryText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={modalStyles.btnPrimary} onPress={handleSave}>
+                <Text style={modalStyles.btnPrimaryText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// Modal styles
+const modalStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  sheet: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 34,
+  },
+  handle: {
+    width: 36,
+    height: 4,
+    backgroundColor: Colors.border,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 10,
+    marginBottom: 16,
+  },
+  content: {
+    paddingHorizontal: 24,
+    gap: 8,
+  },
+  title: {
+    ...Typography.title2,
+    color: Colors.charcoal,
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  formGroup: {
+    width: '100%',
+    gap: 6,
+  },
+  label: {
+    ...Typography.caption,
+    color: Colors.charcoal,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  noteInput: {
+    ...Typography.body,
+    backgroundColor: Colors.linen,
+    borderRadius: 10,
+    borderWidth: normalizeBorder(1),
+    borderColor: Colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  inputError: {
+    borderColor: Colors.error,
+    borderWidth: normalizeBorder(1.5),
+  },
+  addTimeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(74, 93, 79, 0.08)',
+    borderRadius: 8,
+  },
+  addTimeText: {
+    ...Typography.body,
+    color: Colors.deepSage,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  durationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  removeText: {
+    ...Typography.caption,
+    color: Colors.error,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  durationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  durationInput: {
+    flex: 1,
+    backgroundColor: Colors.linen,
+    borderRadius: 10,
+    borderWidth: normalizeBorder(1),
+    borderColor: Colors.border,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  durationField: {
+    ...Typography.title2,
+    color: Colors.charcoal,
+    fontSize: 22,
+    fontWeight: '500',
+    fontVariant: ['tabular-nums'],
+    textAlign: 'center',
+    minWidth: 40,
+    padding: 0,
+  },
+  durationUnit: {
+    ...Typography.caption,
+    color: Colors.warmGray,
+    fontSize: 11,
+  },
+  durationSep: {
+    ...Typography.title2,
+    color: Colors.warmGray,
+    fontSize: 20,
+  },
+  errorText: {
+    ...Typography.caption,
+    color: Colors.error,
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  buttons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+    width: '100%',
+  },
+  btnSecondary: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 14,
+    backgroundColor: Colors.linen,
+    borderRadius: 12,
+    borderWidth: normalizeBorder(1),
+    borderColor: Colors.border,
+  },
+  btnSecondaryText: {
+    ...Typography.body,
+    color: Colors.charcoal,
+    fontWeight: '500',
+  },
+  btnPrimary: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 14,
+    backgroundColor: Colors.deepSage,
+    borderRadius: 12,
+  },
+  btnPrimaryText: {
+    ...Typography.body,
+    color: Colors.white,
+    fontWeight: '600',
+  },
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -285,69 +675,6 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     fontSize: 16,
   },
-  entryForm: {
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: normalizeBorder(1.5),
-    borderColor: Colors.sage,
-    ...Platform.select({
-      ...buttonShadow,
-      default: {},
-    }),
-  },
-  formTitle: {
-    ...Typography.title3,
-    color: Colors.charcoal,
-    fontWeight: '600' as const,
-    fontSize: 16,
-    marginBottom: 12,
-  },
-  textArea: {
-    height: 150,
-    textAlignVertical: 'top',
-    paddingTop: 12,
-  },
-  formButtons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 12,
-    marginTop: 12,
-  },
-  cancelButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: normalizeBorder(1),
-    borderColor: Colors.border,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  cancelButtonText: {
-    ...Typography.body,
-    color: Colors.charcoal,
-    fontSize: 15,
-    fontWeight: '500' as const,
-  },
-  saveButton: {
-    backgroundColor: Colors.sage,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  saveButtonDisabled: {
-    backgroundColor: Colors.warmGray,
-    opacity: 0.5,
-  },
-  saveButtonText: {
-    ...Typography.body,
-    color: Colors.white,
-    fontSize: 15,
-    fontWeight: '600' as const,
-  },
   entriesList: {
     gap: 12,
   },
@@ -362,11 +689,45 @@ const styles = StyleSheet.create({
       default: {},
     }),
   },
+  timeSessionCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: normalizeBorder(1),
+    borderColor: Colors.deepTeal,
+    borderLeftWidth: 3,
+    ...Platform.select({
+      ...buttonShadow,
+      default: {},
+    }),
+  },
+  workEntryCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: normalizeBorder(1),
+    borderColor: Colors.sage,
+    borderLeftWidth: 3,
+    ...Platform.select({
+      ...buttonShadow,
+      default: {},
+    }),
+  },
   entryHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 8,
+  },
+  entryTypeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  entryActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   entryDate: {
     ...Typography.caption,
@@ -385,5 +746,31 @@ const styles = StyleSheet.create({
     ...Typography.body,
     color: Colors.charcoal,
     lineHeight: 22,
+  },
+  sessionBadge: {
+    backgroundColor: Colors.deepTeal,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  sessionBadgeText: {
+    ...Typography.caption,
+    color: Colors.white,
+    fontWeight: '600' as const,
+    fontSize: 12,
+  },
+  sessionDetails: {
+    gap: 4,
+  },
+  sessionSource: {
+    ...Typography.caption,
+    color: Colors.warmGray,
+    fontSize: 13,
+  },
+  sessionNote: {
+    ...Typography.body,
+    color: Colors.charcoal,
+    marginTop: 4,
+    lineHeight: 20,
   },
 });

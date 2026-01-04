@@ -59,3 +59,14 @@ export {
   clearNewlyCreatedInventory,
   type NewlyCreatedInventory,
 } from './new-inventory-tracker';
+
+// Timer store - Active timer state (persisted locally)
+export {
+  activeTimer$,
+  startTimer,
+  stopTimer,
+  getActiveTimer,
+  isTimerRunningForProject,
+  isAnyTimerRunning,
+  forceStopTimer,
+} from './timerStore';

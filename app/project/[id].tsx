@@ -297,6 +297,7 @@ export default function ProjectDetailScreen(): React.JSX.Element {
         <View style={styles.content}>
           {/* Time Tracking */}
           <TimeTrackingMockup
+            projectId={project.id}
             isCompleted={project.status === 'completed' || project.status === 'frogged'}
           />
 

@@ -9,3 +9,4 @@ export { LanguageProvider, useLanguage } from './LanguageProvider';
 export type { Language } from './LanguageProvider';
 export { ProjectsProvider, useProjects } from './ProjectsProvider';
 export { InventoryProvider, useInventory } from './InventoryProvider';
+export { TimeSessionsProvider, useTimeSessions } from './TimeSessionsProvider';

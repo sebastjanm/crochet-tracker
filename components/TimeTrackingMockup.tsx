@@ -1,11 +1,13 @@
 /**
- * TimeTrackingMockup - Compact inline time tracking UI
+ * TimeTracking - Compact inline time tracking UI
  *
- * UI-ONLY mockup for layout review. No real functionality.
- * Tap the row to cycle states in dev mode.
+ * Real time tracking functionality using Legend-State + Supabase.
+ * - Start/stop timer
+ * - Manual time entry
+ * - Computed totals
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -25,51 +27,128 @@ import { Button } from '@/components/Button';
 import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { normalizeBorder, normalizeBorderOpacity } from '@/constants/pixelRatio';
+import { useTimeSessions } from '@/providers';
+import { formatElapsed, formatDuration, formatDurationCompact } from '@/lib/timer-utils';
+import type { ProjectTimeSession } from '@/types';
 
-type MockState = 'idle' | 'running';
+// ============================================================================
+// PROPS
+// ============================================================================
 
-interface TimeTrackingMockupProps {
-  initialState?: MockState;
+interface TimeTrackingProps {
+  projectId: string;
   isCompleted?: boolean;
-  totalTime?: string;
 }
 
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
+
 export function TimeTrackingMockup({
-  initialState = 'idle',
+  projectId,
   isCompleted = false,
-  totalTime = '12:45',
-}: TimeTrackingMockupProps) {
-  const [mockState, setMockState] = useState<MockState>(initialState);
+}: TimeTrackingProps) {
+  const {
+    activeTimer,
+    isTimerRunning,
+    startTimer,
+    stopTimer,
+    addManualSession,
+    getTotalMinutes,
+    updateSessionNote,
+    isTimerRunningFor,
+  } = useTimeSessions();
+
+  // Local state for modals
   const [showStoppedModal, setShowStoppedModal] = useState(false);
   const [showManualModal, setShowManualModal] = useState(false);
+  const [lastSession, setLastSession] = useState<ProjectTimeSession | null>(null);
 
-  // Toggle state (dev preview)
-  const toggleState = () => {
-    if (mockState === 'idle') {
-      setMockState('running');
-    } else {
-      setMockState('idle');
+  // Elapsed time display (updates every second when running)
+  const [elapsedDisplay, setElapsedDisplay] = useState('0:00');
+
+  // Is timer running for THIS project?
+  const isRunningForThisProject = isTimerRunningFor(projectId);
+
+  // Total time for this project
+  const totalMinutes = getTotalMinutes(projectId);
+  const totalTimeDisplay = formatDurationCompact(totalMinutes);
+
+  // Update elapsed time display every second when timer is running
+  useEffect(() => {
+    if (!isRunningForThisProject || !activeTimer) {
+      setElapsedDisplay('0:00');
+      return;
+    }
+
+    // Immediate update
+    setElapsedDisplay(formatElapsed(activeTimer.startedAt));
+
+    // Update every second
+    const interval = setInterval(() => {
+      setElapsedDisplay(formatElapsed(activeTimer.startedAt));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isRunningForThisProject, activeTimer]);
+
+  // Handle start button
+  const handleStart = useCallback(() => {
+    const success = startTimer(projectId);
+    if (__DEV__ && !success) {
+      console.log('[TimeTracking] Could not start timer (another may be running)');
+    }
+  }, [projectId, startTimer]);
+
+  // Handle stop button
+  const handleStop = useCallback(async () => {
+    const session = await stopTimer();
+    if (session) {
+      setLastSession(session);
       setShowStoppedModal(true);
     }
-  };
+  }, [stopTimer]);
 
-  // Completed state - read-only display of total time
+  // Handle save from stopped modal
+  const handleSaveSession = useCallback((note?: string) => {
+    if (lastSession && note) {
+      updateSessionNote(lastSession.id, note);
+    }
+    setShowStoppedModal(false);
+    setLastSession(null);
+  }, [lastSession, updateSessionNote]);
+
+  // Handle manual entry (unified: note OR duration OR both)
+  const handleManualSave = useCallback(async (hours: number, minutes: number, note?: string) => {
+    const totalMinutes = hours * 60 + minutes;
+    // Pass null if no duration, otherwise pass the total minutes
+    await addManualSession(projectId, new Date(), totalMinutes > 0 ? totalMinutes : null, note);
+    setShowManualModal(false);
+  }, [projectId, addManualSession]);
+
+  // ============================================================================
+  // RENDER: COMPLETED STATE
+  // ============================================================================
+
   if (isCompleted) {
     return (
       <View style={styles.container}>
         <View style={styles.completedRow}>
           <Clock size={18} color={Colors.sage} />
           <Text style={styles.completedLabel}>Time spent:</Text>
-          <Text style={styles.completedValue}>{totalTime}</Text>
+          <Text style={styles.completedValue}>{totalTimeDisplay}</Text>
         </View>
       </View>
     );
   }
 
-  if (mockState === 'running') {
+  // ============================================================================
+  // RENDER: RUNNING STATE
+  // ============================================================================
+
+  if (isRunningForThisProject) {
     return (
       <View style={styles.container}>
-        {/* Running State - Clean Card */}
         <View style={styles.runningCard}>
           {/* Left: Timer display */}
           <View style={styles.timerSection}>
@@ -77,57 +156,73 @@ export function TimeTrackingMockup({
               <View style={styles.runningDot} />
               <Text style={styles.runningBadgeText}>REC</Text>
             </View>
-            <Text style={styles.elapsedTime}>23:14</Text>
-            <Text style={styles.totalTimeSmall}>Total: 12:45</Text>
+            <Text style={styles.elapsedTime}>{elapsedDisplay}</Text>
+            <Text style={styles.totalTimeSmall}>Total: {totalTimeDisplay}</Text>
           </View>
 
           {/* Right: Stop button */}
           <TouchableOpacity
             style={styles.stopButton}
-            onPress={toggleState}
+            onPress={handleStop}
             activeOpacity={0.7}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Stop timer"
           >
             <Square size={20} color={Colors.white} fill={Colors.white} />
           </TouchableOpacity>
         </View>
-
-        <StoppedModal
-          visible={showStoppedModal}
-          onClose={() => setShowStoppedModal(false)}
-        />
       </View>
     );
   }
 
-  // Idle State - Compact Row
+  // ============================================================================
+  // RENDER: IDLE STATE
+  // ============================================================================
+
   return (
     <View style={styles.container}>
       <View style={styles.idleRow}>
         <View style={styles.timeInfo}>
           <Text style={styles.timeLabel}>Total:</Text>
-          <Text style={styles.timeValue}>0:00</Text>
+          <Text style={styles.timeValue}>{totalTimeDisplay}</Text>
         </View>
         <Button
           title="Start"
           size="small"
           icon={<Play size={16} color={Colors.white} fill={Colors.white} />}
-          onPress={toggleState}
+          onPress={handleStart}
+          disabled={isTimerRunning && !isRunningForThisProject}
         />
       </View>
 
-      {/* Manual entry - subtle link */}
+      {/* Add work entry link */}
       <TouchableOpacity
         style={styles.manualLink}
         onPress={() => setShowManualModal(true)}
         activeOpacity={0.7}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel="Add work entry"
       >
         <Plus size={14} color={Colors.sage} />
-        <Text style={styles.manualLinkText}>Add manually</Text>
+        <Text style={styles.manualLinkText}>Add entry</Text>
       </TouchableOpacity>
 
       <ManualSessionModal
         visible={showManualModal}
+        onSave={handleManualSave}
         onClose={() => setShowManualModal(false)}
+      />
+
+      <StoppedModal
+        visible={showStoppedModal}
+        session={lastSession}
+        onSave={handleSaveSession}
+        onClose={() => {
+          setShowStoppedModal(false);
+          setLastSession(null);
+        }}
       />
     </View>
   );
@@ -137,7 +232,29 @@ export function TimeTrackingMockup({
 // MODALS
 // =============================================================================
 
-function StoppedModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+interface StoppedModalProps {
+  visible: boolean;
+  session: ProjectTimeSession | null;
+  onSave: (note?: string) => void;
+  onClose: () => void;
+}
+
+function StoppedModal({ visible, session, onSave, onClose }: StoppedModalProps) {
+  const [note, setNote] = useState('');
+  const [showNoteInput, setShowNoteInput] = useState(false);
+
+  // Reset state when modal opens
+  useEffect(() => {
+    if (visible) {
+      setNote('');
+      setShowNoteInput(false);
+    }
+  }, [visible]);
+
+  const durationText = session?.durationMinutes
+    ? formatDuration(session.durationMinutes)
+    : '0m';
+
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
@@ -146,15 +263,42 @@ function StoppedModal({ visible, onClose }: { visible: boolean; onClose: () => v
           <View style={styles.sheetHandle} />
           <View style={styles.sheetContent}>
             <Clock size={28} color={Colors.deepSage} />
-            <Text style={styles.sheetTitle}>Worked 42 minutes</Text>
-            <Text style={styles.sheetSubtitle}>Add a note?</Text>
+            <Text style={styles.sheetTitle}>Worked {durationText}</Text>
+
+            {showNoteInput ? (
+              <TextInput
+                style={styles.noteInputSmall}
+                placeholder="What did you work on?"
+                placeholderTextColor={Colors.warmGray}
+                value={note}
+                onChangeText={setNote}
+                multiline
+                autoFocus
+              />
+            ) : (
+              <Text style={styles.sheetSubtitle}>Add a note?</Text>
+            )}
+
             <View style={styles.sheetButtons}>
-              <TouchableOpacity style={styles.btnSecondary} onPress={onClose}>
-                <Text style={styles.btnSecondaryText}>Add note</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.btnPrimary} onPress={onClose}>
-                <Text style={styles.btnPrimaryText}>Save</Text>
-              </TouchableOpacity>
+              {showNoteInput ? (
+                <>
+                  <TouchableOpacity style={styles.btnSecondary} onPress={() => setShowNoteInput(false)}>
+                    <Text style={styles.btnSecondaryText}>Skip</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.btnPrimary} onPress={() => onSave(note)}>
+                    <Text style={styles.btnPrimaryText}>Save</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <TouchableOpacity style={styles.btnSecondary} onPress={() => setShowNoteInput(true)}>
+                    <Text style={styles.btnSecondaryText}>Add note</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.btnPrimary} onPress={() => onSave()}>
+                    <Text style={styles.btnPrimaryText}>Save</Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           </View>
         </View>
@@ -163,7 +307,67 @@ function StoppedModal({ visible, onClose }: { visible: boolean; onClose: () => v
   );
 }
 
-function ManualSessionModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+interface ManualSessionModalProps {
+  visible: boolean;
+  onSave: (hours: number, minutes: number, note?: string) => void;
+  onClose: () => void;
+}
+
+function ManualSessionModal({ visible, onSave, onClose }: ManualSessionModalProps) {
+  const [hours, setHours] = useState('0');
+  const [minutes, setMinutes] = useState('0');
+  const [note, setNote] = useState('');
+  const [showDuration, setShowDuration] = useState(false);
+  const [validationError, setValidationError] = useState(false);
+
+  // Reset state when modal opens
+  useEffect(() => {
+    if (visible) {
+      setHours('0');
+      setMinutes('0');
+      setNote('');
+      setShowDuration(false);
+      setValidationError(false);
+    }
+  }, [visible]);
+
+  // Filter to only allow numeric input
+  const handleHoursChange = (text: string) => {
+    const numeric = text.replace(/[^0-9]/g, '');
+    setHours(numeric);
+    setValidationError(false);
+  };
+
+  const handleMinutesChange = (text: string) => {
+    const numeric = text.replace(/[^0-9]/g, '');
+    // Clamp minutes to max 59
+    const num = parseInt(numeric, 10);
+    if (numeric === '' || (num >= 0 && num <= 59)) {
+      setMinutes(numeric);
+      setValidationError(false);
+    }
+  };
+
+  const handleNoteChange = (text: string) => {
+    setNote(text);
+    setValidationError(false);
+  };
+
+  const handleSave = () => {
+    const h = parseInt(hours, 10) || 0;
+    const m = parseInt(minutes, 10) || 0;
+    const hasNote = note.trim().length > 0;
+    const hasDuration = h > 0 || m > 0;
+
+    // Validation: at least note OR duration required
+    if (!hasNote && !hasDuration) {
+      setValidationError(true);
+      return;
+    }
+
+    onSave(h, m, note.trim() || undefined);
+  };
+
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
@@ -171,46 +375,80 @@ function ManualSessionModal({ visible, onClose }: { visible: boolean; onClose: (
         <View style={styles.bottomSheetLarge}>
           <View style={styles.sheetHandle} />
           <View style={styles.sheetContent}>
-            <Text style={styles.modalTitle}>Add Work Session</Text>
+            <Text style={styles.modalTitle}>Add Work Entry</Text>
 
+            {/* Note field first - primary focus */}
             <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>Date</Text>
-              <View style={styles.formInput}>
-                <Text style={styles.formPlaceholder}>Today</Text>
-              </View>
-            </View>
-
-            <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>Duration</Text>
-              <View style={styles.durationRow}>
-                <View style={styles.durationInput}>
-                  <Text style={styles.durationValue}>0</Text>
-                  <Text style={styles.durationUnit}>hr</Text>
-                </View>
-                <Text style={styles.durationSep}>:</Text>
-                <View style={styles.durationInput}>
-                  <Text style={styles.durationValue}>30</Text>
-                  <Text style={styles.durationUnit}>min</Text>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>Note</Text>
+              <Text style={styles.formLabel}>What did you work on?</Text>
               <TextInput
-                style={styles.noteInput}
-                placeholder="What did you work on?"
+                style={[styles.noteInput, validationError && styles.inputError]}
+                placeholder="Describe your progress..."
                 placeholderTextColor={Colors.warmGray}
+                value={note}
+                onChangeText={handleNoteChange}
                 multiline
-                editable={false}
+                autoFocus
               />
             </View>
+
+            {/* Duration toggle */}
+            {!showDuration ? (
+              <TouchableOpacity
+                style={styles.addTimeButton}
+                onPress={() => setShowDuration(true)}
+                activeOpacity={0.7}
+              >
+                <Plus size={16} color={Colors.deepSage} />
+                <Text style={styles.addTimeText}>Add time</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.formGroup}>
+                <View style={styles.durationHeader}>
+                  <Text style={styles.formLabel}>Duration (optional)</Text>
+                  <TouchableOpacity onPress={() => {
+                    setShowDuration(false);
+                    setHours('0');
+                    setMinutes('0');
+                  }}>
+                    <Text style={styles.removeDurationText}>Remove</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.durationRow}>
+                  <View style={styles.durationInputContainer}>
+                    <TextInput
+                      style={styles.durationInputField}
+                      value={hours}
+                      onChangeText={handleHoursChange}
+                      keyboardType="number-pad"
+                      maxLength={2}
+                    />
+                    <Text style={styles.durationUnit}>hr</Text>
+                  </View>
+                  <Text style={styles.durationSep}>:</Text>
+                  <View style={styles.durationInputContainer}>
+                    <TextInput
+                      style={styles.durationInputField}
+                      value={minutes}
+                      onChangeText={handleMinutesChange}
+                      keyboardType="number-pad"
+                      maxLength={2}
+                    />
+                    <Text style={styles.durationUnit}>min</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* Validation error */}
+            {validationError && (
+              <Text style={styles.errorText}>Please add a note or time worked</Text>
+            )}
 
             <View style={styles.sheetButtons}>
               <TouchableOpacity style={styles.btnSecondary} onPress={onClose}>
                 <Text style={styles.btnSecondaryText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.btnPrimary} onPress={onClose}>
+              <TouchableOpacity style={styles.btnPrimary} onPress={handleSave}>
                 <Text style={styles.btnPrimaryText}>Save</Text>
               </TouchableOpacity>
             </View>
@@ -460,6 +698,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  durationInputContainer: {
+    flex: 1,
+    backgroundColor: Colors.linen,
+    borderRadius: 10,
+    borderWidth: normalizeBorder(1),
+    borderColor: Colors.border,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  durationInputField: {
+    ...Typography.title2,
+    color: Colors.charcoal,
+    fontSize: 22,
+    fontWeight: '500',
+    fontVariant: ['tabular-nums'],
+    textAlign: 'center',
+    minWidth: 40,
+    padding: 0,
+  },
   durationInput: {
     flex: 1,
     backgroundColor: Colors.linen,
@@ -497,5 +754,58 @@ const styles = StyleSheet.create({
     fontSize: 15,
     minHeight: 70,
     textAlignVertical: 'top',
+  },
+  noteInputSmall: {
+    ...Typography.body,
+    backgroundColor: Colors.linen,
+    borderRadius: 10,
+    borderWidth: normalizeBorder(1),
+    borderColor: Colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    minHeight: 60,
+    width: '100%',
+    textAlignVertical: 'top',
+  },
+
+  // Add time button (toggles duration section)
+  addTimeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(74, 93, 79, 0.08)',
+    borderRadius: 8,
+  },
+  addTimeText: {
+    ...Typography.body,
+    color: Colors.deepSage,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  durationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  removeDurationText: {
+    ...Typography.caption,
+    color: Colors.error,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  inputError: {
+    borderColor: Colors.error,
+    borderWidth: normalizeBorder(1.5),
+  },
+  errorText: {
+    ...Typography.caption,
+    color: Colors.error,
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 4,
   },
 });

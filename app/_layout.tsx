@@ -14,6 +14,7 @@ import {
   ProjectsProvider,
   InventoryProvider,
   LanguageProvider,
+  TimeSessionsProvider,
   useLanguage,
 } from "@/providers";
 import { ToastProvider, useToast } from "@/components/Toast";
@@ -120,6 +121,7 @@ export default Sentry.wrap(function RootLayout() {
             <AuthProvider>
               <ProjectsProvider>
                 <InventoryProvider>
+                  <TimeSessionsProvider>
                   <ToastProvider>
                     <UpdateNotifier />
                     <Stack
@@ -154,6 +156,7 @@ export default Sentry.wrap(function RootLayout() {
                         />
                       </Stack>
                   </ToastProvider>
+                  </TimeSessionsProvider>
                 </InventoryProvider>
               </ProjectsProvider>
             </AuthProvider>

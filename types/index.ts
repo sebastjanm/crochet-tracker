@@ -303,6 +303,33 @@ export interface InventoryItem {
 
 export type UserRole = 'ordinary' | 'pro' | 'admin';
 
+// ===== TIME TRACKING =====
+
+export type TimeSessionSource = 'timer' | 'manual';
+
+export interface ProjectTimeSession {
+  id: string;
+  userId: string;
+  projectId: string;
+  startedAt: Date;
+  endedAt: Date;
+  /** Duration in minutes. null = note-only entry (journal-style) */
+  durationMinutes: number | null;
+  source: TimeSessionSource;
+  note?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Active timer state - persisted to AsyncStorage
+ * Survives app restarts
+ */
+export interface ActiveTimer {
+  projectId: string;
+  startedAt: string; // ISO timestamp
+}
+
 export interface User {
   id: string;
   name: string;

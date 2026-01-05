@@ -69,7 +69,8 @@ export default function ToolsScreen(): React.JSX.Element {
       icon: Lightbulb,
       iconColor: '#F59E0B',
       gradientColors: ['#FFFBEB', '#FEF3C7'] as const,
-      route: '/yarnai/ideas',
+      route: null,
+      isPlaceholder: true,
     },
     {
       id: 'image-generator',
@@ -78,7 +79,8 @@ export default function ToolsScreen(): React.JSX.Element {
       icon: ImageIcon,
       iconColor: '#8B5CF6',
       gradientColors: ['#F3F0FF', '#E9D5FF'] as const,
-      route: '/yarnai/image-generator',
+      route: null,
+      isPlaceholder: true,
     },
     {
       id: 'voice-assistant',
@@ -87,7 +89,8 @@ export default function ToolsScreen(): React.JSX.Element {
       icon: Mic,
       iconColor: '#EF4444',
       gradientColors: ['#FEE2E2', '#FECACA'] as const,
-      route: '/yarnai/voice',
+      route: null,
+      isPlaceholder: true,
     },
     {
       id: 'coming-soon',

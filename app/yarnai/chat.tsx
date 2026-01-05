@@ -13,14 +13,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Send, MessageSquare, User, Bot } from 'lucide-react-native';
+import { generateText } from 'ai';
 import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { normalizeBorder, cardShadow } from '@/constants/pixelRatio';
 import { MAX_FONT_SIZE_MULTIPLIER } from '@/constants/accessibility';
 import { UniversalHeader } from '@/components/UniversalHeader';
-
-const CHAT_API_URL = 'https://toolkit.rork.com/text/llm/';
+import { openai, MODELS } from '@/lib/ai/client';
 
 interface Message {
   id: string;
@@ -113,13 +113,17 @@ const styles = StyleSheet.create({
   assistantTime: {
     color: Colors.warmGray,
   },
-  inputContainer: {
+  inputWrapper: {
     backgroundColor: Colors.white,
     borderTopWidth: normalizeBorder(1),
     borderTopColor: Colors.beige,
-    padding: 16,
+  },
+  inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
     gap: 12,
   },
   textInput: {
@@ -237,40 +241,26 @@ export default function YarnAIChat() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(CHAT_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [
-            {
-              role: 'system',
-              content: 'You are YarnAI, a helpful assistant specialized in yarn crafts, crochet, knitting, and fiber arts. Provide helpful, accurate, and encouraging advice about yarn projects, techniques, patterns, and troubleshooting. Keep responses friendly and accessible for crafters of all skill levels.',
-            },
-            ...messages.map(msg => ({
-              role: msg.role,
-              content: msg.content,
-            })),
-            {
-              role: 'user',
-              content: userMessage.content,
-            },
-          ],
-        }),
+      const { text } = await generateText({
+        model: openai(MODELS.chat),
+        system: 'You are YarnAI, a helpful assistant specialized in yarn crafts, crochet, knitting, and fiber arts. Provide helpful, accurate, and encouraging advice about yarn projects, techniques, patterns, and troubleshooting. Keep responses friendly and accessible for crafters of all skill levels.',
+        messages: [
+          ...messages.map(msg => ({
+            role: msg.role as 'user' | 'assistant',
+            content: msg.content,
+          })),
+          {
+            role: 'user' as const,
+            content: userMessage.content,
+          },
+        ],
       });
 
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      if (data.completion) {
+      if (text) {
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: data.completion,
+          content: text,
           timestamp: new Date(),
         };
 
@@ -278,11 +268,12 @@ export default function YarnAIChat() {
       } else {
         throw new Error('No response from AI');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Chat API Error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       Alert.alert(
         t('common.error'),
-        `Failed to get response: ${error.message || 'Unknown error'}`
+        `Failed to get response: ${errorMessage}`
       );
     } finally {
       setIsLoading(false);
@@ -322,7 +313,8 @@ export default function YarnAIChat() {
       </SafeAreaView>
       <KeyboardAvoidingView
         style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         <View style={styles.messagesContainer}>
           <ScrollView 
@@ -419,34 +411,36 @@ export default function YarnAIChat() {
           </ScrollView>
         </View>
 
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.textInput}
-            placeholder={t('yarnai.chatPlaceholder')}
-            placeholderTextColor={Colors.warmGray}
-            value={inputText}
-            onChangeText={setInputText}
-            multiline
-            editable={!isLoading}
-            onSubmitEditing={sendMessage}
-            blurOnSubmit={false}
-          />
-          <TouchableOpacity
-            style={[
-              styles.sendButton,
-              (!inputText.trim() || isLoading) && styles.sendButtonDisabled,
-            ]}
-            onPress={sendMessage}
-            disabled={!inputText.trim() || isLoading}
-            activeOpacity={0.8}
-          >
-            {isLoading ? (
-              <ActivityIndicator size="small" color={Colors.white} />
-            ) : (
-              <Send size={20} color={Colors.white} />
-            )}
-          </TouchableOpacity>
-        </View>
+        <SafeAreaView edges={['bottom']} style={styles.inputWrapper}>
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.textInput}
+              placeholder={t('yarnai.chatPlaceholder')}
+              placeholderTextColor={Colors.warmGray}
+              value={inputText}
+              onChangeText={setInputText}
+              multiline
+              editable={!isLoading}
+              onSubmitEditing={sendMessage}
+              blurOnSubmit={false}
+            />
+            <TouchableOpacity
+              style={[
+                styles.sendButton,
+                (!inputText.trim() || isLoading) && styles.sendButtonDisabled,
+              ]}
+              onPress={sendMessage}
+              disabled={!inputText.trim() || isLoading}
+              activeOpacity={0.8}
+            >
+              {isLoading ? (
+                <ActivityIndicator size="small" color={Colors.white} />
+              ) : (
+                <Send size={20} color={Colors.white} />
+              )}
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
       </KeyboardAvoidingView>
     </View>
   );

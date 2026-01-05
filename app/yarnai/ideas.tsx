@@ -20,8 +20,6 @@ import { cardShadow } from '@/constants/pixelRatio';
 import { MAX_FONT_SIZE_MULTIPLIER } from '@/constants/accessibility';
 import { UniversalHeader } from '@/components/UniversalHeader';
 
-const CHAT_API_URL = 'https://toolkit.rork.com/text/llm/';
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -215,7 +213,7 @@ export default function ProjectIdeas() {
   const { t } = useLanguage();
   const [prompt, setPrompt] = useState('');
   const [ideas, setIdeas] = useState<ProjectIdea[]>([]);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [isGenerating] = useState(false);
 
   const promptSuggestions = [
     t('yarnai.projectIdeasSuggestion1'),
@@ -229,96 +227,11 @@ export default function ProjectIdeas() {
   ];
 
   const generateIdeas = async () => {
-    if (!prompt.trim()) {
-      Alert.alert(t('common.error'), t('yarnai.projectIdeasError'));
-      return;
-    }
-
-    setIsGenerating(true);
-    setIdeas([]);
-
-    try {
-      console.log('Generating project ideas, prompt:', prompt);
-      
-      const response = await fetch(CHAT_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [
-            {
-              role: 'system',
-              content: `You are a creative yarn craft expert. Generate 3-4 specific project ideas based on the user's request. 
-
-For each project, provide:
-- A catchy project title
-- A detailed description (2-3 sentences)
-- Difficulty level (Beginner/Intermediate/Advanced)
-- Time estimate (e.g., "2-3 hours", "Weekend project", "1-2 weeks")
-- Key materials needed
-
-Format your response as a JSON array with objects containing: title, description, difficulty, timeEstimate, materials
-
-Example:
-[
-  {
-    "title": "Cozy Cable Knit Scarf",
-    "description": "A classic cable knit scarf perfect for cold weather. Features a beautiful twisted cable pattern that looks complex but uses basic techniques. Great for practicing cable knitting skills.",
-    "difficulty": "Intermediate",
-    "timeEstimate": "1-2 weeks",
-    "materials": "Worsted weight yarn (300g), Cable needle, Size 8 knitting needles"
-  }
-]`,
-            },
-            {
-              role: 'user',
-              content: `Generate creative yarn project ideas for: ${prompt}`,
-            },
-          ],
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      if (data.completion) {
-        try {
-          // Try to parse JSON from the response
-          const jsonMatch = data.completion.match(/\[[\s\S]*\]/);
-          if (jsonMatch) {
-            const parsedIdeas = JSON.parse(jsonMatch[0]);
-            setIdeas(parsedIdeas);
-          } else {
-            // Fallback: parse the response manually
-            throw new Error('Could not parse JSON response');
-          }
-        } catch (parseError) {
-          console.error('JSON parsing error:', parseError);
-          // Create a single idea from the text response
-          setIdeas([{
-            title: 'Creative Project Idea',
-            description: data.completion,
-            difficulty: 'Various',
-            timeEstimate: 'Varies',
-            materials: 'See description for details',
-          }]);
-        }
-      } else {
-        throw new Error('No response from AI');
-      }
-    } catch (error: any) {
-      console.error('Ideas Generation Error:', error);
-      Alert.alert(
-        t('common.error'),
-        `Failed to generate ideas: ${error.message || 'Unknown error'}`
-      );
-    } finally {
-      setIsGenerating(false);
-    }
+    // Feature disabled - Project Ideas coming soon
+    Alert.alert(
+      t('common.comingSoon'),
+      t('yarnai.projectIdeasComingSoon')
+    );
   };
 
   const handleSuggestionChip = (suggestion: string) => {

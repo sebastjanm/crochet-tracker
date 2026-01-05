@@ -11,17 +11,19 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Mic, MicOff, Volume2, MessageSquare } from 'lucide-react-native';
-import { useAudioRecorder, IOSOutputFormat, AudioQuality, setAudioModeAsync } from 'expo-audio';
-import * as Audio from 'expo-audio';
+import {
+  useAudioRecorder,
+  IOSOutputFormat,
+  AudioQuality,
+  setAudioModeAsync,
+  requestRecordingPermissionsAsync,
+} from 'expo-audio';
 import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { normalizeBorder, cardShadow, modalShadow } from '@/constants/pixelRatio';
 import { MAX_FONT_SIZE_MULTIPLIER } from '@/constants/accessibility';
 import { UniversalHeader } from '@/components/UniversalHeader';
-
-const STT_API_URL = 'https://toolkit.rork.com/stt/transcribe/';
-const CHAT_API_URL = 'https://toolkit.rork.com/text/llm/';
 
 interface Conversation {
   id: string;
@@ -187,7 +189,7 @@ const styles = StyleSheet.create({
 export default function VoiceAssistant() {
   const { t } = useLanguage();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [conversation, setConversation] = useState<Conversation[]>([]);
+  const [conversation] = useState<Conversation[]>([]);
   const audioRecorder = useAudioRecorder({
     extension: '.m4a',
     sampleRate: 44100,
@@ -218,7 +220,7 @@ export default function VoiceAssistant() {
 
     try {
       // Request audio permissions using expo-audio
-      const { granted } = await Audio.requestRecordingPermissionsAsync();
+      const { granted } = await requestRecordingPermissionsAsync();
 
       if (!granted) {
         Alert.alert('Permission Denied', 'Audio recording permission is required');
@@ -263,99 +265,14 @@ export default function VoiceAssistant() {
     }
   };
 
-  const transcribeAudio = async (uri: string) => {
-    try {
-      const formData = new FormData();
-      
-      const uriParts = uri.split('.');
-      const fileType = uriParts[uriParts.length - 1];
-      
-      const audioFile = {
-        uri,
-        name: `recording.${fileType}`,
-        type: `audio/${fileType}`,
-      } as any;
-
-      formData.append('audio', audioFile);
-
-      const response = await fetch(STT_API_URL, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error(`Transcription failed: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      if (data.text) {
-        const userMessage: Conversation = {
-          id: Date.now().toString(),
-          type: 'user',
-          text: data.text,
-          timestamp: new Date(),
-        };
-
-        setConversation(prev => [...prev, userMessage]);
-        await getAIResponse(data.text);
-      } else {
-        throw new Error('No transcription received');
-      }
-    } catch (error: any) {
-      console.error('Transcription error:', error);
-      Alert.alert('Error', `Failed to transcribe audio: ${error.message}`);
-    }
+  const transcribeAudio = async (_uri: string) => {
+    // Feature disabled - Voice Assistant coming soon
+    Alert.alert(
+      t('common.comingSoon'),
+      t('yarnai.voiceAssistantNotAvailableMessage')
+    );
   };
 
-  const getAIResponse = async (userText: string) => {
-    try {
-      const response = await fetch(CHAT_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [
-            {
-              role: 'system',
-              content: 'You are YarnAI, a helpful voice assistant specialized in yarn crafts, crochet, knitting, and fiber arts. Provide concise, helpful responses since this is a voice conversation. Keep responses under 100 words when possible.',
-            },
-            ...conversation.map(msg => ({
-              role: msg.type === 'user' ? 'user' : 'assistant',
-              content: msg.text,
-            })),
-            {
-              role: 'user',
-              content: userText,
-            },
-          ],
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`AI response failed: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      if (data.completion) {
-        const assistantMessage: Conversation = {
-          id: (Date.now() + 1).toString(),
-          type: 'assistant',
-          text: data.completion,
-          timestamp: new Date(),
-        };
-
-        setConversation(prev => [...prev, assistantMessage]);
-      } else {
-        throw new Error('No AI response received');
-      }
-    } catch (error: any) {
-      console.error('AI response error:', error);
-      Alert.alert('Error', `Failed to get AI response: ${error.message}`);
-    }
-  };
 
   const handleRecordPress = () => {
     if (audioRecorder.isRecording) {

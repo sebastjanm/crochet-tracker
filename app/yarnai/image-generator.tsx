@@ -21,8 +21,6 @@ import { cardShadow } from '@/constants/pixelRatio';
 import { MAX_FONT_SIZE_MULTIPLIER } from '@/constants/accessibility';
 import { UniversalHeader } from '@/components/UniversalHeader';
 
-const IMAGE_API_URL = 'https://toolkit.rork.com/images/generate/';
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -185,7 +183,7 @@ export default function ImageGenerator() {
   const { t } = useLanguage();
   const [prompt, setPrompt] = useState('');
   const [generatedImage, setGeneratedImage] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [isGenerating] = useState(false);
 
   const examplePrompts = [
     t('yarnai.imageGeneratorExample1'),
@@ -196,55 +194,11 @@ export default function ImageGenerator() {
   ];
 
   const generateImage = async () => {
-    if (!prompt.trim()) {
-      Alert.alert(t('common.error'), t('yarnai.imageGeneratorError'));
-      return;
-    }
-
-    setIsGenerating(true);
-    setGeneratedImage('');
-
-    try {
-      console.log('Generating image with DALL-E 3, prompt:', prompt);
-      
-      const response = await fetch(IMAGE_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: `Create a beautiful, high-quality image of: ${prompt}. Focus on yarn, crochet, or knitting projects with vibrant colors and clear details. Professional photography style.`,
-          size: '1024x1024'
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        console.error('Image API Error Response:', errorData);
-        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log('Image API response received');
-      
-      if (data.image && data.image.base64Data) {
-        const base64Image = `data:${data.image.mimeType};base64,${data.image.base64Data}`;
-        setGeneratedImage(base64Image);
-        console.log('Image generated successfully');
-      } else {
-        console.error('Unexpected response format:', data);
-        throw new Error('No image data in response');
-      }
-      
-    } catch (error: any) {
-      console.error('Image Generation Error:', error);
-      Alert.alert(
-        t('common.error'), 
-        `Failed to generate image: ${error.message || 'Unknown error'}`
-      );
-    } finally {
-      setIsGenerating(false);
-    }
+    // Feature disabled - Image Generator coming soon
+    Alert.alert(
+      t('common.comingSoon'),
+      t('yarnai.imageGeneratorComingSoon')
+    );
   };
 
   const handleExamplePrompt = (examplePrompt: string) => {

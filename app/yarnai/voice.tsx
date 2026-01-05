@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Mic, MicOff, Volume2, MessageSquare } from 'lucide-react-native';
-import { useAudioRecorder, IOSOutputFormat, AudioQuality } from 'expo-audio';
+import { useAudioRecorder, IOSOutputFormat, AudioQuality, setAudioModeAsync } from 'expo-audio';
 import * as Audio from 'expo-audio';
 import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
@@ -225,8 +225,15 @@ export default function VoiceAssistant() {
         return;
       }
 
+      // Set audio mode for recording
+      await setAudioModeAsync({
+        playsInSilentMode: true,
+        allowsRecording: true,
+      });
+
       console.log('Starting recording..');
-      await audioRecorder.record();
+      await audioRecorder.prepareToRecordAsync();
+      audioRecorder.record();
       console.log('Recording started');
     } catch (err) {
       console.error('Failed to start recording', err);

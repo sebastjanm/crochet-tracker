@@ -190,7 +190,7 @@ export default {
   },
   tabs: {
     projects: 'Projekte',
-    inventory: 'Inventar',
+    inventory: 'Vorrat',
     profile: 'Profil',
     yarnai: 'YarnAI',
     tools: 'Werkzeuge',
@@ -409,7 +409,7 @@ export default {
     removedFromWorkingOn: 'Von Aktuell in Arbeit entfernt',
   },
   inventory: {
-    title: 'Mein Inventar',
+    title: 'Mein Vorrat',
     manageYourSupplies: 'Verwalten Sie Ihre Wolle und Zubehör',
     addItem: 'Artikel hinzufügen',
     addToInventory: 'Zum Inventar hinzufügen',
@@ -741,7 +741,7 @@ export default {
     syncPulled: 'Heruntergeladen',
     syncErrors: 'Fehler',
     projects: 'Projekte',
-    inventory: 'Inventar',
+    inventory: 'Vorrat',
     // Image Sync
     syncImages: 'Bilder synchronisieren',
     syncingImages: 'Synchronisiere Bilder...',
@@ -870,7 +870,7 @@ export default {
     videosSubtitle: 'Schauen Sie sich kurze Tutorials an, um die App-Funktionen schnell zu erlernen',
     gettingStarted: 'Erste Schritte',
     projects: 'Projekte',
-    inventory: 'Inventar',
+    inventory: 'Vorrat',
     general: 'Allgemein',
     faq1Question: 'Wie erstelle ich ein neues Projekt?',
     faq1Answer: 'Tippen Sie auf die "+"-Schaltfläche im Projekte-Tab und füllen Sie dann Ihre Projektdetails aus, einschließlich Name, Beschreibung und Status. Sie können auch Fotos und Muster-PDFs hinzufügen, um alles organisiert zu halten.',
@@ -894,7 +894,7 @@ export default {
     video5Description: 'Vollständige Anleitung zur Katalogisierung Ihres Garnvorrats',
     // FAQ Categories
     faqCategoryProjects: 'Projekte',
-    faqCategoryInventory: 'Inventar',
+    faqCategoryInventory: 'Vorrat',
     faqCategoryYarn: 'Garn',
     faqCategoryHooks: 'Haken',
     faqCategoryMaterials: 'Materialien verknüpfen',
@@ -1119,7 +1119,7 @@ export default {
   },
   about: {
     title: 'Über',
-    appName: 'Artful Space',
+    appName: 'Crochet Tracker',
     version: 'Version',
     build: 'Build',
     platform: 'Plattform',

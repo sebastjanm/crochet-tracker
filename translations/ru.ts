@@ -190,7 +190,7 @@ export default {
   },
   tabs: {
     projects: 'Проекты',
-    inventory: 'Инвентарь',
+    inventory: 'Запасы',
     profile: 'Профиль',
     yarnai: 'YarnAI',
     tools: 'Инструменты',
@@ -409,7 +409,7 @@ export default {
     removedFromWorkingOn: 'Удалено из активных проектов',
   },
   inventory: {
-    title: 'Мой инвентарь',
+    title: 'Мои запасы',
     manageYourSupplies: 'Управляйте пряжей и материалами',
     addItem: 'Добавить предмет',
     addToInventory: 'Добавить в инвентарь',
@@ -741,7 +741,7 @@ export default {
     syncPulled: 'Получено',
     syncErrors: 'Ошибки',
     projects: 'проектов',
-    inventory: 'инвентарь',
+    inventory: 'запасы',
     // Image Sync
     syncImages: 'Синхронизация изображений',
     syncingImages: 'Синхронизация изображений...',
@@ -870,7 +870,7 @@ export default {
     videosSubtitle: 'Смотрите короткие руководства для быстрого изучения функций приложения',
     gettingStarted: 'Начало работы',
     projects: 'Проекты',
-    inventory: 'Инвентарь',
+    inventory: 'Запасы',
     general: 'Общее',
     faq1Question: 'Как создать новый проект?',
     faq1Answer: 'Нажмите кнопку "+" на вкладке Проекты, затем заполните детали проекта, включая название, описание и статус. Вы также можете добавить фотографии и PDF схемы, чтобы все было организовано.',
@@ -894,7 +894,7 @@ export default {
     video5Description: 'Полное руководство по каталогизации вашего запаса пряжи',
     // FAQ Categories
     faqCategoryProjects: 'Проекты',
-    faqCategoryInventory: 'Инвентарь',
+    faqCategoryInventory: 'Запасы',
     faqCategoryYarn: 'Пряжа',
     faqCategoryHooks: 'Крючки',
     faqCategoryMaterials: 'Связь материалов',
@@ -1119,7 +1119,7 @@ export default {
   },
   about: {
     title: 'О приложении',
-    appName: 'Artful Space',
+    appName: 'Crochet Tracker',
     version: 'Версия',
     build: 'Сборка',
     platform: 'Платформа',

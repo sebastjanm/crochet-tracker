@@ -190,7 +190,7 @@ export default {
   },
   tabs: {
     projects: 'Projects',
-    inventory: 'Inventory',
+    inventory: 'Stash',
     profile: 'Profile',
     tools: 'Tools',
   },
@@ -413,7 +413,7 @@ export default {
     removedFromWorkingOn: 'Removed from Currently Working On',
   },
   inventory: {
-    title: 'My Inventory',
+    title: 'My Stash',
     manageYourSupplies: 'Manage your yarn and supplies',
     addItem: 'Add Item',
     addToInventory: 'Add to Inventory',
@@ -753,7 +753,7 @@ export default {
     syncPulled: 'Pulled',
     syncErrors: 'Errors',
     projects: 'projects',
-    inventory: 'inventory',
+    inventory: 'stash',
     items: 'items',
     // Image Sync
     syncImages: 'Sync Images',
@@ -882,7 +882,7 @@ export default {
     // Categories
     gettingStarted: 'Getting Started',
     projects: 'Projects',
-    inventory: 'Inventory',
+    inventory: 'Stash',
     general: 'General',
     // FAQ Questions and Answers
     faq1Question: 'How do I create a new project?',
@@ -890,14 +890,14 @@ export default {
     faq2Question: 'How do I track my project progress?',
     faq2Answer: 'Update your project status as you work: Idea → In Progress → Completed. You can also add notes and photos to document your progress along the way.',
     faq3Question: 'How do I add yarn to my inventory?',
-    faq3Answer: 'Go to the Inventory tab and tap the "+" button. Fill in details like brand, weight, color, and quantity.',
+    faq3Answer: 'Go to the Stash tab and tap the "+" button. Fill in details like brand, weight, color, and quantity.',
     faq4Question: 'How do I change the app language?',
     faq4Answer: 'Go to the Profile tab, tap on Settings, then select Language. Choose between English, Slovenščina (Slovene), Русский (Russian), and Deutsch (German).',
     faq5Question: 'Can I export my data?',
     faq5Answer: 'Currently, all your data is stored locally on your device. We\'re working on cloud sync and export features for future updates.',
     // FAQ Categories
     faqCategoryProjects: 'Projects',
-    faqCategoryInventory: 'Inventory',
+    faqCategoryInventory: 'Stash',
     faqCategoryYarn: 'Yarn',
     faqCategoryHooks: 'Hooks',
     faqCategoryMaterials: 'Linking Materials',
@@ -1125,7 +1125,7 @@ export default {
   },
   about: {
     title: 'About',
-    appName: 'Artful Space',
+    appName: 'Crochet Tracker',
     version: 'Version',
     build: 'Build',
     platform: 'Platform',

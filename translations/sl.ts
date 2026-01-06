@@ -190,7 +190,7 @@ export default {
   },
   tabs: {
     projects: 'Projekti',
-    inventory: 'Zaloga',
+    inventory: 'Shramba',
     profile: 'Profil',
     tools: 'Orodja',
   },
@@ -413,7 +413,7 @@ export default {
     removedFromWorkingOn: 'Odstranjeno iz aktivnih projektov',
   },
   inventory: {
-    title: 'Moja zaloga',
+    title: 'Moja shramba',
     manageYourSupplies: 'Upravljajte svojo prejo in materiale',
     addItem: 'Dodaj izdelek',
     addToInventory: 'Dodaj v zalogo',
@@ -753,7 +753,7 @@ export default {
     syncPulled: 'Preneseno',
     syncErrors: 'Napake',
     projects: 'projektov',
-    inventory: 'zaloga',
+    inventory: 'shramba',
     // Image Sync
     syncImages: 'Sinhroniziraj slike',
     syncingImages: 'Sinhroniziram slike...',
@@ -881,7 +881,7 @@ export default {
     // Categories
     gettingStarted: 'Začetek',
     projects: 'Projekti',
-    inventory: 'Zaloga',
+    inventory: 'Shramba',
     general: 'Splošno',
     // FAQ Questions and Answers
     faq1Question: 'Kako ustvarim nov projekt?',
@@ -889,14 +889,14 @@ export default {
     faq2Question: 'Kako spremljam napredek svojega projekta?',
     faq2Answer: 'Posodobite status svojega projekta med delom: Ideja → V teku → Končano. Lahko tudi dodate opombe in fotografije za dokumentiranje napredka.',
     faq3Question: 'Kako dodam prejo v svojo zalogo?',
-    faq3Answer: 'Pojdite na zavihek Zaloga in tapnite gumb "+". Izpolnite podrobnosti, kot so znamka, teža, barva in količina.',
+    faq3Answer: 'Pojdite na zavihek Shramba in tapnite gumb "+". Izpolnite podrobnosti, kot so znamka, teža, barva in količina.',
     faq4Question: 'Kako spremenim jezik aplikacije?',
     faq4Answer: 'Pojdite na zavihek Profil, tapnite Nastavitve, nato izberite Jezik. Izbirate lahko med angleščino, slovenščino, ruščino in nemščino.',
     faq5Question: 'Ali lahko izvozim svoje podatke?',
     faq5Answer: 'Trenutno so vsi vaši podatki shranjeni lokalno na vaši napravi. Delamo na funkcijah sinhronizacije v oblaku in izvozu za prihodnje posodobitve.',
     // FAQ Categories
     faqCategoryProjects: 'Projekti',
-    faqCategoryInventory: 'Zaloga',
+    faqCategoryInventory: 'Shramba',
     faqCategoryYarn: 'Preja',
     faqCategoryHooks: 'Kvačke',
     faqCategoryMaterials: 'Povezovanje materialov',
@@ -1124,7 +1124,7 @@ export default {
   },
   about: {
     title: 'O aplikaciji',
-    appName: 'Artful Space',
+    appName: 'Crochet Tracker',
     version: 'Različica',
     build: 'Gradnja',
     platform: 'Platforma',

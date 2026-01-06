@@ -17,7 +17,7 @@
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import createContextHook from '@nkzw/create-context-hook';
-import { useSelector, useObserve } from '@legendapp/state/react';
+import { useSelector } from '@legendapp/state/react';
 import { syncState } from '@legendapp/state';
 import { InventoryItem, ProjectImage } from '@/types';
 
@@ -70,50 +70,30 @@ export const [InventoryProvider, useInventory] = createContextHook(() => {
     [user?.id, isPro, refreshKey]
   );
 
-  // Track sync state separately to avoid render-cycle issues
-  // Using useState + useObserve instead of useSelector for syncState
-  const [syncStatus, setSyncStatus] = useState({
-    isPersistLoaded: false,
-    isLoaded: false,
-  });
-
   // Keep ref updated for use in refresh function
   const syncStateRef = useRef(syncState(inventory$));
 
   // Re-subscribe to sync state when inventory$ changes (after refresh)
   useEffect(() => {
     syncStateRef.current = syncState(inventory$);
-
-    // Reset sync status for new observable
-    setSyncStatus({ isPersistLoaded: false, isLoaded: false });
-
-    if (__DEV__) {
-      console.log('[Inventory] New observable - watching sync state');
-    }
   }, [inventory$]);
 
-  // Observe sync state changes - must access inventory$ directly for reactivity
-  useObserve(() => {
-    // Access inventory$ directly so useObserve tracks it as a dependency
+  // Use useSelector to derive loading state directly from observable
+  // This avoids the infinite re-render loop caused by useState + useObserve
+  const isLoading = useSelector(() => {
     const state = syncState(inventory$);
     const isPersistLoaded = state.isPersistLoaded?.get() ?? false;
     const isLoaded = state.isLoaded?.get() ?? false;
-
-    // Update state in next tick to avoid render-cycle issues
-    setTimeout(() => {
-      setSyncStatus({ isPersistLoaded, isLoaded });
-    }, 0);
-
-    if (__DEV__) {
-      console.log('[Inventory] Sync status:', { isPersistLoaded, isLoaded });
-    }
+    return !isPersistLoaded || (isPro && !isLoaded);
   });
 
-  // Loading = not yet loaded from cache OR (Pro user AND remote not loaded)
-  const isLoading = !syncStatus.isPersistLoaded || (isPro && !syncStatus.isLoaded);
-
   // Sync complete when both persistence AND remote are loaded
-  const isSyncComplete = syncStatus.isPersistLoaded && syncStatus.isLoaded;
+  const isSyncComplete = useSelector(() => {
+    const state = syncState(inventory$);
+    const isPersistLoaded = state.isPersistLoaded?.get() ?? false;
+    const isLoaded = state.isLoaded?.get() ?? false;
+    return isPersistLoaded && isLoaded;
+  });
 
   // Auto-reconciliation: detect orphaned inventory items after sync completes
   // This catches edge cases where data was modified directly in Supabase

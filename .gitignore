@@ -47,3 +47,7 @@ supabase/.temp/
 
 # Google Play Service Account Key (for EAS Submit)
 google-service-account.json
+
+# Build artifacts (download from EAS instead)
+*.aab
+*.ipa

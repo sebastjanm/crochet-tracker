@@ -269,7 +269,7 @@ export default function YarnAIChat() {
         throw new Error('No response from AI');
       }
     } catch (error: unknown) {
-      console.error('Chat API Error:', error);
+      if (__DEV__) console.error('Chat API Error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       Alert.alert(
         t('common.error'),

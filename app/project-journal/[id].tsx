@@ -21,7 +21,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { LockedProFeature } from '@/components/LockedProFeature';
 import { useProjects } from '@/providers/ProjectsProvider';
 import { useLanguage } from '@/providers/LanguageProvider';
-import { useAuth } from '@/providers/AuthProvider';
+// TODO: Re-enable when subscription system is ready: import { useAuth } from '@/providers/AuthProvider';
 import { useTimeSessions } from '@/providers/TimeSessionsProvider';
 import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
@@ -38,7 +38,7 @@ export default function ProjectJournalScreen() {
   const projectId = id as string;
   const { getProjectById, updateProject } = useProjects();
   const { t } = useLanguage();
-  const { user } = useAuth();
+  // TODO: Re-enable when subscription system is ready: const { user } = useAuth();
   const { getSessionsForProject, addManualSession, deleteSession, getTotalMinutes } = useTimeSessions();
   const project = getProjectById(projectId);
   const timeSessions = getSessionsForProject(projectId);
@@ -191,8 +191,9 @@ export default function ProjectJournalScreen() {
     }
   };
 
-  // Check if user is Pro
-  const isPro = user?.isPro === true;
+  // Pro features available to all users until IAP is implemented
+  // TODO: Re-enable when subscription system is ready: const isPro = user?.isPro === true;
+  const isPro = true;
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>

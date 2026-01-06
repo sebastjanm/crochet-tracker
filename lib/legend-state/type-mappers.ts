@@ -18,13 +18,22 @@ export function isLocalImageUri(uri: string): boolean {
 }
 
 /**
- * Check if a URI is a cloud URL (already uploaded)
+ * Check if a URI is a secure cloud URL (already uploaded)
+ * Only HTTPS is accepted for security compliance with App Store/Play Store requirements
  */
 export function isCloudImageUrl(uri: string): boolean {
-  return typeof uri === 'string' && (
-    uri.startsWith('http://') ||
-    uri.startsWith('https://')
-  );
+  return typeof uri === 'string' && uri.startsWith('https://');
+}
+
+/**
+ * Upgrade HTTP URLs to HTTPS for security compliance.
+ * Returns the original URL if already HTTPS or not a valid HTTP URL.
+ */
+export function ensureHttpsUrl(uri: string): string {
+  if (typeof uri === 'string' && uri.startsWith('http://')) {
+    return uri.replace('http://', 'https://');
+  }
+  return uri;
 }
 
 /**

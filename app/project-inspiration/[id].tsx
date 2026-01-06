@@ -34,7 +34,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { LockedProFeature } from '@/components/LockedProFeature';
 import { useProjects } from '@/providers/ProjectsProvider';
 import { useLanguage } from '@/providers/LanguageProvider';
-import { useAuth } from '@/providers/AuthProvider';
+// TODO: Re-enable when subscription system is ready: import { useAuth } from '@/providers/AuthProvider';
 import { useImagePicker } from '@/hooks/useImagePicker';
 import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
@@ -57,7 +57,7 @@ export default function ProjectInspirationScreen() {
   const { id } = useLocalSearchParams();
   const { getProjectById, updateProject } = useProjects();
   const { t } = useLanguage();
-  const { user } = useAuth();
+  // TODO: Re-enable when subscription system is ready: const { user } = useAuth();
   const { showImagePickerOptionsMultiple } = useImagePicker();
   const project = getProjectById(id as string);
 
@@ -297,8 +297,9 @@ export default function ProjectInspirationScreen() {
     lastTapRef.current = now;
   };
 
-  // Check if user is Pro
-  const isPro = user?.isPro === true;
+  // Pro features available to all users until IAP is implemented
+  // TODO: Re-enable when subscription system is ready: const isPro = user?.isPro === true;
+  const isPro = true;
 
   /**
    * Render a LINK type inspiration card (read-only display)

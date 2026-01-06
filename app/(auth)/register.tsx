@@ -157,6 +157,20 @@ export default function RegisterScreen(): React.JSX.Element {
                 </Link>
               </View>
             </View>
+
+            {/* Legal links - Required by App Store for registration screens */}
+            <View style={styles.legalLinks}>
+              <Text style={styles.legalText}>{t('auth.byRegistering')} </Text>
+              <View style={styles.legalLinksRow}>
+                <Link href="/legal/terms" style={styles.legalLink}>
+                  <Text style={styles.legalLinkText}>{t('legal.terms')}</Text>
+                </Link>
+                <Text style={styles.legalText}> {t('common.and')} </Text>
+                <Link href="/legal/privacy" style={styles.legalLink}>
+                  <Text style={styles.legalLinkText}>{t('legal.privacy')}</Text>
+                </Link>
+              </View>
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -253,5 +267,31 @@ const styles = StyleSheet.create({
     color: Colors.warmGray,
     marginTop: 4,
     marginBottom: 8,
+  },
+  legalLinks: {
+    marginTop: isSmallDevice ? 20 : 24,
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  legalLinksRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+  },
+  legalText: {
+    ...Typography.caption,
+    fontSize: isSmallDevice ? 12 : 13,
+    color: Colors.warmGray,
+    textAlign: 'center',
+  },
+  legalLink: {
+    paddingVertical: 2,
+  },
+  legalLinkText: {
+    ...Typography.caption,
+    fontSize: isSmallDevice ? 12 : 13,
+    color: Colors.terracotta,
+    textDecorationLine: 'underline',
   },
 });

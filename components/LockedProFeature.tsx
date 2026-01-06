@@ -22,7 +22,7 @@ export function LockedProFeature({
     } else {
       // Navigate to subscription/paywall screen (to be implemented)
       // router.push('/subscription');
-      console.log('Navigate to subscription screen');
+      if (__DEV__) console.log('Navigate to subscription screen');
     }
   };
 

@@ -44,3 +44,6 @@ supabase/.temp/
 
 .env.local
 .claude/settings.local.json
+
+# Google Play Service Account Key (for EAS Submit)
+google-service-account.json

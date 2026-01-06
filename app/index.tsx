@@ -14,7 +14,7 @@ export default function RootIndex() {
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
 
   // Debug logging
-  console.log('[Index] State:', { showSplash, isLoading, isAuthenticated });
+  if (__DEV__) console.log('[Index] State:', { showSplash, isLoading, isAuthenticated });
 
   useEffect(() => {
     // Start animations
@@ -69,7 +69,7 @@ export default function RootIndex() {
   }
 
   if (isLoading) {
-    console.log('[Index] Showing loading screen (isLoading=true)');
+    if (__DEV__) console.log('[Index] Showing loading screen (isLoading=true)');
     return (
       <SafeAreaView style={styles.splashContainer}>
         <View style={styles.logoContainer}>
@@ -81,11 +81,11 @@ export default function RootIndex() {
   }
 
   if (isAuthenticated) {
-    console.log('[Index] Redirecting to /projects');
+    if (__DEV__) console.log('[Index] Redirecting to /projects');
     return <Redirect href="/projects" />;
   }
 
-  console.log('[Index] Redirecting to /(auth)/login');
+  if (__DEV__) console.log('[Index] Redirecting to /(auth)/login');
   return <Redirect href="/(auth)/login" />;
 }
 

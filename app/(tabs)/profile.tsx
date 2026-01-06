@@ -24,6 +24,7 @@ import {
   Cloud,
   RefreshCw,
   Package,
+  UserX,
 } from 'lucide-react-native';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
@@ -451,13 +452,12 @@ export default function ProfileScreen(): React.JSX.Element {
                   // Map to row format
                   const row = mapProjectToRow(project);
 
-                  // Insert into Supabase (bypass strict typing for dynamic row)
-                  const { error: insertError } = await (supabase as any)
+                  // Insert into Supabase (DEV-only debug function)
+                  // Type assertion needed: Supabase generic types infer 'never' for this table
+                  const upsertPayload = { ...row, user_id: user.id };
+                  const { error: insertError } = await supabase!
                     .from('projects')
-                    .upsert({
-                      ...row,
-                      user_id: user.id,
-                    });
+                    .upsert(upsertPayload as never);
 
                   if (insertError) {
                     errors.push(`${project.title}: ${insertError.message}`);
@@ -517,6 +517,78 @@ export default function ProfileScreen(): React.JSX.Element {
             } catch (err) {
               Alert.alert('Error', err instanceof Error ? err.message : 'Failed to reset stores');
             }
+          },
+        },
+      ]
+    );
+  };
+
+  /**
+   * Delete Account - Required for App Store compliance.
+   * Permanently deletes all user data and signs out.
+   */
+  const handleDeleteAccount = async () => {
+    Alert.alert(
+      t('profile.deleteAccount'),
+      t('profile.deleteAccountConfirm'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('profile.deleteAccountButton'),
+          style: 'destructive',
+          onPress: async () => {
+            // Second confirmation for destructive action
+            Alert.alert(
+              t('profile.deleteAccountFinal'),
+              t('profile.deleteAccountFinalConfirm'),
+              [
+                { text: t('common.cancel'), style: 'cancel' },
+                {
+                  text: t('profile.deleteAccountButton'),
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      setIsLoadingMockData(true);
+
+                      // Clear all local data
+                      await clearAllData();
+
+                      // If user is logged in to Supabase, delete their data from cloud
+                      if (user?.id && isSupabaseConfigured() && supabase) {
+                        // Delete projects from Supabase
+                        await supabase
+                          .from('projects')
+                          .delete()
+                          .eq('user_id', user.id);
+
+                        // Delete inventory items from Supabase
+                        await supabase
+                          .from('inventory_items')
+                          .delete()
+                          .eq('user_id', user.id);
+
+                        // Delete profile data
+                        await supabase
+                          .from('profiles')
+                          .delete()
+                          .eq('id', user.id);
+                      }
+
+                      // Log out and redirect to login
+                      await logout();
+                      router.replace('/');
+
+                      showToast(t('profile.accountDeleted'), 'success');
+                    } catch (err) {
+                      if (__DEV__) console.error('Delete account error:', err);
+                      Alert.alert(t('common.error'), t('profile.deleteAccountError'));
+                    } finally {
+                      setIsLoadingMockData(false);
+                    }
+                  },
+                },
+              ]
+            );
           },
         },
       ]
@@ -739,6 +811,29 @@ export default function ProfileScreen(): React.JSX.Element {
                 </TouchableOpacity>
               </Fragment>
             ))}
+          </Card>
+        </View>
+
+        {/* Account Management Section - Always visible for App Store compliance */}
+        <View style={styles.dangerZoneContainer}>
+          <Text style={styles.dangerZoneTitle}>{t('profile.accountManagement')}</Text>
+          <Card>
+            <TouchableOpacity
+              style={styles.dangerItem}
+              onPress={handleDeleteAccount}
+              activeOpacity={0.7}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={t('profile.deleteAccount')}
+              accessibilityHint={t('profile.deleteAccountHint')}
+            >
+              <UserX size={20} color={ACCESSIBLE_COLORS.errorAccessible} />
+              <View style={styles.dangerItemText}>
+                <Text style={styles.dangerItemLabel}>{t('profile.deleteAccount')}</Text>
+                <Text style={styles.dangerItemDescription}>{t('profile.deleteAccountDescription')}</Text>
+              </View>
+              <ChevronRight size={20} color={ACCESSIBLE_COLORS.errorAccessible} />
+            </TouchableOpacity>
           </Card>
         </View>
 
@@ -1048,6 +1143,35 @@ const styles = StyleSheet.create({
   footer: {
     paddingHorizontal: 16,
     paddingBottom: 24,
+  },
+  // Danger Zone / Account Management styles (always visible)
+  dangerZoneContainer: {
+    paddingHorizontal: 16,
+    marginBottom: 24,
+  },
+  dangerZoneTitle: {
+    ...Typography.title3,
+    color: Colors.charcoal,
+    marginBottom: 12,
+  },
+  dangerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    gap: 12,
+  },
+  dangerItemText: {
+    flex: 1,
+  },
+  dangerItemLabel: {
+    ...Typography.body,
+    color: ACCESSIBLE_COLORS.errorAccessible,
+    fontWeight: '600' as const,
+  },
+  dangerItemDescription: {
+    ...Typography.caption,
+    color: Colors.warmGray,
+    marginTop: 2,
   },
   // Debug section styles (development only)
   debugContainer: {

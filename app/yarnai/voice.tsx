@@ -233,12 +233,12 @@ export default function VoiceAssistant() {
         allowsRecording: true,
       });
 
-      console.log('Starting recording..');
+      if (__DEV__) console.log('Starting recording..');
       await audioRecorder.prepareToRecordAsync();
       audioRecorder.record();
-      console.log('Recording started');
+      if (__DEV__) console.log('Recording started');
     } catch (err) {
-      console.error('Failed to start recording', err);
+      if (__DEV__) console.error('Failed to start recording', err);
       Alert.alert('Error', 'Failed to start recording');
     }
   };
@@ -246,19 +246,19 @@ export default function VoiceAssistant() {
   const stopRecording = async () => {
     if (!audioRecorder.isRecording) return;
 
-    console.log('Stopping recording..');
+    if (__DEV__) console.log('Stopping recording..');
     setIsProcessing(true);
 
     try {
       await audioRecorder.stop();
       const uri = audioRecorder.uri;
-      console.log('Recording stopped and stored at', uri);
+      if (__DEV__) console.log('Recording stopped and stored at', uri);
 
       if (uri) {
         await transcribeAudio(uri);
       }
     } catch (error) {
-      console.error('Error stopping recording:', error);
+      if (__DEV__) console.error('Error stopping recording:', error);
       Alert.alert('Error', 'Failed to process recording');
     } finally {
       setIsProcessing(false);

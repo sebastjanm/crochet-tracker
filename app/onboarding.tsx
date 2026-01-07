@@ -95,7 +95,7 @@ export default function OnboardingScreen() {
   // Navigate after fade animation completes
   const navigateToLogin = async () => {
     await markOnboardingComplete();
-    router.replace('/(auth)/login');
+    router.replace('/(auth)/welcome');
   };
 
   const handleSkip = () => {

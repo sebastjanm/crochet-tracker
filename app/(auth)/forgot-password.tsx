@@ -70,7 +70,7 @@ export default function ForgotPasswordScreen(): React.JSX.Element {
             <View style={styles.logoContainer}>
               <YarnBallLogo size={48} color={Colors.terracotta} />
             </View>
-            <Text style={styles.title}>artful.space</Text>
+            <Text style={styles.title}>Crochet Tracker</Text>
             <Text style={styles.subtitle}>
               {t('auth.forgotPasswordSubtitle')}
             </Text>

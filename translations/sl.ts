@@ -141,6 +141,11 @@ export default {
     restart: 'Znova zaženi',
     tapToRestart: 'Posodobitev pripravljena - tapnite za ponovni zagon',
   },
+  welcome: {
+    subtitle: 'Vaš kreativni spremljevalec za organizacijo projektov in preje',
+    createAccount: 'Ustvari račun',
+    signIn: 'Imam že račun',
+  },
   auth: {
     login: 'Prijava',
     logout: 'Odjava',

@@ -141,6 +141,11 @@ export default {
     restart: 'Restart',
     tapToRestart: 'Update ready - tap to restart',
   },
+  welcome: {
+    subtitle: 'Your creative companion for organizing projects and yarn',
+    createAccount: 'Create Account',
+    signIn: 'I Already Have an Account',
+  },
   auth: {
     login: 'Login',
     logout: 'Logout',

@@ -141,6 +141,11 @@ export default {
     restart: 'Neu starten',
     tapToRestart: 'Update bereit - tippen zum Neustarten',
   },
+  welcome: {
+    subtitle: 'Dein kreativer Begleiter zum Organisieren von Projekten und Garn',
+    createAccount: 'Konto erstellen',
+    signIn: 'Ich habe bereits ein Konto',
+  },
   auth: {
     login: 'Anmelden',
     logout: 'Abmelden',

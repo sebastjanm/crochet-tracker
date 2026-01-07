@@ -1,73 +1,65 @@
 import { Redirect } from 'expo-router';
 import { useAuth } from '@/providers/AuthProvider';
-import { View, Text, StyleSheet, Animated, Platform } from 'react-native';
-import { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, Platform } from 'react-native';
+import { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as SplashScreen from 'expo-splash-screen';
 import { YarnBallLogo } from '@/components/YarnBallLogo';
 import { Colors } from '@/constants/colors';
 import { buttonShadow } from '@/constants/pixelRatio';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept for DEV testing
+import { hasSeenOnboarding, resetOnboarding } from './onboarding';
+
+// Keep native splash visible until we're ready
+SplashScreen.preventAutoHideAsync();
+
+// Configure native splash fade animation
+SplashScreen.setOptions({
+  duration: 400,
+  fade: true,
+});
 
 export default function RootIndex() {
   const { isAuthenticated, isLoading } = useAuth();
-  const [showSplash, setShowSplash] = useState(true);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Check if user has seen onboarding
+  useEffect(() => {
+    async function checkOnboarding() {
+      try {
+        // DEV: Uncomment next line to reset onboarding and see it again
+        // await resetOnboarding();
+
+        const seen = await hasSeenOnboarding();
+        if (__DEV__) console.log('[Index] hasSeenOnboarding:', seen);
+        setShowOnboarding(!seen);
+      } catch (error) {
+        if (__DEV__) console.error('[Index] Failed to check onboarding:', error);
+        setShowOnboarding(false);
+      } finally {
+        setCheckingOnboarding(false);
+        SplashScreen.hide();
+      }
+    }
+    checkOnboarding();
+  }, []);
 
   // Debug logging
-  if (__DEV__) console.log('[Index] State:', { showSplash, isLoading, isAuthenticated });
+  if (__DEV__) console.log('[Index] State:', { checkingOnboarding, showOnboarding, isLoading, isAuthenticated });
 
-  useEffect(() => {
-    // Start animations
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 50,
-        friction: 7,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Hide splash after 2 seconds
-    const timer = setTimeout(() => {
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start(() => {
-        setShowSplash(false);
-      });
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [fadeAnim, scaleAnim]);
-
-  if (showSplash) {
-    return (
-      <SafeAreaView style={styles.splashContainer}>
-        <Animated.View 
-          style={[
-            styles.splashContent,
-            {
-              opacity: fadeAnim,
-              transform: [{ scale: scaleAnim }],
-            },
-          ]}
-        >
-          <View style={styles.logoContainer}>
-            <YarnBallLogo size={64} color={Colors.white} />
-          </View>
-          <Text style={styles.appName}>Crochet Tracker</Text>
-          <Text style={styles.tagline}>Track your crochet projects</Text>
-        </Animated.View>
-      </SafeAreaView>
-    );
+  // Still checking onboarding status (native splash is visible)
+  if (checkingOnboarding) {
+    return <View style={styles.loadingContainer} />;
   }
 
+  // Show onboarding for first-time users
+  if (showOnboarding) {
+    if (__DEV__) console.log('[Index] Redirecting to /onboarding');
+    return <Redirect href="/onboarding" />;
+  }
+
+  // Show loading while auth is being determined
   if (isLoading) {
     if (__DEV__) console.log('[Index] Showing loading screen (isLoading=true)');
     return (
@@ -80,6 +72,7 @@ export default function RootIndex() {
     );
   }
 
+  // Redirect based on auth state
   if (isAuthenticated) {
     if (__DEV__) console.log('[Index] Redirecting to /projects');
     return <Redirect href="/projects" />;
@@ -90,13 +83,14 @@ export default function RootIndex() {
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#E891A0', // Match splash screen background
+  },
   splashContainer: {
     flex: 1,
     backgroundColor: Colors.cream,
     justifyContent: 'center',
-    alignItems: 'center',
-  },
-  splashContent: {
     alignItems: 'center',
   },
   logoContainer: {
@@ -112,20 +106,11 @@ const styles = StyleSheet.create({
       default: {},
     }),
   },
-  logoText: {
-    fontSize: 48,
-  },
   appName: {
     fontSize: 32,
     fontWeight: '700',
     color: Colors.charcoal,
     marginBottom: 8,
     textAlign: 'center',
-  },
-  tagline: {
-    fontSize: 16,
-    color: Colors.warmGray,
-    textAlign: 'center',
-    fontWeight: '400',
   },
 });

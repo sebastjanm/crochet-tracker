@@ -1142,4 +1142,30 @@ export default {
     updateAvailable: 'Update available!',
     embedded: 'Embedded',
   },
+  onboarding: {
+    skip: 'Skip',
+    getStarted: 'Get Started',
+    slideOf: '%{current} of %{total}',
+    slide1: {
+      title: 'Crochet Tracker',
+      subtitle: 'Your creative companion for crochet',
+      feature1: 'Track projects from start to finish',
+      feature2: 'Organize your yarn stash',
+      feature3: 'AI-powered pattern assistance',
+    },
+    slide2: {
+      title: 'Track Projects',
+      subtitle: 'From WIP to finished masterpiece',
+      feature1: 'Log progress with photos',
+      feature2: 'Track time spent on each project',
+      feature3: 'Organize by status: To-Do, WIP, Done',
+    },
+    slide3: {
+      title: 'Manage Your Stash',
+      subtitle: 'Know what you have, find what you need',
+      feature1: 'Catalog yarn, hooks & accessories',
+      feature2: 'Quick barcode scanning',
+      feature3: 'Link materials to projects',
+    },
+  },
 };

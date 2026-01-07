@@ -1141,4 +1141,30 @@ export default {
     updateAvailable: 'Posodobitev na voljo!',
     embedded: 'Vgrajeno',
   },
+  onboarding: {
+    skip: 'Preskoči',
+    getStarted: 'Začni',
+    slideOf: '%{current} od %{total}',
+    slide1: {
+      title: 'Crochet Tracker',
+      subtitle: 'Vaš kreativni spremljevalec za kvačkanje',
+      feature1: 'Sledite projektom od začetka do konca',
+      feature2: 'Organizirajte svojo zalogo preje',
+      feature3: 'AI pomoč pri vzorcih',
+    },
+    slide2: {
+      title: 'Sledite projektom',
+      subtitle: 'Od dela v teku do mojstrovine',
+      feature1: 'Beležite napredek s fotografijami',
+      feature2: 'Sledite porabljenemu času',
+      feature3: 'Organizirajte po statusu: Načrt, V delu, Končano',
+    },
+    slide3: {
+      title: 'Upravljajte zalogo',
+      subtitle: 'Vedite, kaj imate, najdite, kar potrebujete',
+      feature1: 'Katalogizirajte prejo, kavlje in dodatke',
+      feature2: 'Hitro skeniranje črtne kode',
+      feature3: 'Povežite materiale s projekti',
+    },
+  },
 };

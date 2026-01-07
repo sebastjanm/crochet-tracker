@@ -1136,4 +1136,30 @@ export default {
     updateAvailable: 'Update verfügbar!',
     embedded: 'Eingebettet',
   },
+  onboarding: {
+    skip: 'Überspringen',
+    getStarted: 'Los geht\'s',
+    slideOf: '%{current} von %{total}',
+    slide1: {
+      title: 'Crochet Tracker',
+      subtitle: 'Dein kreativer Begleiter fürs Häkeln',
+      feature1: 'Projekte von Anfang bis Ende verfolgen',
+      feature2: 'Deinen Garnvorrat organisieren',
+      feature3: 'KI-gestützte Musterhilfe',
+    },
+    slide2: {
+      title: 'Projekte verfolgen',
+      subtitle: 'Vom WIP zum fertigen Meisterwerk',
+      feature1: 'Fortschritt mit Fotos dokumentieren',
+      feature2: 'Zeitaufwand pro Projekt erfassen',
+      feature3: 'Nach Status ordnen: Geplant, In Arbeit, Fertig',
+    },
+    slide3: {
+      title: 'Vorrat verwalten',
+      subtitle: 'Wissen was du hast, finden was du brauchst',
+      feature1: 'Garn, Nadeln & Zubehör katalogisieren',
+      feature2: 'Schnelles Barcode-Scannen',
+      feature3: 'Materialien mit Projekten verknüpfen',
+    },
+  },
 };

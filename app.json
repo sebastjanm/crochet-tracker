@@ -75,7 +75,9 @@
           "organization": "sebom"
         }
       ],
-      "@sentry/react-native"
+      "@sentry/react-native",
+      "expo-video",
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true

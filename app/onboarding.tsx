@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, Dimensions, Pressable } from 'react-native';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { router } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,7 +14,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Check } from 'lucide-react-native';
+import { Check, Volleyball, Box, Wrench } from 'lucide-react-native';
 import { Colors } from '@/constants/colors';
 import { useLanguage } from '@/providers/LanguageProvider';
 
@@ -22,9 +22,9 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Slide configuration - icons and translation keys
 const SLIDE_CONFIG = [
-  { icon: '🧶', key: 'slide1' },
-  { icon: '📋', key: 'slide2' },
-  { icon: '🎨', key: 'slide3' },
+  { Icon: Volleyball, key: 'slide1' },
+  { Icon: Box, key: 'slide2' },
+  { Icon: Wrench, key: 'slide3' },
 ] as const;
 
 const TOTAL_SLIDES = SLIDE_CONFIG.length;
@@ -74,8 +74,12 @@ export default function OnboardingScreen() {
   const player = useVideoPlayer(introVideo, (p) => {
     p.loop = true;
     p.muted = true;
-    p.play();
   });
+
+  // Ensure video plays after mount
+  useEffect(() => {
+    player.play();
+  }, [player]);
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
@@ -163,7 +167,7 @@ export default function OnboardingScreen() {
             <SlideCard
               key={config.key}
               slideKey={config.key}
-              icon={config.icon}
+              Icon={config.Icon}
               index={index}
               scrollX={scrollX}
               isLast={index === TOTAL_SLIDES - 1}
@@ -199,7 +203,7 @@ function FeatureItem({ text }: { text: string }) {
 // Individual slide card component
 function SlideCard({
   slideKey,
-  icon,
+  Icon,
   index,
   scrollX,
   isLast,
@@ -207,7 +211,7 @@ function SlideCard({
   t,
 }: {
   slideKey: 'slide1' | 'slide2' | 'slide3';
-  icon: string;
+  Icon: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
   index: number;
   scrollX: SharedValue<number>;
   isLast: boolean;
@@ -250,7 +254,9 @@ function SlideCard({
   return (
     <View style={styles.slideContainer}>
       <Animated.View style={[styles.cardContent, animatedStyle]}>
-        <Text style={styles.icon}>{icon}</Text>
+        <View style={styles.iconContainer}>
+          <Icon size={40} color={Colors.white} strokeWidth={2} />
+        </View>
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.subtitle}>{subtitle}</Text>
 
@@ -316,7 +322,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
   },
   header: {
     position: 'absolute',
@@ -361,8 +367,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.15)',
   },
-  icon: {
-    fontSize: 56,
+  iconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 16,
   },
   title: {

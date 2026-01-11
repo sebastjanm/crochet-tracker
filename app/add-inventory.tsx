@@ -320,8 +320,7 @@ export default function AddInventoryScreen(): React.JSX.Element {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ModalHeader
         title={t('inventory.addToInventory')}
-        showHelp={true}
-        helpSection="inventory"
+        showHelp={false}
       />
 
       <KeyboardAvoidingView
@@ -879,8 +878,8 @@ const styles = StyleSheet.create({
     }),
   },
   categoryButtonActive: {
-    backgroundColor: Colors.sage,
-    borderColor: Colors.sage,
+    backgroundColor: Colors.deepSage,
+    borderColor: Colors.deepSage,
     ...Platform.select({
       ...buttonShadow,
       default: {},
@@ -935,7 +934,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: Colors.sage,
+    backgroundColor: Colors.deepSage,
     alignItems: 'center',
     justifyContent: 'center',
   },

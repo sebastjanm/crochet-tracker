@@ -101,13 +101,9 @@ export default function RegisterScreen(): React.JSX.Element {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <YarnBallLogo size={48} color={Colors.terracotta} />
-            </View>
-            <Text style={styles.title}>Crochet Tracker</Text>
-            <Text style={styles.subtitle}>
-              {t('auth.registerSubtitle')}
-            </Text>
+            <YarnBallLogo size={isSmallDevice ? 80 : 100} color="#c59e4b" />
+            <Text style={styles.title}>CROCHET TRACKER</Text>
+            <Text style={styles.subtitle}>TRACK YOUR PROJECTS</Text>
           </View>
 
           <View style={styles.form}>
@@ -198,33 +194,23 @@ const styles = StyleSheet.create({
     marginBottom: isSmallDevice ? 32 : 48,
     width: '100%',
   },
-  logoContainer: {
-    width: isSmallDevice ? 80 : 100,
-    height: isSmallDevice ? 80 : 100,
-    borderRadius: isSmallDevice ? 40 : 50,
-    backgroundColor: Colors.beige,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: isSmallDevice ? 16 : 24,
-  },
   title: {
-    fontSize: isSmallDevice ? 32 : isTablet ? 48 : 42,
-    lineHeight: isSmallDevice ? 38 : isTablet ? 56 : 48,
+    fontSize: isSmallDevice ? 24 : isTablet ? 32 : 28,
     fontWeight: '300' as const,
-    letterSpacing: -0.5,
+    fontFamily: Platform.select({ ios: 'Avenir-Light', android: 'sans-serif-light', default: undefined }),
+    letterSpacing: 3,
     color: Colors.charcoal,
-    marginBottom: 12,
+    marginTop: 20,
+    marginBottom: 6,
     textAlign: 'center' as const,
   },
   subtitle: {
-    fontSize: isSmallDevice ? 14 : 16,
-    lineHeight: isSmallDevice ? 20 : 22,
-    fontWeight: '400' as const,
-    letterSpacing: 0.2,
+    fontSize: isSmallDevice ? 11 : 13,
+    fontWeight: '300' as const,
+    fontFamily: Platform.select({ ios: 'Avenir-Light', android: 'sans-serif-light', default: undefined }),
+    letterSpacing: 4,
     color: Colors.warmGray,
     textAlign: 'center' as const,
-    opacity: 0.8,
-    maxWidth: isTablet ? 480 : '100%',
   },
   form: {
     width: '100%',

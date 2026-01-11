@@ -86,6 +86,7 @@ export default function ProjectInspirationScreen() {
   if (!project) {
     return (
       <SafeAreaView style={styles.container} edges={['bottom']}>
+        <ModalHeader title={t('projects.inspiration')} />
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{t('projects.projectNotFound')}</Text>
           <Button
@@ -441,7 +442,6 @@ export default function ProjectInspirationScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ModalHeader title={t('projects.inspiration')} />
-
       {!isPro ? (
         <LockedProFeature
           title={t('projects.inspirationIsProFeature')}
@@ -736,7 +736,7 @@ export default function ProjectInspirationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.cream,
+    backgroundColor: Colors.white,
   },
   scrollContent: {
     padding: 16,

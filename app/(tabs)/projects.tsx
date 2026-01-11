@@ -329,7 +329,7 @@ export default function ProjectsScreen(): React.JSX.Element {
               accessibilityLabel="Help and support"
               accessibilityHint="Get help and view tutorials"
             >
-              <HelpCircle size={32} color={Colors.deepSage} strokeWidth={2} />
+              <HelpCircle size={32} color={Colors.white} strokeWidth={2} />
             </TouchableOpacity>
           </View>
         </View>
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   headerGreeting: {
-    color: Colors.warmGray,
+    color: Colors.white,
     fontWeight: '500' as const,
     fontSize: isSmallDevice ? 16 : isTablet ? 20 : 18,
     lineHeight: isSmallDevice ? 20 : isTablet ? 26 : 24,
@@ -507,7 +507,7 @@ const styles = StyleSheet.create({
   },
   headerUserName: {
     ...Typography.title2,
-    color: Colors.charcoal,
+    color: Colors.white,
     fontWeight: '700' as const,
     fontSize: isSmallDevice ? 20 : isTablet ? 26 : 22,
     lineHeight: isSmallDevice ? 26 : isTablet ? 32 : 28,

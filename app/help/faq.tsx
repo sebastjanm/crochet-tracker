@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, router } from 'expo-router';
+import { ChevronDown, ChevronRight } from 'lucide-react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { Colors } from '@/constants/colors';
 import { Card } from '@/components/Card';
+import { DarkHeader } from '@/components/DarkHeader';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { normalizeBorder } from '@/constants/pixelRatio';
 
@@ -160,25 +160,13 @@ export default function FAQ() {
 
   return (
     <View style={styles.backgroundContainer}>
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <View style={styles.headerWrapper}>
-          <View style={styles.headerRow}>
-            <TouchableOpacity
-              onPress={() => router.back()}
-              style={styles.headerButton}
-              accessibilityLabel={t('common.back')}
-              accessibilityRole="button"
-            >
-              <ChevronLeft size={24} color={Colors.deepSage} strokeWidth={2.5} />
-              <Text style={styles.backLabel}>{t('common.back')}</Text>
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.title}>{t('help.faqTitle')}</Text>
-          <Text style={styles.subtitle}>
-            {t('help.faqSubtitle')}
-          </Text>
-        </View>
-      </SafeAreaView>
+      <DarkHeader
+        title={t('help.faqTitle')}
+        subtitle={t('help.faqSubtitle')}
+        variant="back"
+        backLabel={t('common.back')}
+        accessibilityLabel={t('common.back')}
+      />
 
       <View style={styles.container}>
         <ScrollView
@@ -238,34 +226,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.headerBg,
   },
-  safeArea: {
-    backgroundColor: Colors.headerBg,
-  },
-  headerWrapper: {
-    backgroundColor: Colors.headerBg,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    paddingTop: 8,
-    paddingBottom: 12,
-  },
-  headerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: Colors.linen,
-  },
-  backLabel: {
-    fontSize: 16,
-    color: Colors.deepSage,
-    fontWeight: '600',
-  },
   container: {
     flex: 1,
     backgroundColor: Colors.beige,
@@ -275,17 +235,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: Colors.charcoal,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: Colors.warmGray,
-    lineHeight: 24,
   },
   categorySection: {
     marginBottom: 32,

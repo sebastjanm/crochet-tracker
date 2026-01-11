@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Dimensions, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Pressable, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { YarnBallLogo } from '@/components/YarnBallLogo';
@@ -21,11 +21,9 @@ export default function WelcomeScreen(): React.JSX.Element {
       <View style={styles.content}>
         {/* Logo and branding */}
         <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            <YarnBallLogo size={64} color={Colors.white} />
-          </View>
-          <Text style={styles.title}>Crochet Tracker</Text>
-          <Text style={styles.subtitle}>{t('welcome.subtitle')}</Text>
+          <YarnBallLogo size={isSmallDevice ? 80 : 100} color="#c59e4b" />
+          <Text style={styles.title}>CROCHET TRACKER</Text>
+          <Text style={styles.subtitle}>TRACK YOUR PROJECTS</Text>
         </View>
 
         {/* Action buttons */}
@@ -74,30 +72,23 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
   },
-  logoContainer: {
-    width: isSmallDevice ? 100 : 120,
-    height: isSmallDevice ? 100 : 120,
-    borderRadius: isSmallDevice ? 50 : 60,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
   title: {
-    fontSize: isSmallDevice ? 36 : isTablet ? 52 : 44,
+    fontSize: isSmallDevice ? 24 : isTablet ? 32 : 28,
     fontWeight: '300',
-    letterSpacing: -0.5,
+    fontFamily: Platform.select({ ios: 'Avenir-Light', android: 'sans-serif-light', default: undefined }),
+    letterSpacing: 3,
     color: Colors.white,
-    marginBottom: 12,
+    marginTop: 20,
+    marginBottom: 6,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: isSmallDevice ? 16 : 18,
-    lineHeight: isSmallDevice ? 24 : 28,
-    fontWeight: '400',
+    fontSize: isSmallDevice ? 11 : 13,
+    fontWeight: '300',
+    fontFamily: Platform.select({ ios: 'Avenir-Light', android: 'sans-serif-light', default: undefined }),
+    letterSpacing: 4,
     color: 'rgba(255, 255, 255, 0.85)',
     textAlign: 'center',
-    maxWidth: isTablet ? 400 : 300,
   },
   buttons: {
     gap: 16,

@@ -114,7 +114,7 @@ export default Sentry.wrap(function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="auto" />
+      <StatusBar style="light" />
       <QueryClientProvider client={queryClient}>
         <GestureHandlerRootView style={styles.container}>
           <LanguageProvider>
@@ -130,6 +130,7 @@ export default Sentry.wrap(function RootLayout() {
                         }}
                       >
                         <Stack.Screen name="index" />
+                        <Stack.Screen name="onboarding" />
                         <Stack.Screen name="(auth)" />
                         <Stack.Screen name="(tabs)" />
                         <Stack.Screen name="help" />
@@ -152,6 +153,14 @@ export default Sentry.wrap(function RootLayout() {
                         />
                         <Stack.Screen
                           name="edit-project/[id]"
+                          options={{ presentation: 'modal' }}
+                        />
+                        <Stack.Screen
+                          name="project-inspiration/[id]"
+                          options={{ presentation: 'modal' }}
+                        />
+                        <Stack.Screen
+                          name="project-journal/[id]"
                           options={{ presentation: 'modal' }}
                         />
                       </Stack>

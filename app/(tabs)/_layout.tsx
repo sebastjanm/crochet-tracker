@@ -26,8 +26,8 @@ export default function TabLayout(): React.JSX.Element | null {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors.deepTeal,
-        tabBarInactiveTintColor: Colors.warmGray,
+        tabBarActiveTintColor: Colors.headerBg,
+        tabBarInactiveTintColor: 'rgba(42, 71, 60, 0.4)',
         tabBarShowLabel: true,
         tabBarLabelStyle: {
           fontSize: 11,

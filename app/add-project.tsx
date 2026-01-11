@@ -411,8 +411,7 @@ export default function AddProjectScreen(): React.JSX.Element {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ModalHeader
         title={t('projects.newProject')}
-        showHelp={true}
-        helpSection="projects"
+        showHelp={false}
       />
 
       <KeyboardAvoidingView
@@ -518,7 +517,7 @@ export default function AddProjectScreen(): React.JSX.Element {
             >
               {[
                 { value: 'to-do' as ProjectStatus, label: t('projects.toDo'), icon: <Lightbulb size={16} color={status === 'to-do' ? Colors.white : '#FFB84D'} />, color: '#FFB84D' },
-                { value: 'in-progress' as ProjectStatus, label: t('projects.inProgress'), icon: <Clock size={16} color={status === 'in-progress' ? Colors.white : '#2C7873'} />, color: '#2C7873' },
+                { value: 'in-progress' as ProjectStatus, label: t('projects.inProgress'), icon: <Clock size={16} color={status === 'in-progress' ? Colors.white : '#3d6757'} />, color: '#3d6757' },
                 { value: 'on-hold' as ProjectStatus, label: t('projects.onHold'), icon: <PauseCircle size={16} color={status === 'on-hold' ? Colors.white : '#9C27B0'} />, color: '#9C27B0' },
                 { value: 'completed' as ProjectStatus, label: t('projects.completed'), icon: <CheckCircle size={16} color={status === 'completed' ? Colors.white : '#4CAF50'} />, color: '#4CAF50' },
                 { value: 'frogged' as ProjectStatus, label: t('projects.frogged'), icon: <RotateCcw size={16} color={status === 'frogged' ? Colors.white : '#FF6B6B'} />, color: '#FF6B6B' },

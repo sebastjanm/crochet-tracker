@@ -115,6 +115,7 @@ export default function ProjectJournalScreen() {
   if (!project) {
     return (
       <SafeAreaView style={styles.container} edges={['bottom']}>
+        <ModalHeader title={t('projects.projectJournal')} />
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{t('projects.projectNotFound')}</Text>
           <Button
@@ -198,7 +199,6 @@ export default function ProjectJournalScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ModalHeader title={t('projects.projectJournal')} />
-
       {!isPro ? (
         <LockedProFeature
           title={t('projects.journalIsProFeature')}
@@ -658,7 +658,7 @@ const modalStyles = StyleSheet.create({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.cream,
+    backgroundColor: Colors.white,
   },
   keyboardView: {
     flex: 1,

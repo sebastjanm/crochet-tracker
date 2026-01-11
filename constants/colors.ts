@@ -8,7 +8,7 @@ export const Colors = {
   linen: '#F5F3EF',              // Item cards, list items
   beige: '#efece5',              // Main content/body background
   filterBar: '#e5e1d6',          // Filter section background
-  headerBg: '#c5c0b5',           // Header/SafeArea background
+  headerBg: '#2a473c',           // Header/SafeArea background (dark green)
 
   // ===========================================
   // TEXT & NEUTRALS
@@ -22,7 +22,7 @@ export const Colors = {
   // PRIMARY ACTIONS - Sage palette
   // ===========================================
   sage: '#8B9A7B',               // Primary buttons, FAB
-  deepSage: '#6B7A5C',           // Active/pressed states, borders
+  deepSage: '#3d6757',           // Active/pressed states, borders
 
   // ===========================================
   // SECONDARY ACTIONS - Teal palette
@@ -42,7 +42,7 @@ export const Colors = {
   // FILTER CHIP COLORS
   // ===========================================
   filterToDo: '#FFB84D',         // To-do status (amber)
-  filterInProgress: '#2C7873',   // In-progress status (teal)
+  filterInProgress: '#3d6757',   // In-progress status (dark green)
   filterOnHold: '#9C27B0',       // On-hold status (purple)
   filterCompleted: '#4CAF50',    // Completed status (green)
   filterFrogged: '#FF6B6B',      // Frogged status (coral)

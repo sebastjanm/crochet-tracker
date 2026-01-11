@@ -53,7 +53,7 @@ export function UniversalHeader({
             style={styles.headerButton}
             activeOpacity={0.7}
           >
-            <ChevronLeft size={24} color={Colors.deepSage} strokeWidth={2.5} />
+            <ChevronLeft size={24} color={Colors.white} strokeWidth={2.5} />
             {backLabel && (
               <Text style={styles.backLabel}>{backLabel}</Text>
             )}
@@ -70,7 +70,7 @@ export function UniversalHeader({
             style={styles.helpButton}
             activeOpacity={0.7}
           >
-            <HelpCircle size={32} color={Colors.deepSage} strokeWidth={2} />
+            <HelpCircle size={32} color={Colors.white} strokeWidth={2} />
           </TouchableOpacity>
         )}
       </View>
@@ -99,11 +99,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginRight: 8,
     borderRadius: 20,
-    backgroundColor: Colors.linen,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
   },
   backLabel: {
     ...Typography.body,
-    color: Colors.deepSage,
+    color: Colors.white,
     fontWeight: '600' as const,
     fontSize: 16,
   },

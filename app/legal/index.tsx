@@ -6,10 +6,10 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { ChevronRight, FileText, Shield, Building, X } from 'lucide-react-native';
+import { ChevronRight, FileText, Shield, Building } from 'lucide-react-native';
 import { Card } from '@/components/Card';
+import { DarkHeader } from '@/components/DarkHeader';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
@@ -44,22 +44,12 @@ export default function LegalScreen() {
 
   return (
     <View style={styles.backgroundContainer}>
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <View style={styles.headerWrapper}>
-          <View style={styles.headerRow}>
-            <TouchableOpacity
-              onPress={() => router.back()}
-              style={styles.closeButton}
-              accessibilityLabel={t('common.close')}
-              accessibilityRole="button"
-            >
-              <X size={24} color={Colors.charcoal} />
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.title}>{t('legal.title')}</Text>
-          <Text style={styles.subtitle}>{t('legal.description')}</Text>
-        </View>
-      </SafeAreaView>
+      <DarkHeader
+        title={t('legal.title')}
+        subtitle={t('legal.description')}
+        variant="close"
+        accessibilityLabel={t('common.close')}
+      />
 
       <View style={styles.container}>
         <ScrollView
@@ -99,39 +89,6 @@ const styles = StyleSheet.create({
   backgroundContainer: {
     flex: 1,
     backgroundColor: Colors.headerBg,
-  },
-  safeArea: {
-    backgroundColor: Colors.headerBg,
-  },
-  headerWrapper: {
-    backgroundColor: Colors.headerBg,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    paddingTop: 8,
-    paddingBottom: 12,
-  },
-  closeButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.cream,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700' as const,
-    color: Colors.charcoal,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: Colors.warmGray,
-    lineHeight: 24,
   },
   container: {
     flex: 1,

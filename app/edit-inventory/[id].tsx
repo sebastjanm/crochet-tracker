@@ -441,8 +441,7 @@ export default function EditInventoryScreen(): React.JSX.Element {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ModalHeader
         title={t('inventory.editItem')}
-        showHelp={true}
-        helpSection="inventory"
+        showHelp={false}
       />
 
       <KeyboardAvoidingView
@@ -1010,7 +1009,7 @@ const styles = StyleSheet.create({
     }),
   },
   categoryButtonActive: {
-    backgroundColor: Colors.sage,
+    backgroundColor: Colors.deepSage,
     borderColor: Colors.deepSage,
     borderWidth: normalizeBorder(2),
     ...Platform.select({
@@ -1066,7 +1065,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: Colors.sage,
+    backgroundColor: Colors.deepSage,
     alignItems: 'center',
     justifyContent: 'center',
   },

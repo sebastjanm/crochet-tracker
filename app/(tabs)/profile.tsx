@@ -651,7 +651,7 @@ export default function ProfileScreen(): React.JSX.Element {
               accessibilityLabel="Help and support"
               accessibilityHint="Get help and view tutorials"
             >
-              <HelpCircle size={32} color={Colors.deepSage} strokeWidth={2} />
+              <HelpCircle size={32} color={Colors.white} strokeWidth={2} />
             </TouchableOpacity>
           </View>
         </View>
@@ -982,7 +982,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...Typography.title1,
-    color: Colors.charcoal,
+    color: Colors.white,
     fontWeight: '700' as const,
     fontSize: isSmallDevice ? 24 : isTablet ? 32 : 28,
     lineHeight: isSmallDevice ? 30 : isTablet ? 38 : 34,
@@ -990,7 +990,7 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {
     fontSize: isSmallDevice ? 13 : 14,
-    color: Colors.warmGray,
+    color: Colors.white,
     opacity: 0.9,
     lineHeight: 18,
   },

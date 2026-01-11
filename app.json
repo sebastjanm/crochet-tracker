@@ -8,11 +8,6 @@
     "scheme": "artfulspace",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/images/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#2a473c"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.sebastjanm-crochet-tracker",
@@ -50,10 +45,9 @@
         {
           "backgroundColor": "#2a473c",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
+          "imageWidth": 470,
           "dark": {
-            "backgroundColor": "#1A1A1A",
+            "backgroundColor": "#000000",
             "image": "./assets/images/splash-icon-dark.png"
           }
         }

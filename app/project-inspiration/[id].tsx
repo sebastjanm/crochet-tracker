@@ -676,7 +676,6 @@ export default function ProjectInspirationScreen() {
                 <TouchableOpacity
                   style={[
                     styles.sheetSaveButton,
-                    styles.sheetSaveButtonSage,
                     selectedImages.length === 0 && styles.sheetSaveButtonDisabled,
                   ]}
                   onPress={handleSaveEditedImages}
@@ -779,7 +778,7 @@ const styles = StyleSheet.create({
     }),
   },
   linkButton: {
-    backgroundColor: Colors.teal,
+    backgroundColor: Colors.deepSage,
   },
   imageButton: {
     backgroundColor: Colors.sage,
@@ -995,14 +994,11 @@ const styles = StyleSheet.create({
   },
   sheetSaveButton: {
     flex: 1,
-    backgroundColor: Colors.teal,
+    backgroundColor: Colors.deepSage,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  sheetSaveButtonSage: {
-    backgroundColor: Colors.sage,
   },
   sheetSaveButtonDisabled: {
     opacity: 0.5,

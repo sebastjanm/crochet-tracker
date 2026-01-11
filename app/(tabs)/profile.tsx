@@ -44,6 +44,7 @@ import { Typography } from '@/constants/typography';
 import { normalizeBorder } from '@/constants/pixelRatio';
 import { ACCESSIBLE_COLORS } from '@/constants/accessibility';
 import { loadAllMockData, clearAllData } from '@/scripts/loadMockData';
+import { resetOnboarding } from '@/app/onboarding';
 
 const { width } = Dimensions.get('window');
 const isSmallDevice = width < 375;
@@ -524,6 +525,14 @@ export default function ProfileScreen(): React.JSX.Element {
   };
 
   /**
+   * Debug: Reset onboarding to show it again on next app launch
+   */
+  const handleResetOnboarding = async () => {
+    await resetOnboarding();
+    showToast('Onboarding reset. Restart app to see it.', 'success');
+  };
+
+  /**
    * Delete Account - Required for App Store compliance.
    * Permanently deletes all user data and signs out.
    */
@@ -873,6 +882,21 @@ export default function ProfileScreen(): React.JSX.Element {
                 <Cloud size={20} color={Colors.sage} />
                 <Text style={styles.debugLabel}>Image Queue Status</Text>
                 <Text style={styles.debugDescription}>Debug image sync</Text>
+              </TouchableOpacity>
+
+              <View style={styles.menuDivider} />
+
+              <TouchableOpacity
+                style={styles.debugItem}
+                onPress={handleResetOnboarding}
+                activeOpacity={0.7}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Reset onboarding"
+              >
+                <RefreshCw size={20} color={Colors.sage} />
+                <Text style={styles.debugLabel}>Reset Onboarding</Text>
+                <Text style={styles.debugDescription}>Restart to see</Text>
               </TouchableOpacity>
 
               <View style={styles.menuDivider} />

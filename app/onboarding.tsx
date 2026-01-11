@@ -95,7 +95,7 @@ export default function OnboardingScreen() {
   // Navigate after fade animation completes
   const navigateToLogin = async () => {
     await markOnboardingComplete();
-    router.replace('/(auth)/welcome');
+    router.replace('/(auth)/login');
   };
 
   const handleSkip = () => {
@@ -318,7 +318,7 @@ function DotIndicator({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: Colors.black,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
   getStartedText: {
     fontSize: 17,
     fontWeight: '600',
-    color: Colors.charcoal,
+    color: Colors.deepSage,
   },
   dotsContainer: {
     position: 'absolute',

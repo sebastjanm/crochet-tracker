@@ -10,8 +10,8 @@
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/splash-icon.png",
-      "resizeMode": "cover",
-      "backgroundColor": "#E891A0"
+      "resizeMode": "contain",
+      "backgroundColor": "#2a473c"
     },
     "ios": {
       "supportsTablet": true,
@@ -30,7 +30,7 @@
       "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#2a473c"
       },
       "package": "app.sebastjanm.crochettracker",
       "permissions": [

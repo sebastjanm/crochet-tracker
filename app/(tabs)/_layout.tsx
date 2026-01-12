@@ -26,6 +26,7 @@ export default function TabLayout(): React.JSX.Element | null {
   return (
     <Tabs
       screenOptions={{
+        freezeOnBlur: false, // Keep tabs mounted to prevent re-render jumps
         tabBarActiveTintColor: Colors.headerBg,
         tabBarInactiveTintColor: 'rgba(42, 71, 60, 0.4)',
         tabBarShowLabel: true,

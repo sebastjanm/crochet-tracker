@@ -101,7 +101,8 @@ export default Sentry.wrap(function RootLayout() {
         if (Platform.OS === 'android') {
           await setButtonStyleAsync('dark');
         }
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Give stores time to warm up from AsyncStorage before showing UI
+        await new Promise(resolve => setTimeout(resolve, 300));
       } catch (error) {
         if (__DEV__) console.warn('Error during app initialization:', error);
       } finally {

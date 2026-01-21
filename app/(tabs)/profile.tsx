@@ -16,6 +16,7 @@ import {
   ChevronRight,
   Scissors,
   HelpCircle,
+  Info,
   Globe,
   FileText,
   DollarSign,
@@ -632,7 +633,7 @@ export default function ProfileScreen(): React.JSX.Element {
       onPress: () => router.push('/legal'),
     },
     {
-      icon: <HelpCircle size={20} color={Colors.charcoal} />,
+      icon: <Info size={20} color={Colors.charcoal} />,
       label: t('profile.about'),
       onPress: () => router.push('/about' as Parameters<typeof router.push>[0]),
     },
@@ -1013,10 +1014,12 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   headerSubtitle: {
-    fontSize: isSmallDevice ? 13 : 14,
+    ...Typography.body,
     color: Colors.white,
+    fontSize: isSmallDevice ? 13 : 14,
+    fontWeight: '500' as const,
+    lineHeight: isSmallDevice ? 17 : 18,
     opacity: 0.9,
-    lineHeight: 18,
   },
   helpButton: {
     padding: 8,

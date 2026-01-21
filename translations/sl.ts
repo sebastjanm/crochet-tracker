@@ -883,6 +883,11 @@ export default {
     videosNavTitle: 'Videi',
     videosTitle: 'Hitri video priročniki',
     videosSubtitle: 'Oglejte si kratke priročnike za hitro učenje funkcij aplikacije',
+    videoGuide: 'Video priročnik',
+    videoNotAvailable: 'Video ni na voljo',
+    videoErrorHint: 'Ta video morda ni na voljo ali je omejen. Poskusite znova pozneje.',
+    openingVideo: 'Odpiranje videa...',
+    watchOnYouTube: 'Poglej na YouTube',
     // Categories
     gettingStarted: 'Začetek',
     projects: 'Projekti',

@@ -884,6 +884,11 @@ export default {
     videosNavTitle: 'Videos',
     videosTitle: 'Video Guides',
     videosSubtitle: 'Watch short tutorials to learn the app features quickly',
+    videoGuide: 'Video Guide',
+    videoNotAvailable: 'Video not available',
+    videoErrorHint: 'This video may be unavailable or restricted. Try again later.',
+    openingVideo: 'Opening video...',
+    watchOnYouTube: 'Watch on YouTube',
     // Categories
     gettingStarted: 'Getting Started',
     projects: 'Projects',

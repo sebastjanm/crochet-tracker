@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
   },
   itemImage: {
     width: '100%',
-    height: 140,
+    height: 160,
   },
   placeholderImage: {
     backgroundColor: Colors.beige,
@@ -366,14 +366,14 @@ const styles = StyleSheet.create({
     lineHeight: 14,
   },
   itemInfo: {
-    padding: 10,
+    padding: 12,
   },
   itemTitle: {
     ...Typography.body,
     color: Colors.charcoal,
     fontWeight: '600' as const,
-    fontSize: 14,
-    lineHeight: 18,
+    fontSize: 15,
+    lineHeight: 20,
     marginBottom: 2,
   },
   itemBrand: {

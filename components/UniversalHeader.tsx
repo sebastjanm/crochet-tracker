@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.title2,
-    color: Colors.charcoal,
+    color: Colors.white,
     fontWeight: '600' as const,
     fontSize: 20,
     flex: 1,

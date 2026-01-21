@@ -9,5 +9,5 @@ export const openai = createOpenAI({
 
 // Default models
 export const MODELS = {
-  chat: 'gpt-5',
+  chat: 'gpt-5.2-chat-latest',
 } as const;

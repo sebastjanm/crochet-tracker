@@ -138,7 +138,10 @@ export default Sentry.wrap(function RootLayout() {
                         <Stack.Screen name="legal" />
                         <Stack.Screen name="about" />
                         <Stack.Screen name="project/[id]" />
-                        <Stack.Screen name="video-player" />
+                        <Stack.Screen
+                          name="video-player"
+                          options={{ presentation: 'modal' }}
+                        />
                         <Stack.Screen name="yarnai" />
                         <Stack.Screen
                           name="add-inventory"

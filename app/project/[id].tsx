@@ -218,7 +218,6 @@ export default function ProjectDetailScreen(): React.JSX.Element {
             showBack={true}
             backLabel={t('common.back')}
             showHelp={true}
-            helpSection="projects"
           />
         </View>
       </SafeAreaView>

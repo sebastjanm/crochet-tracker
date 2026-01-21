@@ -129,7 +129,6 @@ export default function InventoryDetailScreen(): React.JSX.Element {
             showBack={true}
             backLabel={t('common.back')}
             showHelp={true}
-            helpSection="inventory"
           />
         </View>
       </SafeAreaView>

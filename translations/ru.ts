@@ -1178,8 +1178,10 @@ export default {
     viewJourney: 'Посмотреть мой путь',
     // Opening Story
     storyAboutToBegin: 'Ваша творческая история вот-вот начнётся...',
+    storyBegan: 'Ваша история началась:',
     storyBeganWith: 'Ваша творческая история началась {{date}}',
     withFirstProject: 'с "{{projectName}}"',
+    withPrefix: 'с',
     stillInProgress: '- ещё в работе!',
     // Time Investment (1 час, 2-4 часа, 5+ часов)
     hoursWithYarn: '{{hours}} часов с пряжей в руках',
@@ -1200,6 +1202,7 @@ export default {
     },
     thatsAbout: "это примерно {{comparison}}!",
     // Collection
+    timeInvestment: 'Вложенное время',
     yourCollection: 'Ваша коллекция',
     yarnWaiting: '{{count}} мотков ждут, чтобы стать чем-то прекрасным',
     yarnFirstWaiting: 'Ваша первая пряжа ждёт, чтобы её нашли',
@@ -1218,11 +1221,20 @@ export default {
     firstAwaits: 'Ваше первое готовое изделие ждёт',
     inProgressNow: '{{count}} сейчас в работе',
     oneInProgress: '1 сейчас в работе',
+    onHold: '{{count}} на паузе',
+    toDo: '{{count}} ждут начала',
     twoInProgress: '2 сейчас в работе',
     readyToStart: 'Готовы начать что-то новое?',
     // Fun Fact
     funFact: 'Интересный факт',
     yarnCouldStretch: 'Ваша пряжа могла бы растянуться на',
+    usedYarn: 'В проектах',
+    unusedYarn: 'Ждёт в коллекции',
+    totalYarnValue: 'Общая стоимость',
+    investment: 'ИНВЕСТИЦИИ',
+    investedInCraft: 'вложено в ваше ремесло',
+    yarnValue: 'Пряжа',
+    hookValue: 'Крючки',
     meters: '{{count}} метров',
     metersOne: '1 метр',
     metersTwo: '{{count}} метра',
@@ -1232,11 +1244,7 @@ export default {
     kilometersTwo: '{{count}} километра',
     kilometersFew: '{{count}} километра',
     comparison: {
-      footballField: 'через футбольное поле',
-      statueOfLiberty: 'выше Статуи Свободы',
-      eiffelTower: 'выше Эйфелевой башни',
-      runningTrack: '{{count}} кругов вокруг беговой дорожки',
-      yarnBomb: 'можно обвязать целую улицу!',
+      footballField: 'Это {{count}} футбольных полей! ⚽',
     },
     journeyBeginning: 'Ваше путешествие с пряжей только начинается!',
     // Stat labels (short, for cards)

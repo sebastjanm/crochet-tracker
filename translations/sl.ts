@@ -1178,13 +1178,15 @@ export default {
     },
   },
   journey: {
-    title: 'Moja pot',
+    title: 'Moja ustvarjalnica',
     previewTitle: 'Vaša ustvarjalna pot',
     viewJourney: 'Poglej mojo pot',
     // Opening Story
     storyAboutToBegin: 'Vaša ustvarjalna zgodba se bo kmalu začela...',
-    storyBeganWith: 'Vaša ustvarjalna zgodba se je začela {{date}}',
+    storyBegan: 'Tvoje ustarjanje se je začelo:',
+    storyBeganWith: 'Tvoja ustvarjalna zgodba se je začela: {{date}}',
     withFirstProject: 'z "{{projectName}}"',
+    withPrefix: 'z',
     stillInProgress: '- še vedno v delu!',
     // Time Investment (1 ura, 2 uri, 3-4 ure, 5+ ur)
     hoursWithYarn: '{{hours}} ur s prejo v rokah',
@@ -1205,6 +1207,7 @@ export default {
     },
     thatsAbout: "to je približno {{comparison}}!",
     // Collection
+    timeInvestment: 'Vložen čas',
     yourCollection: 'Moja zbirka',
     yarnWaiting: '{{count}} klopk čaka, da postane nekaj lepega',
     yarnFirstWaiting: 'Moja prva preja čaka, da jo najdete',
@@ -1223,11 +1226,20 @@ export default {
     firstAwaits: 'Vaš prvi dokončan kos čaka',
     inProgressNow: '{{count}} trenutno v delu',
     oneInProgress: '1 trenutno v delu',
+    onHold: '{{count}} na čakanju',
+    toDo: '{{count}} čaka na začetek',
     twoInProgress: '2 trenutno v delu',
     readyToStart: 'Pripravljeni začeti nekaj novega?',
     // Fun Fact
     funFact: 'Zanimivost',
     yarnCouldStretch: 'Vaša preja bi se lahko raztegnila',
+    usedYarn: 'V projektih',
+    unusedYarn: 'Čaka v zbirki',
+    totalYarnValue: 'Skupna vrednost',
+    investment: 'INVESTICIJA',
+    investedInCraft: 'vloženo v vašo ustvarjalnost',
+    yarnValue: 'Preja',
+    hookValue: 'Kvačke',
     // Meters: 1 meter, 2 metra, 3-4 metre, 5+ metrov
     meters: '{{count}} metrov',
     metersOne: '1 meter',
@@ -1239,11 +1251,7 @@ export default {
     kilometersTwo: '2 kilometra',
     kilometersFew: '{{count}} kilometre',
     comparison: {
-      footballField: 'čez nogometno igrišče',
-      statueOfLiberty: 'višje od Kipa svobode',
-      eiffelTower: 'višje od Eifflovega stolpa',
-      runningTrack: '{{count}} krogov okoli tekaške steze',
-      yarnBomb: 'lahko bi ovili celo ulico!',
+      footballField: 'To je {{count}} nogometnih igrišč! ⚽',
     },
     journeyBeginning: 'Vaša preja-pot se šele začenja!',
     // Stat labels (short, for cards)

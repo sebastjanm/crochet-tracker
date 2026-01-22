@@ -30,10 +30,23 @@ export interface JourneyStats {
   yarnCount: number;
   hookCount: number;
   totalYarnMeters: number;
+  usedYarnMeters: number;
+  unusedYarnMeters: number;
+  // Yarn value
+  totalYarnValue: number;
+  usedYarnValue: number;
+  unusedYarnValue: number;
+  // Hooks value
+  totalHookValue: number;
+  // Total inventory value (yarn + hooks)
+  totalInventoryValue: number;
+  inventoryCurrency: string | null;
 
   // Creations
   completedCount: number;
   inProgressCount: number;
+  onHoldCount: number;
+  toDoCount: number;
 
   // Loading state
   isLoading: boolean;
@@ -107,6 +120,102 @@ function calculateTotalYarnMeters(items: InventoryItem[]): number {
 }
 
 /**
+ * Calculate used vs unused yarn meters and value
+ * Used = yarn linked to projects via yarnMaterials
+ * Unused = remaining yarn in inventory
+ */
+function calculateYarnUsage(
+  items: InventoryItem[],
+  projects: Project[]
+): {
+  usedMeters: number;
+  unusedMeters: number;
+  usedValue: number;
+  unusedValue: number;
+  totalValue: number;
+  currency: string | null;
+} {
+  const yarnItems = items.filter(
+    (item) => item.category === 'yarn'
+  );
+
+  // Build a map of yarn ID -> total skeins used in projects
+  const usedSkeinsMap = new Map<string, number>();
+
+  for (const project of projects) {
+    if (project.yarnMaterials) {
+      for (const material of project.yarnMaterials) {
+        const current = usedSkeinsMap.get(material.itemId) ?? 0;
+        usedSkeinsMap.set(material.itemId, current + material.quantity);
+      }
+    }
+  }
+
+  let usedMeters = 0;
+  let unusedMeters = 0;
+  let usedValue = 0;
+  let unusedValue = 0;
+  let totalValue = 0;
+  let detectedCurrency: string | null = null;
+
+  for (const item of yarnItems) {
+    const metersPerSkein = item.yarnDetails?.meters ?? 0;
+    const pricePerSkein = item.yarnDetails?.purchasePrice ?? 0;
+    const totalSkeins = item.quantity ?? 1;
+    const usedSkeins = Math.min(usedSkeinsMap.get(item.id) ?? 0, totalSkeins);
+    const unusedSkeins = Math.max(0, totalSkeins - usedSkeins);
+
+    // Meters
+    usedMeters += usedSkeins * metersPerSkein;
+    unusedMeters += unusedSkeins * metersPerSkein;
+
+    // Value
+    usedValue += usedSkeins * pricePerSkein;
+    unusedValue += unusedSkeins * pricePerSkein;
+    totalValue += totalSkeins * pricePerSkein;
+
+    // Detect currency (use first found)
+    if (!detectedCurrency && item.yarnDetails?.currency) {
+      detectedCurrency = item.yarnDetails.currency;
+    }
+  }
+
+  return {
+    usedMeters,
+    unusedMeters,
+    usedValue,
+    unusedValue,
+    totalValue,
+    currency: detectedCurrency,
+  };
+}
+
+/**
+ * Calculate total hook value from inventory
+ */
+function calculateHookValue(items: InventoryItem[]): {
+  totalValue: number;
+  currency: string | null;
+} {
+  let totalValue = 0;
+  let detectedCurrency: string | null = null;
+
+  for (const item of items) {
+    if (item.category === 'hook' && item.hookDetails?.purchasePrice) {
+      const price = item.hookDetails.purchasePrice;
+      const quantity = item.quantity ?? 1;
+      totalValue += price * quantity;
+
+      if (!detectedCurrency && item.hookDetails.currency) {
+        detectedCurrency = item.hookDetails.currency;
+      }
+    }
+  }
+
+  return { totalValue, currency: detectedCurrency };
+}
+
+/**
  * Calculate total minutes from all time sessions across all projects
  */
 function calculateTotalMinutesFromProjects(
@@ -126,7 +235,7 @@ function calculateTotalMinutesFromProjects(
  * Hook to aggregate journey statistics from all data providers
  */
 export function useJourneyStats(): JourneyStats {
-  const { projects, completedCount, inProgressCount, isLoading: projectsLoading } = useProjects();
+  const { projects, completedCount, inProgressCount, onHoldCount, toDoCount, isLoading: projectsLoading } = useProjects();
   const { items, yarnCount, hookCount, isLoading: inventoryLoading } = useInventory();
   const { getTotalMinutes, isLoading: sessionsLoading } = useTimeSessions();
 
@@ -142,8 +251,23 @@ export function useJourneyStats(): JourneyStats {
     const totalMinutes = calculateTotalMinutesFromProjects(getTotalMinutes, projects);
     const totalHours = Math.round(totalMinutes / 60);
 
-    // Calculate yarn meters
+    // Calculate yarn meters and value
     const totalYarnMeters = calculateTotalYarnMeters(items);
+    const {
+      usedMeters: usedYarnMeters,
+      unusedMeters: unusedYarnMeters,
+      usedValue: usedYarnValue,
+      unusedValue: unusedYarnValue,
+      totalValue: totalYarnValue,
+      currency: yarnCurrency,
+    } = calculateYarnUsage(items, projects);
+
+    // Calculate hook value
+    const { totalValue: totalHookValue, currency: hookCurrency } = calculateHookValue(items);
+
+    // Total inventory value
+    const totalInventoryValue = totalYarnValue + totalHookValue;
+    const inventoryCurrency = yarnCurrency || hookCurrency;
 
     // Determine if user has any data
     const hasAnyData = projects.length > 0 || items.length > 0;
@@ -162,10 +286,23 @@ export function useJourneyStats(): JourneyStats {
       yarnCount,
       hookCount,
       totalYarnMeters,
+      usedYarnMeters,
+      unusedYarnMeters,
+      // Yarn value
+      totalYarnValue,
+      usedYarnValue,
+      unusedYarnValue,
+      // Hook value
+      totalHookValue,
+      // Total inventory
+      totalInventoryValue,
+      inventoryCurrency,
 
       // Creations
       completedCount,
       inProgressCount,
+      onHoldCount,
+      toDoCount,
 
       // Loading state
       isLoading,
@@ -178,6 +315,8 @@ export function useJourneyStats(): JourneyStats {
     items,
     completedCount,
     inProgressCount,
+    onHoldCount,
+    toDoCount,
     yarnCount,
     hookCount,
     getTotalMinutes,
@@ -226,33 +365,21 @@ export function getTimeComparison(hours: number): {
 /**
  * Get fun distance comparison based on total meters
  */
-export type DistanceComparison =
-  | 'footballField'
-  | 'statueOfLiberty'
-  | 'eiffelTower'
-  | 'runningTrack'
-  | 'yarnBomb';
+export type DistanceComparison = 'footballField';
 
 export function getDistanceComparison(meters: number): {
   type: DistanceComparison;
-  count?: number;
+  count: number;
 } | null {
   if (meters < 10) {
     return null; // Too little to compare
   }
-  if (meters <= 100) {
-    return { type: 'footballField' };
+  // Football field = ~100m
+  const footballFields = Math.round(meters / 100);
+  if (footballFields >= 1) {
+    return { type: 'footballField', count: footballFields };
   }
-  if (meters <= 300) {
-    return { type: 'statueOfLiberty' };
-  }
-  if (meters <= 500) {
-    return { type: 'eiffelTower' };
-  }
-  if (meters <= 1000) {
-    return { type: 'runningTrack', count: Math.floor(meters / 400) };
-  }
-  return { type: 'yarnBomb', count: Math.round(meters / 1000) };
+  return null;
 }
 
 /**

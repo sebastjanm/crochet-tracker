@@ -1178,8 +1178,10 @@ export default {
     viewJourney: 'Meine Reise ansehen',
     // Opening Story
     storyAboutToBegin: 'Deine Handarbeits-Geschichte beginnt bald...',
+    storyBegan: 'Deine Geschichte begann:',
     storyBeganWith: 'Deine Handarbeits-Geschichte begann {{date}}',
     withFirstProject: 'mit "{{projectName}}"',
+    withPrefix: 'mit',
     stillInProgress: '- noch in Arbeit!',
     // Time Investment
     hoursWithYarn: '{{hours}} Stunden mit Garn in der Hand',
@@ -1200,6 +1202,7 @@ export default {
     },
     thatsAbout: "das ist etwa {{comparison}}!",
     // Collection
+    timeInvestment: 'Investierte Zeit',
     yourCollection: 'Deine Sammlung',
     yarnWaiting: '{{count}} Knäuel warten darauf, etwas Schönes zu werden',
     yarnFirstWaiting: 'Dein erstes Garn wartet darauf, gefunden zu werden',
@@ -1218,11 +1221,20 @@ export default {
     firstAwaits: 'Dein erstes fertiges Stück wartet',
     inProgressNow: '{{count}} gerade in Arbeit',
     oneInProgress: '1 gerade in Arbeit',
+    onHold: '{{count}} auf Pause',
+    toDo: '{{count}} warten auf Start',
     twoInProgress: '2 gerade in Arbeit',
     readyToStart: 'Bereit, etwas Neues zu beginnen?',
     // Fun Fact
     funFact: 'Wusstest du?',
     yarnCouldStretch: 'Dein Garn könnte sich erstrecken über',
+    usedYarn: 'In Projekten',
+    unusedYarn: 'Wartet im Vorrat',
+    totalYarnValue: 'Gesamtwert',
+    investment: 'INVESTITION',
+    investedInCraft: 'in dein Handwerk investiert',
+    yarnValue: 'Garn',
+    hookValue: 'Häkelnadeln',
     meters: '{{count}} Meter',
     metersOne: '1 Meter',
     metersTwo: '{{count}} Meter',
@@ -1232,11 +1244,7 @@ export default {
     kilometersTwo: '{{count}} Kilometer',
     kilometersFew: '{{count}} Kilometer',
     comparison: {
-      footballField: 'ein Fußballfeld',
-      statueOfLiberty: 'höher als die Freiheitsstatue',
-      eiffelTower: 'höher als der Eiffelturm',
-      runningTrack: '{{count}} Runden um eine Laufbahn',
-      yarnBomb: 'du könntest eine ganze Straße einstricken!',
+      footballField: 'Das sind {{count}} Fußballfelder! ⚽',
     },
     journeyBeginning: 'Deine Garn-Reise beginnt gerade erst!',
     // Stat labels (short, for cards)

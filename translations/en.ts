@@ -1184,8 +1184,10 @@ export default {
     viewJourney: 'View My Journey',
     // Opening Story
     storyAboutToBegin: 'Your craft story is about to begin...',
+    storyBegan: 'Your story began:',
     storyBeganWith: 'Your craft story began in {{date}}',
     withFirstProject: 'with "{{projectName}}"',
+    withPrefix: 'with',
     stillInProgress: '- still in progress!',
     // Time Investment
     hoursWithYarn: '{{hours}} hours with yarn in hand',
@@ -1206,6 +1208,7 @@ export default {
     },
     thatsAbout: "that's {{comparison}}!",
     // Collection
+    timeInvestment: 'Time invested',
     yourCollection: 'Your collection',
     yarnWaiting: '{{count}} skeins waiting to become something beautiful',
     yarnFirstWaiting: 'Your first yarn is waiting to be found',
@@ -1224,11 +1227,20 @@ export default {
     firstAwaits: 'Your first finished piece awaits',
     inProgressNow: '{{count}} in progress right now',
     oneInProgress: '1 in progress right now',
+    onHold: '{{count}} on hold',
+    toDo: '{{count}} waiting to start',
     twoInProgress: '2 in progress right now',
     readyToStart: 'Ready to start something new?',
     // Fun Fact
     funFact: 'Fun fact',
     yarnCouldStretch: 'Your yarn could stretch',
+    usedYarn: 'In projects',
+    unusedYarn: 'Waiting in stash',
+    totalYarnValue: 'Total value',
+    investment: 'INVESTMENT',
+    investedInCraft: 'invested in your craft',
+    yarnValue: 'Yarn',
+    hookValue: 'Hooks',
     meters: '{{count}} meters',
     metersOne: '1 meter',
     metersTwo: '{{count}} meters',
@@ -1238,11 +1250,7 @@ export default {
     kilometersTwo: '{{count}} kilometers',
     kilometersFew: '{{count}} kilometers',
     comparison: {
-      footballField: 'across a football field',
-      statueOfLiberty: 'taller than the Statue of Liberty',
-      eiffelTower: 'taller than the Eiffel Tower',
-      runningTrack: '{{count}} laps around a running track',
-      yarnBomb: "you could yarn-bomb a whole street!",
+      footballField: "That's {{count}} football fields! ⚽",
     },
     journeyBeginning: 'Your yarn journey is just beginning!',
     // Stat labels (short, for cards)

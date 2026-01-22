@@ -25,7 +25,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Volleyball, Wrench, Sparkles, Flame, Plus, Clock } from 'lucide-react-native';
+import { Volleyball, Wrench, Sparkles, Flame, Plus, Clock, Pause, Circle } from 'lucide-react-native';
 import { DarkHeader } from '@/components/DarkHeader';
 import { Colors } from '@/constants/colors';
 import { Typography } from '@/constants/typography';
@@ -131,39 +131,48 @@ export default function JourneyScreen() {
         {/* Section 1: Opening Story */}
         {stats.journeyStartDate && (
           <View
-            style={styles.section}
+            style={styles.card}
             accessible={true}
             accessibilityRole="text"
-            accessibilityLabel={`${t('journey.storyBeganWith', {
-              date: formatJourneyDate(stats.journeyStartDate),
-            })} ${stats.firstCompletedProjectName ? t('journey.withFirstProject', { projectName: stats.firstCompletedProjectName }) : ''}`}
+            accessibilityLabel={`${t('journey.storyBegan')} ${formatJourneyDate(stats.journeyStartDate)} ${stats.firstCompletedProjectName || ''}`}
           >
-            <Text style={styles.storyText}>
-              {t('journey.storyBeganWith', {
-                date: formatJourneyDate(stats.journeyStartDate),
-              })}
-            </Text>
-            {stats.firstCompletedProjectName && (
-              <Text style={styles.storyHighlight}>
-                {t('journey.withFirstProject', {
-                  projectName: stats.firstCompletedProjectName,
-                })}
-                {!hasCompletedProjects && (
-                  <Text style={styles.storyMuted}>
-                    {' '}
-                    {t('journey.stillInProgress')}
+            <Text style={styles.sectionTitle}>{t('journey.storyBegan')}</Text>
+            <View style={styles.storyDetails}>
+              <View style={styles.collectionRow}>
+                <View style={styles.iconContainer}>
+                  <Clock size={20} color={Colors.sage} />
+                </View>
+                <Text style={styles.collectionText}>
+                  {formatJourneyDate(stats.journeyStartDate)}
+                </Text>
+              </View>
+              {stats.firstCompletedProjectName && (
+                <View style={styles.collectionRow}>
+                  <View style={styles.iconContainer}>
+                    <Volleyball size={20} color={Colors.sage} />
+                  </View>
+                  <Text style={styles.storyProjectName}>
+                    &ldquo;{stats.firstCompletedProjectName}&rdquo;
+                    {!hasCompletedProjects && (
+                      <Text style={styles.storyMuted}>
+                        {' '}{t('journey.stillInProgress')}
+                      </Text>
+                    )}
                   </Text>
-                )}
-              </Text>
-            )}
+                </View>
+              )}
+            </View>
           </View>
         )}
 
         {/* Section 2: Time Investment */}
         {stats.totalHours > 0 && (
           <View style={styles.card}>
+            <Text style={styles.sectionTitle}>{t('journey.timeInvestment')}</Text>
             <View style={styles.collectionRow}>
-              <Clock size={20} color={Colors.teal} />
+              <View style={styles.iconContainer}>
+                <Clock size={20} color={Colors.sage} />
+              </View>
               <Text style={styles.collectionText}>
                 {stats.totalHours >= 500
                   ? tPlural('journey.trueArtisan', stats.totalHours, 'hours')
@@ -171,7 +180,7 @@ export default function JourneyScreen() {
               </Text>
             </View>
             {timeComparison && (
-              <Text style={styles.cardSubtitle}>
+              <Text style={styles.subtextIndented}>
                 {t('journey.thatsAbout', {
                   comparison: t(`journey.funComparison.${timeComparison.type}`, {
                     count: timeComparison.count,
@@ -189,7 +198,9 @@ export default function JourneyScreen() {
 
             {/* Yarn line */}
             <View style={styles.collectionRow}>
-              <Volleyball size={20} color={Colors.sage} />
+              <View style={styles.iconContainer}>
+                <Volleyball size={20} color={Colors.sage} />
+              </View>
               <Text style={styles.collectionText}>
                 {stats.yarnCount === 0
                   ? t('journey.yarnFirstWaiting')
@@ -203,7 +214,9 @@ export default function JourneyScreen() {
 
             {/* Hook line */}
             <View style={styles.collectionRow}>
-              <Wrench size={20} color={Colors.sage} />
+              <View style={styles.iconContainer}>
+                <Wrench size={20} color={Colors.sage} />
+              </View>
               <Text style={styles.collectionText}>
                 {stats.hookCount === 0
                   ? t('journey.hookFirst')
@@ -216,17 +229,18 @@ export default function JourneyScreen() {
         )}
 
         {/* Section 4: Your Creations */}
-        {(stats.completedCount > 0 || stats.inProgressCount > 0) && (
+        {(stats.completedCount > 0 || stats.inProgressCount > 0 || stats.onHoldCount > 0 || stats.toDoCount > 0) && (
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>{t('journey.yourCreations')}</Text>
 
             {/* Completed line */}
-            <View style={styles.collectionRow}>
-              <Sparkles size={20} color={Colors.teal} />
-              <Text style={styles.collectionText}>
-                {stats.completedCount === 0
-                  ? t('journey.firstAwaits')
-                  : stats.completedCount > 10
+            {stats.completedCount > 0 && (
+              <View style={styles.collectionRow}>
+                <View style={styles.iconContainer}>
+                  <Sparkles size={20} color={Colors.sage} />
+                </View>
+                <Text style={styles.collectionText}>
+                  {stats.completedCount > 10
                     ? t('journey.manyFinished', { count: stats.completedCount })
                     : stats.completedCount === 1
                       ? t('journey.oneFinished')
@@ -235,13 +249,16 @@ export default function JourneyScreen() {
                         : stats.completedCount <= 4
                           ? t('journey.fewFinished', { count: stats.completedCount })
                           : t('journey.finishedWithLove', { count: stats.completedCount })}
-              </Text>
-            </View>
+                </Text>
+              </View>
+            )}
 
             {/* In Progress line */}
             {stats.inProgressCount > 0 && (
               <View style={styles.collectionRow}>
-                <Flame size={20} color={Colors.warning} />
+                <View style={styles.iconContainer}>
+                  <Flame size={20} color={Colors.sage} />
+                </View>
                 <Text style={styles.collectionText}>
                   {stats.inProgressCount === 1
                     ? t('journey.oneInProgress')
@@ -251,11 +268,35 @@ export default function JourneyScreen() {
                 </Text>
               </View>
             )}
+
+            {/* On Hold line */}
+            {stats.onHoldCount > 0 && (
+              <View style={styles.collectionRow}>
+                <View style={styles.iconContainer}>
+                  <Pause size={20} color={Colors.sage} />
+                </View>
+                <Text style={styles.collectionText}>
+                  {t('journey.onHold', { count: stats.onHoldCount })}
+                </Text>
+              </View>
+            )}
+
+            {/* To-Do line */}
+            {stats.toDoCount > 0 && (
+              <View style={styles.collectionRow}>
+                <View style={styles.iconContainer}>
+                  <Circle size={20} color={Colors.sage} />
+                </View>
+                <Text style={styles.collectionText}>
+                  {t('journey.toDo', { count: stats.toDoCount })}
+                </Text>
+              </View>
+            )}
           </View>
         )}
 
-        {/* Section 5: Fun Fact */}
-        {distanceComparison && (
+        {/* Section 5: Fun Fact - Yarn Length */}
+        {stats.totalYarnMeters >= 10 && (
           <View style={styles.funFactCard}>
             <Text style={styles.funFactLabel}>{t('journey.funFact')}</Text>
             <Text style={styles.funFactText}>{t('journey.yarnCouldStretch')}</Text>
@@ -264,12 +305,66 @@ export default function JourneyScreen() {
                 ? tPlural('journey.kilometers', Math.round(stats.totalYarnMeters / 1000))
                 : tPlural('journey.meters', Math.round(stats.totalYarnMeters))}
             </Text>
-            <Text style={styles.funFactComparison}>
-              {t(`journey.comparison.${distanceComparison.type}`, {
-                count: distanceComparison.count,
-              })}{' '}
-              {distanceComparison.type === 'eiffelTower' ? '🗼' : ''}
+            {distanceComparison && (
+              <Text style={styles.funFactComparison}>
+                {t(`journey.comparison.${distanceComparison.type}`, {
+                  count: distanceComparison.count,
+                })}
+              </Text>
+            )}
+            {/* Used vs Unused meters */}
+            {(stats.usedYarnMeters > 0 || stats.unusedYarnMeters > 0) && (
+              <View style={styles.yarnBreakdown}>
+                {stats.usedYarnMeters > 0 && (
+                  <Text style={styles.yarnBreakdownText}>
+                    🧶 {t('journey.usedYarn')}: {Math.round(stats.usedYarnMeters)}m
+                  </Text>
+                )}
+                {stats.unusedYarnMeters > 0 && (
+                  <Text style={styles.yarnBreakdownText}>
+                    ✨ {t('journey.unusedYarn')}: {Math.round(stats.unusedYarnMeters)}m
+                  </Text>
+                )}
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Section 6: Investment - Money Spent */}
+        {stats.totalInventoryValue > 0 && stats.inventoryCurrency && (
+          <View style={styles.funFactCard}>
+            <Text style={styles.funFactLabel}>{t('journey.investment')}</Text>
+            <Text style={styles.funFactHighlight}>
+              {stats.totalInventoryValue.toFixed(2)} {stats.inventoryCurrency}
             </Text>
+            <Text style={styles.funFactText}>{t('journey.investedInCraft')}</Text>
+            <View style={styles.yarnBreakdown}>
+              {stats.totalYarnValue > 0 && (
+                <Text style={styles.yarnBreakdownText}>
+                  🧶 {t('journey.yarnValue')}: {stats.totalYarnValue.toFixed(2)} {stats.inventoryCurrency}
+                </Text>
+              )}
+              {stats.totalHookValue > 0 && (
+                <Text style={styles.yarnBreakdownText}>
+                  🪝 {t('journey.hookValue')}: {stats.totalHookValue.toFixed(2)} {stats.inventoryCurrency}
+                </Text>
+              )}
+            </View>
+            {/* Used vs Unused value */}
+            {(stats.usedYarnValue > 0 || stats.unusedYarnValue > 0) && (
+              <View style={styles.yarnBreakdown}>
+                {stats.usedYarnValue > 0 && (
+                  <Text style={styles.yarnBreakdownText}>
+                    ✂️ {t('journey.usedYarn')}: {stats.usedYarnValue.toFixed(2)} {stats.inventoryCurrency}
+                  </Text>
+                )}
+                {stats.unusedYarnValue > 0 && (
+                  <Text style={styles.yarnBreakdownText}>
+                    📦 {t('journey.unusedYarn')}: {stats.unusedYarnValue.toFixed(2)} {stats.inventoryCurrency}
+                  </Text>
+                )}
+              </View>
+            )}
           </View>
         )}
 
@@ -307,24 +402,19 @@ const styles = StyleSheet.create({
   },
 
   // Opening Story
-  section: {
-    marginBottom: 24,
+  storyDetails: {
+    gap: 0,
   },
-  storyText: {
-    ...Typography.title2,
-    color: Colors.charcoal,
-    fontSize: 22,
-    lineHeight: 30,
-  },
-  storyHighlight: {
+  storyProjectName: {
     ...Typography.body,
     color: Colors.deepSage,
-    fontSize: 18,
-    lineHeight: 26,
-    marginTop: 4,
+    fontSize: 16,
+    lineHeight: 24,
+    fontWeight: '600',
   },
   storyMuted: {
     color: Colors.warmGray,
+    fontWeight: '400',
     fontStyle: 'italic',
   },
 
@@ -343,13 +433,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     lineHeight: 28,
   },
-  cardSubtitle: {
-    ...Typography.body,
-    color: Colors.warmGray,
-    fontSize: 16,
-    lineHeight: 24,
-    marginTop: 4,
-  },
 
   // Section titles
   sectionTitle: {
@@ -363,16 +446,30 @@ const styles = StyleSheet.create({
   // Collection rows
   collectionRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 12,
     marginBottom: 12,
+  },
+  iconContainer: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   collectionText: {
     ...Typography.body,
     color: Colors.charcoal,
     fontSize: 16,
-    lineHeight: 22,
+    lineHeight: 24,
     flex: 1,
+  },
+  subtextIndented: {
+    ...Typography.body,
+    color: Colors.warmGray,
+    fontSize: 15,
+    lineHeight: 22,
+    marginLeft: 36, // 24 (icon) + 12 (gap)
+    marginTop: -4,
   },
 
   // Fun Fact
@@ -414,7 +511,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
   },
-
+  yarnBreakdown: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: Colors.border,
+    width: '100%',
+    gap: 8,
+  },
+  yarnBreakdownText: {
+    ...Typography.body,
+    color: Colors.warmGray,
+    fontSize: 14,
+    textAlign: 'center',
+  },
   // Footer
   footer: {
     alignItems: 'center',

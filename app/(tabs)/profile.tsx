@@ -14,7 +14,6 @@ import { router } from 'expo-router';
 import {
   LogOut,
   ChevronRight,
-  Scissors,
   HelpCircle,
   Info,
   Globe,
@@ -24,8 +23,11 @@ import {
   Trash2,
   Cloud,
   RefreshCw,
-  Package,
   UserX,
+  Hourglass,
+  Heart,
+  Volleyball,
+  Box,
 } from 'lucide-react-native';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
@@ -46,6 +48,7 @@ import { normalizeBorder } from '@/constants/pixelRatio';
 import { ACCESSIBLE_COLORS } from '@/constants/accessibility';
 import { loadAllMockData, clearAllData } from '@/scripts/loadMockData';
 import { resetOnboarding } from '@/app/onboarding';
+import { useJourneyStats } from '@/hooks/useJourneyStats';
 
 const { width } = Dimensions.get('window');
 const isSmallDevice = width < 375;
@@ -57,7 +60,7 @@ const isTablet = width >= 768;
  */
 export default function ProfileScreen(): React.JSX.Element {
   const { user, logout, updateUser, refreshUser, isPro } = useAuth();
-  const { projects, completedCount, inProgressCount, refreshProjects, syncToCloud: syncProjectsToCloud } = useProjects();
+  const { projects, refreshProjects, syncToCloud: syncProjectsToCloud } = useProjects();
   const { items, refreshItems, syncToCloud: syncInventoryToCloud } = useInventory();
   const { language, changeLanguage, t } = useLanguage();
   const [isLoadingMockData, setIsLoadingMockData] = useState(false);
@@ -65,6 +68,7 @@ export default function ProfileScreen(): React.JSX.Element {
   const [isSyncingImages, setIsSyncingImages] = useState(false);
   const [isRefreshingFromCloud, setIsRefreshingFromCloud] = useState(false);
   const { showToast } = useToast();
+  const journeyStats = useJourneyStats();
 
 
   /**
@@ -694,37 +698,61 @@ export default function ProfileScreen(): React.JSX.Element {
           onSelectAvatar={handleAvatarSelect}
         />
 
-        <View style={styles.statsContainer}>
-          <Card style={styles.statsCard}>
-            <View style={styles.statsRow}>
-              <View style={styles.stat}>
-                <Scissors size={24} color={Colors.sage} />
-                <Text style={styles.statNumber}>{projects.length}</Text>
-                <Text style={styles.statLabel}>{t('profile.projectsCount')}</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.stat}>
-                <Package size={24} color={Colors.teal} />
-                <Text style={styles.statNumber}>{items.length}</Text>
-                <Text style={styles.statLabel}>{t('profile.inventoryCount')}</Text>
-              </View>
-            </View>
-          </Card>
-        </View>
+        {/* Your Maker Story Card */}
+        <View style={styles.storyContainer}>
+          {/* Section Label */}
+          <Text style={styles.storyLabel}>{t('journey.makerStory')}</Text>
 
-        <View style={styles.progressContainer}>
-          <Text style={styles.sectionTitle}>{t('profile.yourProgress')}</Text>
-          <Card>
-            <View style={styles.progressItem}>
-              <Text style={styles.progressLabel}>{t('profile.finishedProjects')}</Text>
-              <Text style={styles.progressValue}>{completedCount}</Text>
-            </View>
-            <View style={styles.progressDivider} />
-            <View style={styles.progressItem}>
-              <Text style={styles.progressLabel}>{t('profile.inProgressProjects')}</Text>
-              <Text style={styles.progressValue}>{inProgressCount}</Text>
-            </View>
-          </Card>
+          <TouchableOpacity
+            onPress={() => router.push('/journey')}
+            activeOpacity={0.85}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel={t('journey.viewJourney')}
+            accessibilityHint="Opens your craft journey summary"
+          >
+            <Card style={styles.storyCard}>
+              <View style={styles.storyList}>
+                <View style={styles.storyRow}>
+                  <View style={styles.storyIcon}>
+                    <Volleyball size={20} color={Colors.warmGray} />
+                  </View>
+                  <Text style={styles.storyText}>
+                    {t('journey.projectsStarted', { count: projects.length })}
+                  </Text>
+                </View>
+                <View style={styles.storyRow}>
+                  <View style={styles.storyIcon}>
+                    <Box size={20} color={Colors.warmGray} />
+                  </View>
+                  <Text style={styles.storyText}>
+                    {t('journey.treasuresInStash', { count: items.length })}
+                  </Text>
+                </View>
+                {journeyStats.totalHours > 0 && (
+                  <View style={styles.storyRow}>
+                    <View style={styles.storyIcon}>
+                      <Hourglass size={20} color={Colors.warmGray} />
+                    </View>
+                    <Text style={styles.storyText}>
+                      {t('journey.hoursOfLove', { count: journeyStats.totalHours })}
+                    </Text>
+                  </View>
+                )}
+                {journeyStats.completedCount > 0 && (
+                  <View style={styles.storyRow}>
+                    <View style={styles.storyIcon}>
+                      <Heart size={20} color={Colors.warmGray} />
+                    </View>
+                    <Text style={styles.storyText}>
+                      {t('journey.madeWithLove', { count: journeyStats.completedCount })}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <ChevronRight size={20} color={Colors.warmGray} style={styles.storyCta} />
+            </Card>
+          </TouchableOpacity>
         </View>
 
         {/* Cloud Sync Section - Pro Users Only (Image Sync) */}
@@ -746,7 +774,7 @@ export default function ProfileScreen(): React.JSX.Element {
                 {isSyncingImages ? (
                   <ActivityIndicator size="small" color={Colors.sage} />
                 ) : (
-                  <RefreshCw size={24} color={Colors.sage} />
+                  <RefreshCw size={20} color={Colors.sage} />
                 )}
                 <View style={styles.syncButtonText}>
                   <Text style={styles.syncButtonLabel}>
@@ -779,7 +807,7 @@ export default function ProfileScreen(): React.JSX.Element {
                 {isRefreshingFromCloud ? (
                   <ActivityIndicator size="small" color={Colors.teal} />
                 ) : (
-                  <Cloud size={24} color={Colors.teal} />
+                  <Cloud size={20} color={Colors.teal} />
                 )}
                 <View style={styles.syncButtonText}>
                   <Text style={styles.syncButtonLabel}>
@@ -1062,62 +1090,48 @@ const styles = StyleSheet.create({
     ...Typography.body,
     color: Colors.warmGray,
   },
-  statsContainer: {
+  // Story Card — Dieter Rams aesthetic
+  storyContainer: {
     paddingHorizontal: 16,
     marginBottom: 24,
   },
-  statsCard: {
-    padding: 20,
+  storyLabel: {
+    ...Typography.title3,
+    color: Colors.charcoal,
+    fontWeight: '600' as const,
+    marginBottom: 12,
   },
-  statsRow: {
+  storyCard: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
   },
-  stat: {
+  storyList: {
     flex: 1,
+    gap: 8,
+  },
+  storyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  storyIcon: {
+    width: 24,
     alignItems: 'center',
   },
-  statNumber: {
-    ...Typography.title1,
+  storyText: {
+    ...Typography.body,
     color: Colors.charcoal,
-    marginTop: 8,
-    marginBottom: 4,
+    fontSize: 15,
   },
-  statLabel: {
-    ...Typography.caption,
-    color: Colors.warmGray,
-  },
-  statDivider: {
-    width: normalizeBorder(1),
-    height: 60,
-    backgroundColor: Colors.border,
-  },
-  progressContainer: {
-    paddingHorizontal: 16,
-    marginBottom: 24,
+  storyCta: {
+    marginLeft: 12,
   },
   sectionTitle: {
     ...Typography.title3,
     color: Colors.charcoal,
     marginBottom: 12,
-  },
-  progressItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  progressLabel: {
-    ...Typography.body,
-    color: Colors.charcoal,
-  },
-  progressValue: {
-    ...Typography.title3,
-    color: Colors.sage,
-  },
-  progressDivider: {
-    height: normalizeBorder(1),
-    backgroundColor: Colors.border,
   },
   syncContainer: {
     paddingHorizontal: 16,

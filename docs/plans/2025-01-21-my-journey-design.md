@@ -270,7 +270,7 @@ When user has 0 projects and 0 inventory:
 ## Internationalization
 
 All strings must be in translation files (en, sl, de, ru).
-
+qe
 ### Key Structure
 ```
 journey.title: "My Journey"
